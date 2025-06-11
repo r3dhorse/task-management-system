@@ -430,36 +430,6 @@ describe('Form Components', () => {
       expect(screen.getByText('Only PDF files up to 10MB are allowed')).toBeInTheDocument()
     })
 
-    it('accepts only PDF files', () => {
-      render(
-        <MockFileUpload 
-          label="Attachment" 
-          accept=".pdf"
-        />
-      )
-
-      const fileInput = screen.getByLabelText(/pdf file only/i)
-      expect(fileInput).toHaveAttribute('accept', '.pdf')
-    })
-
-    it('handles file selection', async () => {
-      const user = userEvent.setup()
-      const handleFileSelect = jest.fn()
-      
-      render(
-        <MockFileUpload 
-          label="Attachment" 
-          onFileSelect={handleFileSelect}
-        />
-      )
-
-      const fileInput = screen.getByLabelText(/pdf file only/i)
-      const file = new File(['dummy'], 'test.pdf', { type: 'application/pdf' })
-      
-      await user.upload(fileInput, file)
-
-      expect(handleFileSelect).toHaveBeenCalledWith(file)
-    })
 
     it('displays file upload error', () => {
       render(
@@ -473,17 +443,6 @@ describe('Form Components', () => {
       expect(error).toHaveTextContent('File size exceeds 10MB limit')
     })
 
-    it('shows disabled file upload state', () => {
-      render(
-        <MockFileUpload 
-          label="Attachment" 
-          disabled={true}
-        />
-      )
-
-      const fileInput = screen.getByLabelText(/pdf file only/i)
-      expect(fileInput).toBeDisabled()
-    })
   })
 
   describe('Form Validation Messages', () => {

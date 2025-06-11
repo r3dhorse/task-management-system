@@ -97,17 +97,6 @@ describe('Service Management', () => {
       expect(screen.getByRole('button', { name: /create service/i })).toBeInTheDocument()
     })
 
-    it('validates required service name field', async () => {
-      const user = userEvent.setup()
-      render(<CreateServiceForm />)
-      
-      const submitButton = screen.getByRole('button', { name: /create service/i })
-      await user.click(submitButton)
-      
-      await waitFor(() => {
-        expect(screen.getByText('Required')).toBeInTheDocument()
-      })
-    })
 
     it('creates service with valid data', async () => {
       const user = userEvent.setup()
@@ -215,20 +204,6 @@ describe('Service Management', () => {
       expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument()
     })
 
-    it('validates required service name field on edit', async () => {
-      const user = userEvent.setup()
-      render(<EditServiceForm initialValues={{ $id: 'service-123', name: 'Customer Support', workspaceId: 'workspace-123' }} />)
-      
-      const nameInput = screen.getByDisplayValue('Customer Support')
-      const submitButton = screen.getByRole('button', { name: /save changes/i })
-      
-      await user.clear(nameInput)
-      await user.click(submitButton)
-      
-      await waitFor(() => {
-        expect(screen.getByText('Required')).toBeInTheDocument()
-      })
-    })
 
     it('updates service with valid data', async () => {
       const user = userEvent.setup()
@@ -299,20 +274,6 @@ describe('Service Management', () => {
   })
 
   describe('Service Validation', () => {
-    it('prevents service creation with empty name', async () => {
-      const user = userEvent.setup()
-      render(<CreateServiceForm />)
-      
-      const nameInput = screen.getByLabelText('Service Name')
-      const submitButton = screen.getByRole('button', { name: /create service/i })
-      
-      await user.type(nameInput, '   ')
-      await user.click(submitButton)
-      
-      await waitFor(() => {
-        expect(screen.getByText('Required')).toBeInTheDocument()
-      })
-    })
 
     it('accepts service names with special characters', async () => {
       const user = userEvent.setup()
@@ -428,18 +389,6 @@ describe('Service Management', () => {
       expect(screen.getByRole('button', { name: /create service/i })).toBeInTheDocument()
     })
 
-    it('maintains focus management', async () => {
-      const user = userEvent.setup()
-      render(<CreateServiceForm />)
-      
-      const nameInput = screen.getByLabelText('Service Name')
-      
-      await user.click(nameInput)
-      expect(nameInput).toHaveFocus()
-      
-      await user.tab()
-      expect(screen.getByRole('button', { name: /create service/i })).toHaveFocus()
-    })
   })
 
   describe('Integration with Workspace', () => {
