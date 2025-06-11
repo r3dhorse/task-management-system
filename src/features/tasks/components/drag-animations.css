@@ -1,0 +1,217 @@
+/* Optimized drag and drop animations */
+
+/* Use GPU acceleration for smoother animations */
+.kanban-drag-container {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Custom scrollbar styling for kanban columns */
+.kanban-drop-zone {
+  /* Custom scrollbar for webkit browsers */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+/* Vertical scrollbar */
+.kanban-drop-zone::-webkit-scrollbar:vertical {
+  width: 6px;
+}
+
+/* Horizontal scrollbar */
+.kanban-drop-zone::-webkit-scrollbar:horizontal {
+  height: 6px;
+}
+
+.kanban-drop-zone::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.kanban-drop-zone::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.kanban-drop-zone::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8);
+}
+
+/* Hide scrollbar when not needed */
+.kanban-drop-zone:not(:hover)::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+}
+
+/* Ensure cards maintain their width and don't shrink */
+.kanban-drop-zone .kanban-card {
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+/* Responsive height adjustments */
+@media (max-height: 768px) {
+  .kanban-drop-zone {
+    height: 360px !important;
+    max-height: 360px !important;
+  }
+  
+  .kanban-collapsed-state {
+    height: 360px !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .kanban-drop-zone {
+    height: 280px !important;
+    max-height: 280px !important;
+  }
+  
+  .kanban-collapsed-state {
+    height: 280px !important;
+  }
+}
+
+@media (min-height: 900px) {
+  .kanban-drop-zone {
+    height: 600px !important;
+    max-height: 600px !important;
+  }
+  
+  .kanban-collapsed-state {
+    height: 600px !important;
+  }
+}
+
+/* Smooth transitions for drop zones */
+.kanban-drop-zone {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Enhanced card animations */
+.kanban-card {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              visibility 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Style for the actual dragging element (the clone) */
+[data-rbd-draggable-context-id] [data-rbd-draggable-id].kanban-card {
+  transform: rotate(2deg) scale(1.05) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), 
+              0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 2px solid rgba(59, 130, 246, 0.6) !important;
+  background: white !important;
+  opacity: 0.95 !important;
+  z-index: 1000 !important;
+  border-radius: 8px !important;
+}
+
+/* Alternative approach - target the portal dragging element */
+[data-rbd-drag-handle-context-id] .kanban-card {
+  transform: rotate(2deg) scale(1.05) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), 
+              0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  border: 2px solid rgba(59, 130, 246, 0.6) !important;
+  background: white !important;
+  opacity: 0.95 !important;
+  z-index: 1000 !important;
+  border-radius: 8px !important;
+}
+
+/* Dragging card enhancement - for the drag preview */
+.kanban-card-dragging {
+  transform: translateZ(0) rotate(2deg) scale(1.05) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), 
+              0 10px 25px rgba(0, 0, 0, 0.15) !important;
+  z-index: 1000 !important;
+  will-change: transform;
+  opacity: 0.95 !important;
+  background: white !important;
+  border: 2px solid rgba(59, 130, 246, 0.6) !important;
+  border-radius: 8px !important;
+}
+
+/* Make source card invisible during drag */
+.kanban-card-source-hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: scale(0.75) !important;
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+}
+
+/* Placeholder effect for better visual feedback */
+.kanban-card.opacity-0 {
+  position: relative;
+}
+
+.kanban-card.opacity-0::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(156, 163, 175, 0.1), rgba(209, 213, 219, 0.1));
+  border: 2px dashed rgba(156, 163, 175, 0.3);
+  border-radius: 8px;
+  opacity: 0.7;
+  animation: pulse-placeholder 2s ease-in-out infinite;
+}
+
+@keyframes pulse-placeholder {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Drop zone highlighting */
+.kanban-drop-highlight {
+  background: linear-gradient(135deg, 
+              rgba(59, 130, 246, 0.1) 0%, 
+              rgba(147, 197, 253, 0.1) 100%);
+  border: 2px dashed rgba(59, 130, 246, 0.4);
+  transform: scale(1.02);
+}
+
+/* Pulse animation for drop zones */
+@keyframes pulse-blue {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.kanban-drop-pulse {
+  animation: pulse-blue 2s ease-in-out infinite;
+}
+
+/* Optimized for mobile devices */
+@media (max-width: 768px) {
+  .kanban-card {
+    transition-duration: 0.2s;
+  }
+  
+  .kanban-drop-zone {
+    transition-duration: 0.2s;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .kanban-card,
+  .kanban-drop-zone,
+  .kanban-card-dragging {
+    transition: none;
+    animation: none;
+  }
+}

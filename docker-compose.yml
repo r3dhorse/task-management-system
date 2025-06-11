@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  app:
+    container_name: projectxs-prod
+    image: projectxs-task-management:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+      cache_from:
+        - projectxs-task-management:latest
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      # Production environment
+      - NODE_ENV=production
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      
+      # Appwrite Configuration
+      - NEXT_PUBLIC_APPWRITE_ENDPOINT=${NEXT_PUBLIC_APPWRITE_ENDPOINT:-https://cloud.appwrite.io/v1}
+      - NEXT_PUBLIC_APPWRITE_PROJECT=${NEXT_PUBLIC_APPWRITE_PROJECT}
+      - NEXT_PUBLIC_APPWRITE_DATABASE_ID=${NEXT_PUBLIC_APPWRITE_DATABASE_ID}
+      - NEXT_PUBLIC_APPWRITE_WORKSPACES_ID=${NEXT_PUBLIC_APPWRITE_WORKSPACES_ID}
+      - NEXT_PUBLIC_APPWRITE_TASKS_ID=${NEXT_PUBLIC_APPWRITE_TASKS_ID}
+      - NEXT_PUBLIC_APPWRITE_PROJECTS_ID=${NEXT_PUBLIC_APPWRITE_PROJECTS_ID:-}
+      - NEXT_PUBLIC_APPWRITE_MEMBERS_ID=${NEXT_PUBLIC_APPWRITE_MEMBERS_ID}
+      - NEXT_PUBLIC_APPWRITE_IMAGES_BUCKET_ID=${NEXT_PUBLIC_APPWRITE_IMAGES_BUCKET_ID}
+      - NEXT_PUBLIC_APPWRITE_SERVICES_ID=${NEXT_PUBLIC_APPWRITE_SERVICES_ID}
+      - NEXT_PUBLIC_APPWRITE_TASK_HISTORY_ID=${NEXT_PUBLIC_APPWRITE_TASK_HISTORY_ID}
+      - NEXT_PUBLIC_APPWRITE_TASK_MESSAGES_COLLECTION_ID=${NEXT_PUBLIC_APPWRITE_TASK_MESSAGES_COLLECTION_ID}
+      
+      # Server-side Appwrite Key
+      - NEXT_APPWRITE_KEY=${NEXT_APPWRITE_KEY}
+    restart: always
+    networks:
+      - projectxs-network
+    # Resource limits (uncomment if using Docker Swarm)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  projectxs-network:
+    driver: bridge
