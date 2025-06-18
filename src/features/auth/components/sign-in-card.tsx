@@ -23,6 +23,7 @@ import {
 import { loginSchema } from "../schemas";
 import { useLogin } from "../api/use-login";
 import { ForgotPasswordModal } from "./forgot-password-modal";
+import styles from "./sign-in-card.module.css";
 
 
 export const SignInCard = () => {
@@ -47,17 +48,18 @@ export const SignInCard = () => {
   };
 
   return (
-    <Card className={`w-full h-full md:w-[480px] border border-white/20 shadow-2xl bg-white/10 backdrop-blur-lg backdrop-saturate-150 transform transition-all duration-700 ease-out ${isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-95'}`}>
-      <CardHeader className="flex items-center justify-center text-center pt-12 pb-8">
-        <CardTitle className="text-3xl font-bold text-white mb-2 drop-shadow-sm">
-          Welcome back
-        </CardTitle>
-        <p className="text-white/80 text-base drop-shadow-sm">
-          Sign in to your account to continue
-        </p>
-      </CardHeader>
+    <div className={`w-full h-full md:w-[480px] ${styles.animatedCard} transform transition-all duration-700 ease-out ${isVisible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-8 opacity-0 scale-95'}`}>
+      <Card className={`${styles.cardContent} w-full h-full border-none shadow-none bg-transparent`}>
+        <CardHeader className="flex items-center justify-center text-center pt-12 pb-8">
+          <CardTitle className="text-3xl font-bold text-white mb-2 drop-shadow-sm">
+            Welcome back
+          </CardTitle>
+          <p className="text-white/80 text-base drop-shadow-sm">
+            Sign in to your account to continue
+          </p>
+        </CardHeader>
 
-      <CardContent className="px-8 pb-12">
+        <CardContent className="px-8 pb-12">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
@@ -126,12 +128,13 @@ export const SignInCard = () => {
             </div>
           </form>
         </Form>
-      </CardContent>
+        </CardContent>
 
-      <ForgotPasswordModal
-        open={showForgotPassword}
-        onOpenChange={setShowForgotPassword}
-      />
-    </Card>
+        <ForgotPasswordModal
+          open={showForgotPassword}
+          onOpenChange={setShowForgotPassword}
+        />
+      </Card>
+    </div>
   );
 };
