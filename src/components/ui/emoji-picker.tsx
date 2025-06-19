@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { ScrollArea } from "./scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
-import { Search, Smile, Heart, Star, Clock, Flag, Activity, MapPin, Car } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Search, Smile, Heart, Star, Clock, Flag, Activity, MapPin } from "lucide-react";
 
 interface EmojiData {
   emoji: string;

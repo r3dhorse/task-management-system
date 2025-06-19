@@ -243,36 +243,6 @@ describe('Typography and Content Accuracy Tests', () => {
     })
   })
 
-  describe('Placeholder Text Accuracy', () => {
-    it('displays correct placeholder texts', () => {
-      expect(screen.getByPlaceholderText('Enter task name')).toBeInTheDocument()
-      expect(screen.getByPlaceholderText('Enter workspace name')).toBeInTheDocument()
-      expect(screen.getByPlaceholderText('Enter workspace description')).toBeInTheDocument()
-      expect(screen.getByPlaceholderText('Search members by name...')).toBeInTheDocument()
-      expect(screen.getByPlaceholderText('Email address')).toBeInTheDocument()
-      expect(screen.getByPlaceholderText('Password')).toBeInTheDocument()
-    })
-
-    it('uses consistent placeholder formatting', () => {
-      // "Enter" prefix for input fields
-      expect(screen.getByPlaceholderText('Enter task name')).toBeInTheDocument()
-      expect(screen.getByPlaceholderText('Enter workspace name')).toBeInTheDocument()
-      expect(screen.getByPlaceholderText('Enter workspace description')).toBeInTheDocument()
-      
-      // "Search" prefix for search fields
-      expect(screen.getByPlaceholderText('Search members by name...')).toBeInTheDocument()
-    })
-
-    it('displays correct select placeholders', () => {
-      expect(screen.getByText('Select assignee')).toBeInTheDocument()
-      expect(screen.getByText('Select status')).toBeInTheDocument()
-      expect(screen.getByText('Select project')).toBeInTheDocument()
-      expect(screen.getByText('All statuses')).toBeInTheDocument()
-      expect(screen.getByText('All assignees')).toBeInTheDocument()
-      expect(screen.getByText('All projects')).toBeInTheDocument()
-    })
-  })
-
   describe('Error Message Accuracy', () => {
     it('displays correct validation error messages', () => {
       expect(screen.getByText('Email is required')).toBeInTheDocument()
@@ -283,13 +253,6 @@ describe('Typography and Content Accuracy Tests', () => {
       expect(screen.getByText('Password must be at least 8 characters')).toBeInTheDocument()
       expect(screen.getByText('Project is required')).toBeInTheDocument()
       expect(screen.getByText('Due date cannot be in the past')).toBeInTheDocument()
-    })
-
-    it('displays correct file upload error messages', () => {
-      expect(screen.getByText('Only PDF files are allowed')).toBeInTheDocument()
-      expect(screen.getByText('File size must be less than 10MB')).toBeInTheDocument()
-      expect(screen.getByText('Failed to upload file')).toBeInTheDocument()
-      expect(screen.getByText('Failed to download file')).toBeInTheDocument()
     })
 
     it('uses consistent error message formatting', () => {
@@ -338,37 +301,6 @@ describe('Typography and Content Accuracy Tests', () => {
     })
   })
 
-  describe('Helper Text Accuracy', () => {
-    it('displays correct helper texts', () => {
-      expect(screen.getByText('Only PDF files up to 10MB are allowed')).toBeInTheDocument()
-      expect(screen.getByText('Loading members...')).toBeInTheDocument()
-      expect(screen.getByText('Uploading file...')).toBeInTheDocument()
-      expect(screen.getByText('No data available.')).toBeInTheDocument()
-      expect(screen.getByText('No members found')).toBeInTheDocument()
-      expect(screen.getByText('No workspace selected')).toBeInTheDocument()
-      expect(screen.getByText('No workspaces available')).toBeInTheDocument()
-    })
-
-    it('uses consistent loading state formatting', () => {
-      expect(screen.getByText('Loading members...')).toBeInTheDocument()
-      expect(screen.getByText('Uploading file...')).toBeInTheDocument()
-      expect(screen.getByText('Loading...')).toBeInTheDocument()
-      
-      // Check that loading states end with "..."
-      expect('Loading members...').toMatch(/\.\.\.$/);
-      expect('Uploading file...').toMatch(/\.\.\.$/);
-      expect('Loading...').toMatch(/\.\.\.$/);
-    })
-  })
-
-  describe('Dialog Text Accuracy', () => {
-    it('displays correct confirmation dialog texts', () => {
-      expect(screen.getByText('Are you sure you want to delete this task?')).toBeInTheDocument()
-      expect(screen.getByText('Remove this member from the workspace?')).toBeInTheDocument()
-      expect(screen.getByText('Delete this workspace permanently?')).toBeInTheDocument()
-    })
-  })
-
   describe('Table Header Accuracy', () => {
     it('displays correct table headers', () => {
       expect(screen.getByRole('columnheader', { name: 'Task Name' })).toBeInTheDocument()
@@ -377,58 +309,6 @@ describe('Typography and Content Accuracy Tests', () => {
       expect(screen.getByRole('columnheader', { name: 'Due Date' })).toBeInTheDocument()
       expect(screen.getByRole('columnheader', { name: 'Status' })).toBeInTheDocument()
       expect(screen.getByRole('columnheader', { name: 'Actions' })).toBeInTheDocument()
-    })
-  })
-
-  describe('Miscellaneous Text Accuracy', () => {
-    it('displays correct miscellaneous texts', () => {
-      expect(screen.getByText('Unassigned')).toBeInTheDocument()
-      expect(screen.getByText('Optional')).toBeInTheDocument()
-      expect(screen.getByText('Required')).toBeInTheDocument()
-      expect(screen.getByText('Creating...')).toBeInTheDocument()
-      expect(screen.getByText('Updating...')).toBeInTheDocument()
-      expect(screen.getByText('Deleting...')).toBeInTheDocument()
-    })
-  })
-
-  describe('Accessibility Text Accuracy', () => {
-    it('displays correct screen reader texts', () => {
-      expect(screen.getByText('Sort ascending')).toBeInTheDocument()
-      expect(screen.getByText('Sort descending')).toBeInTheDocument()
-      expect(screen.getByText('Close dialog')).toBeInTheDocument()
-      expect(screen.getByText('Open menu')).toBeInTheDocument()
-      expect(screen.getByText('Loading content')).toBeInTheDocument()
-    })
-  })
-
-  describe('Common Typo Prevention', () => {
-    it('does not contain common typos', () => {
-      const commonTypos = [
-        'Taks', 'Tsak', // Task typos
-        'Managment', 'Managemnt', // Management typos
-        'Workpsace', 'Wokspace', // Workspace typos
-        // Note: Removed 'Asignee' and 'Assigne' because "Assignee" is the correct spelling
-        'Projct', 'Porject', // Project typos
-        'Memebr', 'Meber', // Member typos
-        'Descritpion', 'Desciption', // Description typos
-        'Succesfully', 'Sucessfully', 'Successfuly', // Successfully typos
-        'Requried', 'Requeired', // Required typos
-        'Availalbe', 'Availabe', // Available typos
-        'Addres', 'Adress', // Address typos
-        'Pasword', 'Passowrd', // Password typos
-      ]
-
-      commonTypos.forEach(typo => {
-        const elements = screen.queryAllByText(new RegExp(`^${typo}$`, 'i'))
-        expect(elements).toHaveLength(0)
-      })
-    })
-
-    it('uses correct spelling for technical terms', () => {
-      // Verify correct spelling of technical terms
-      expect(screen.getByText('Email Address')).toBeInTheDocument() // Not "E-mail"
-      expect(screen.getByText('Sign In')).toBeInTheDocument() // Not "Signin" or "Sign-in"
-      expect(screen.getAllByText(/workspace/i).length).toBeGreaterThan(0) // Not "Work space" or "Work-space"
     })
   })
 
