@@ -84,7 +84,9 @@ export const WorkspaceTasksClient = () => {
             </TabsList>
             
             {/* User Welcome Message with Role */}
-            <UserWelcomeBadge />
+            <div className="hidden sm:block">
+              <UserWelcomeBadge />
+            </div>
           </div>
 
           <DottedSeparator />

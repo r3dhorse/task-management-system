@@ -171,7 +171,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
       <div className="flex flex-col gap-y-6">
         {/* Header */}
         <Card className="w-full border-none shadow-none">
-          <CardHeader className="flex flex-row items-center gap-x-4 p-7 space-y-0">
+          <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 sm:p-7 space-y-0">
             <Button
               size="sm"
               variant="secondary"
@@ -179,19 +179,19 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
               className="flex items-center gap-2 hover:bg-slate-100 transition-all duration-200"
             >
               <ArrowLeftIcon className="h-4 w-4" />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </Button>
-            <div className="flex items-center gap-3 flex-1">
-              <SettingsIcon className="h-6 w-6 text-blue-600" />
-              <div>
-                <CardTitle className="text-xl font-bold">Workspace Settings</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
+            <div className="flex items-start sm:items-center gap-3 flex-1">
+              <SettingsIcon className="h-5 sm:h-6 w-5 sm:w-6 text-blue-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <CardTitle className="text-lg sm:text-xl font-bold">Workspace Settings</CardTitle>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1 hidden sm:block">
                   Manage your workspace configuration and preferences
                 </p>
               </div>
             </div>
             {isAdmin && (
-              <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+              <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs sm:text-sm">
                 <ShieldIcon className="h-3 w-3 mr-1" />
                 Administrator
               </Badge>
@@ -201,30 +201,32 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
 
         {/* Workspace Overview */}
         <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-purple-50">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl font-bold">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <Avatar className="h-12 w-12 sm:h-16 sm:w-16">
+                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-lg sm:text-xl font-bold">
                   {initialValues.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900">{initialValues.name}</h2>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{initialValues.name}</h2>
                 {initialValues.description && (
-                  <p className="text-gray-600 mt-1 text-sm">{initialValues.description}</p>
+                  <p className="text-gray-600 mt-1 text-xs sm:text-sm line-clamp-2">{initialValues.description}</p>
                 )}
-                <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                <div className="flex flex-wrap gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-gray-600">
                   <div className="flex items-center gap-1">
-                    <UsersIcon className="h-4 w-4" />
+                    <UsersIcon className="h-3 sm:h-4 w-3 sm:w-4" />
                     <span>{membersData?.total || 0} members</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <CalendarIcon className="h-4 w-4" />
-                    <span>Created {format(new Date(initialValues.$createdAt), 'MMM d, yyyy')}</span>
+                    <CalendarIcon className="h-3 sm:h-4 w-3 sm:w-4" />
+                    <span className="hidden sm:inline">Created {format(new Date(initialValues.$createdAt), 'MMM d, yyyy')}</span>
+                    <span className="sm:hidden">{format(new Date(initialValues.$createdAt), 'MMM d')}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <ClockIcon className="h-4 w-4" />
-                    <span>Updated {format(new Date(initialValues.$updatedAt), 'MMM d, yyyy')}</span>
+                    <ClockIcon className="h-3 sm:h-4 w-3 sm:w-4" />
+                    <span className="hidden sm:inline">Updated {format(new Date(initialValues.$updatedAt), 'MMM d, yyyy')}</span>
+                    <span className="sm:hidden">{format(new Date(initialValues.$updatedAt), 'MMM d')}</span>
                   </div>
                 </div>
               </div>
@@ -234,22 +236,26 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
 
         {/* Settings Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-4">
-            <TabsTrigger value="general" className="flex items-center gap-2">
-              <BrushIcon className="h-4 w-4" />
-              General
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
+            <TabsTrigger value="general" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <BrushIcon className="h-3 sm:h-4 w-3 sm:w-4" />
+              <span className="hidden sm:inline">General</span>
+              <span className="sm:hidden">General</span>
             </TabsTrigger>
-            <TabsTrigger value="members" className="flex items-center gap-2">
-              <UsersIcon className="h-4 w-4" />
-              Members
+            <TabsTrigger value="members" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <UsersIcon className="h-3 sm:h-4 w-3 sm:w-4" />
+              <span className="hidden sm:inline">Members</span>
+              <span className="sm:hidden">Members</span>
             </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <ShieldIcon className="h-4 w-4" />
-              Security
+            <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <ShieldIcon className="h-3 sm:h-4 w-3 sm:w-4" />
+              <span className="hidden sm:inline">Security</span>
+              <span className="sm:hidden">Security</span>
             </TabsTrigger>
-            <TabsTrigger value="danger" className="flex items-center gap-2 text-red-600">
-              <AlertTriangleIcon className="h-4 w-4" />
-              Danger Zone
+            <TabsTrigger value="danger" className="flex items-center gap-1 sm:gap-2 text-red-600 text-xs sm:text-sm">
+              <AlertTriangleIcon className="h-3 sm:h-4 w-3 sm:w-4" />
+              <span className="hidden sm:inline">Danger Zone</span>
+              <span className="sm:hidden">Danger</span>
             </TabsTrigger>
           </TabsList>
 
@@ -351,37 +357,41 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-green-100 rounded-full p-1">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                    <div className="bg-green-100 rounded-full p-1 self-start hidden sm:block">
                       <LinkIcon className="h-4 w-4 text-green-600" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-green-900 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-green-900 mb-2 flex items-center gap-2">
+                        <LinkIcon className="h-4 w-4 text-green-600 sm:hidden" />
                         Workspace Invite Link
                       </p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <Input 
                           value={fullInviteLink} 
                           readOnly 
-                          className="bg-white border-green-200 text-sm font-mono"
+                          className="bg-white border-green-200 text-xs sm:text-sm font-mono min-w-0"
                         />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCopyInviteLink}
-                          className="border-green-200 hover:bg-green-50"
-                        >
-                          <CopyIcon className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={handleShareInviteLink}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          <ExternalLinkIcon className="h-4 w-4 mr-1" />
-                          Share
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleCopyInviteLink}
+                            className="border-green-200 hover:bg-green-50 flex-1 sm:flex-initial"
+                          >
+                            <CopyIcon className="h-4 w-4" />
+                            <span className="ml-1 sm:hidden">Copy</span>
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={handleShareInviteLink}
+                            className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-initial"
+                          >
+                            <ExternalLinkIcon className="h-4 w-4 mr-1" />
+                            Share
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -442,21 +452,21 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 sm:p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <ShieldIcon className="h-4 w-4 text-purple-600" />
-                      <span className="text-sm font-medium text-purple-900">Admin Controls</span>
+                      <span className="text-xs sm:text-sm font-medium text-purple-900">Admin Controls</span>
                     </div>
                     <p className="text-xs text-purple-700">
                       Only administrators can modify workspace settings, manage members, and access sensitive features.
                     </p>
                   </div>
                   
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <UsersIcon className="h-4 w-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-900">Member Access</span>
+                      <span className="text-xs sm:text-sm font-medium text-blue-900">Member Access</span>
                     </div>
                     <p className="text-xs text-blue-700">
                       Regular members can access workspace content and collaborate on projects and tasks.
@@ -492,14 +502,14 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="bg-white border border-red-200 rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <h4 className="font-semibold text-red-800">Delete Workspace</h4>
-                        <p className="text-sm text-red-600">
+                  <div className="bg-white border border-red-200 rounded-lg p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                      <div className="space-y-1 flex-1">
+                        <h4 className="font-semibold text-red-800 text-sm sm:text-base">Delete Workspace</h4>
+                        <p className="text-xs sm:text-sm text-red-600">
                           Permanently delete this workspace and all associated data including projects, tasks, and member information.
                         </p>
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
                           <Badge variant="destructive" className="text-xs">
                             Permanent Action
                           </Badge>
@@ -512,7 +522,8 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
                         variant="destructive"
                         onClick={handleDelete}
                         disabled={isDeletingWorkspace}
-                        className="ml-4"
+                        size="sm"
+                        className="w-full sm:w-auto"
                       >
                         {isDeletingWorkspace ? (
                           <>
@@ -522,7 +533,8 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
                         ) : (
                           <>
                             <TrashIcon className="h-4 w-4 mr-2" />
-                            Delete Workspace
+                            <span className="hidden sm:inline">Delete Workspace</span>
+                            <span className="sm:hidden">Delete</span>
                           </>
                         )}
                       </Button>

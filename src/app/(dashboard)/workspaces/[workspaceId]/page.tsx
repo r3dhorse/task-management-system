@@ -198,7 +198,7 @@ const WorkspaceIdPage = () => {
           </div>
           
           {/* Date Range Filter */}
-          <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-[800px]">
+          <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full sm:w-auto max-w-[800px]">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 ">
               <div className="flex items-center gap-2">
                 <CalendarIcon className="size-4 text-blue-600" />
@@ -262,7 +262,7 @@ const WorkspaceIdPage = () => {
         </div>
         
         {/* User Info */}
-        <div className="flex items-start">
+        <div className="hidden sm:flex items-start">
           <UserInfoCard />
         </div>
       </div>

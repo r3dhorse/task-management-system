@@ -32,7 +32,14 @@ export const useConfirm = (
   }
 
   const ConfirmationDialog = () => (
-    <ResponsiveModal open={promise !== null} onOpenChange={handleClose}>
+    <ResponsiveModal 
+      open={promise !== null} 
+      onOpenChange={handleClose}
+      title={title}
+      description={message}
+      hideTitle={true}
+      hideDescription={true}
+    >
       <Card className="w-full h-full border-none shadow-none">
         <CardContent className="pt-8">
           <CardHeader className="p-0">

@@ -107,7 +107,7 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
       <DeleteDialog />
       <ResetDialog />
       <Card className="w-full h-full border-none shadow-none">
-        <CardHeader className="flex flex-row items-center gap-x-4 p-6 sm:p-7 space-y-0 border-b">
+        <CardHeader className="flex flex-row items-center gap-x-4 p-4 sm:p-6 space-y-0 border-b">
           <Button
             size="sm"
             variant="secondary"
@@ -115,14 +115,14 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
             className="flex items-center gap-2"
           >
             <ArrowLeftIcon className="w-4 h-4" />
-            Back
+            <span className="hidden sm:inline">Back</span>
           </Button>
-          <CardTitle className="text-xl font-semibold truncate">
+          <CardTitle className="text-lg sm:text-xl font-semibold truncate">
             {initialValues.name}
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="p-6 sm:p-7">
+        <CardContent className="p-4 sm:p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-4">
@@ -195,21 +195,23 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
       </Card>
 
       <Card className="w-full h-full border-none shadow-none">
-        <CardContent className="p-7 h-full flex flex-col justify-between">
-          <div className="space-y-2 sm:max-w-md">
-            <h3 className="font-bold text-base">Invite Members</h3>
-            <p className="text-sm text-muted-foreground">
+        <CardContent className="p-4 sm:p-7 h-full flex flex-col justify-between">
+          <div className="space-y-2">
+            <h3 className="font-bold text-sm sm:text-base">Invite Members</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Use the invite link to add members to your workspace.
             </p>
-            <div className="flex items-center gap-x-2 mt-2">
-              <Input disabled value={fullInviteLink} className="truncate" />
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2">
+              <Input disabled value={fullInviteLink} className="truncate min-w-0 text-xs sm:text-sm" />
               <Button
                 type="button"
-                size="icon"
+                size="sm"
                 variant="outline"
                 onClick={handleCopyInviteLink}
+                className="w-full sm:w-auto"
               >
-                <CopyIcon className="h-4 w-4" />
+                <CopyIcon className="h-4 w-4 mr-1 sm:mr-0" />
+                <span className="sm:hidden">Copy Link</span>
               </Button>
             </div>
           </div>
@@ -229,16 +231,16 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
       </Card>
 
       <Card className="w-full h-full border-none shadow-none">
-        <CardContent className="p-7">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <h3 className="font-bold text-red-600">Danger Zone</h3>
-              <p className="text-sm text-muted-foreground">
+        <CardContent className="p-4 sm:p-7">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1 flex-1">
+              <h3 className="font-bold text-red-600 text-sm sm:text-base">Danger Zone</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Deleting a workspace is a permanent action and will result in the loss of all associated data.
               </p>
             </div>
             <Button
-              className="mt-4 sm:mt-0 sm:ml-4 w-fit"
+              className="w-full sm:w-auto"
               size="sm"
               variant="secondary"
               disabled={isPending || isDeletingWorkspace}
