@@ -3,7 +3,8 @@ import { useGetServices } from "@/features/services/api/use-get-services";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { DatePicker } from "@/components/date-picker";
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FolderIcon, ListChecksIcon, UserIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FolderIcon, ListChecksIcon, UserIcon, FilterX } from "lucide-react";
 import { TaskStatus } from "../types";
 import { useTaskFilters } from "../hooks/use-task-filters";
 import { Member, MemberRole } from "@/features/members/types";
@@ -39,14 +40,23 @@ export const DataFilters = () => {
   const onAssigneeChange = (value: string) => { setFilters({ assigneeId: value === "all" ? null : (value as string), }); };
   const onServiceChange = (value: string) => { setFilters({ serviceId: value === "all" ? null : (value as string), }); };
 
+  const clearFilters = () => {
+    setFilters({
+      status: null,
+      assigneeId: null,
+      serviceId: null,
+      dueDate: null,
+    });
+  };
 
+  const hasActiveFilters = status || assigneeId || serviceId || dueDate;
 
   if (isLoading) return null;
   return (
     <div className="flex flex-col lg:flex-row gap-2">
 
       <Select
-        defaultValue={status ?? undefined}
+        value={status || "all"}
         onValueChange={(value) => onStatusChange(value)}
       >
         <SelectTrigger className="w-full lg:w-auto h-8">
@@ -103,7 +113,7 @@ export const DataFilters = () => {
       </Select>
 
       <Select
-        defaultValue={assigneeId ?? undefined}
+        value={assigneeId || "all"}
         onValueChange={(value) => onAssigneeChange(value)}
       >
         <SelectTrigger className="w-full lg:w-auto h-8">
@@ -124,7 +134,7 @@ export const DataFilters = () => {
       </Select>
 
       <Select
-        defaultValue={serviceId ?? undefined}
+        value={serviceId || "all"}
         onValueChange={(value) => onServiceChange(value)}
       >
         <SelectTrigger className="w-full lg:w-auto h-8">
@@ -154,6 +164,18 @@ export const DataFilters = () => {
 
 
       />
+
+      {hasActiveFilters && (
+        <Button
+          onClick={clearFilters}
+          variant="outline"
+          size="sm"
+          className="h-8 px-2 lg:px-3 bg-white hover:bg-gray-50 hover:text-red-600 hover:border-red-200 transition-all duration-200 group"
+        >
+          <FilterX className="h-4 w-4 mr-0 lg:mr-2 group-hover:rotate-12 transition-transform duration-200" />
+          <span className="hidden lg:inline">Clear filters</span>
+        </Button>
+      )}
     </div>
   );
 };
