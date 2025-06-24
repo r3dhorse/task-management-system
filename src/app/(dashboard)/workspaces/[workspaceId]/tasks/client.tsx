@@ -266,7 +266,7 @@ export const MyTasksClient = () => {
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100">
       {/* Enhanced Header */}
       <div className="flex-shrink-0 px-6 py-5 border-b bg-white/80 backdrop-blur-sm shadow-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-4 flex-1">
             <Button
               variant="ghost"
@@ -290,7 +290,7 @@ export const MyTasksClient = () => {
           </div>
           
           {/* Enhanced Date Range Filter */}
-          <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-slate-200">
               <CalendarDays className="h-4 w-4 text-slate-400" />
               <DatePicker
@@ -347,11 +347,73 @@ export const MyTasksClient = () => {
             </div>
           </div>
         </div>
+        
+        {/* Mobile Date Range Filter */}
+        <div className="lg:hidden mt-4 space-y-2">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-sm border border-slate-200 flex-1">
+              <CalendarDays className="h-4 w-4 text-slate-400 flex-shrink-0" />
+              <DatePicker
+                value={dateFrom}
+                onChange={setDateFrom}
+                placeholder="Start date"
+                className="w-full text-sm border-0 shadow-none"
+              />
+            </div>
+            <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-sm border border-slate-200 flex-1">
+              <span className="text-slate-400 text-sm">→</span>
+              <DatePicker
+                value={dateTo}
+                onChange={setDateTo}
+                placeholder="End date"
+                className="w-full text-sm border-0 shadow-none"
+              />
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const today = new Date();
+                setDateTo(today);
+                setDateFrom(subDays(today, 7));
+              }}
+              className="text-xs hover:bg-slate-100 transition-all duration-200 flex-1"
+            >
+              7 days
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const today = new Date();
+                setDateTo(today);
+                setDateFrom(subDays(today, 15));
+              }}
+              className="text-xs hover:bg-slate-100 transition-all duration-200 flex-1"
+            >
+              15 days
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const today = new Date();
+                setDateTo(today);
+                setDateFrom(subDays(today, 30));
+              }}
+              className="text-xs hover:bg-slate-100 transition-all duration-200 flex-1"
+            >
+              30 days
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Main Content - Enhanced with animations */}
       <div className="flex-1 overflow-auto">
-        <div className="p-6 space-y-6">
+        <div className="p-4 lg:p-6 space-y-4 lg:space-y-6">
           {/* Primary Metrics Cards with hover effects */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card 

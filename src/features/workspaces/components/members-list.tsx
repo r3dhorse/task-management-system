@@ -94,18 +94,18 @@ export const MembersList = () => {
       />
       
       <Card className="w-full h-full border-none shadow-none">
-        <CardHeader className="flex flex-row items-center gap-x-4 p-7 space-y-0">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 sm:p-7 space-y-0">
           <Button asChild variant="secondary" size="sm">
             <Link href={`/workspaces/${workspaceId}`}>
               <ArrowLeftIcon className="size-4 mr-2" />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </Link>
           </Button>
-          <div className="flex items-center gap-3 flex-1">
-            <UsersIcon className="h-6 w-6 text-blue-600" />
-            <div>
-              <CardTitle className="text-xl font-bold">Workspace Members</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
+          <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+            <UsersIcon className="h-5 sm:h-6 w-5 sm:w-6 text-blue-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <CardTitle className="text-lg sm:text-xl font-bold">Workspace Members</CardTitle>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 hidden sm:block">
                 Manage members and their roles in this workspace
               </p>
             </div>
@@ -113,39 +113,41 @@ export const MembersList = () => {
           {isCurrentUserAdmin && (
             <Button 
               onClick={addMemberModal.open}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+              size="sm"
             >
               <UserPlusIcon className="size-4 mr-2" />
-              Add Member
+              <span className="hidden sm:inline">Add Member</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           )}
         </CardHeader>
 
-        <div className="px-7">
+        <div className="px-4 sm:px-7">
           <DottedSeparator />
         </div>
 
-        <CardContent className="p-7 space-y-6">
+        <CardContent className="p-4 sm:p-7 space-y-4 sm:space-y-6">
           {/* Search Bar */}
-          <div className="relative max-w-md">
+          <div className="relative">
             <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="text"
-              placeholder="Search members by name..."
+              placeholder="Search members..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
+              className="pl-10 text-sm"
             />
           </div>
 
           {/* Members Count */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="secondary" className="text-xs sm:text-sm">
                 {filteredMembers.length} {filteredMembers.length === 1 ? 'member' : 'members'}
               </Badge>
               {search && (
-                <span className="text-sm text-muted-foreground">
+                <span className="text-xs sm:text-sm text-muted-foreground">
                   {filteredMembers.length === data?.total ? 'showing all' : `filtered from ${data?.total || 0}`}
                 </span>
               )}
@@ -155,10 +157,10 @@ export const MembersList = () => {
           {/* Members List */}
           <div className="space-y-4">
             {isLoading ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex items-center justify-center py-6 sm:py-8">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-sm text-muted-foreground">Loading members...</p>
+                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Loading members...</p>
                 </div>
               </div>
             ) : filteredMembers.length > 0 ? (
@@ -166,41 +168,43 @@ export const MembersList = () => {
                 const populatedMember = member as PopulatedMember;
                 return (
                 <Fragment key={member.$id}>
-                  <div className="flex items-center gap-4 p-4 rounded-lg border bg-white hover:bg-gray-50 transition-colors">
-                    <Avatar className="h-12 w-12">
+                  <div className="flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border bg-white hover:bg-gray-50 transition-colors">
+                    <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-semibold">
                         {populatedMember.name?.[0]?.toUpperCase() || "?"}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                         <p className="text-sm font-semibold text-gray-900 truncate">
                           {populatedMember.name}
                         </p>
-                        {populatedMember.role === MemberRole.ADMIN ? (
-                          <Badge className="bg-amber-100 text-amber-800 border-amber-200">
-                            <ShieldIcon className="h-3 w-3 mr-1" />
-                            Admin
-                          </Badge>
-                        ) : populatedMember.role === MemberRole.VISITOR ? (
-                          <Badge className="bg-gray-100 text-gray-700 border-gray-300">
-                            <UserIcon className="h-3 w-3 mr-1" />
-                            Visitor
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">
-                            <UserIcon className="h-3 w-3 mr-1" />
-                            Member
-                          </Badge>
-                        )}
-                        {populatedMember.userId === currentUser?.$id && (
-                          <Badge variant="outline" className="text-blue-600 border-blue-200">
-                            You
-                          </Badge>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1">
+                          {populatedMember.role === MemberRole.ADMIN ? (
+                            <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
+                              <ShieldIcon className="h-3 w-3 mr-1" />
+                              Admin
+                            </Badge>
+                          ) : populatedMember.role === MemberRole.VISITOR ? (
+                            <Badge className="bg-gray-100 text-gray-700 border-gray-300 text-xs">
+                              <UserIcon className="h-3 w-3 mr-1" />
+                              Visitor
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              <UserIcon className="h-3 w-3 mr-1" />
+                              Member
+                            </Badge>
+                          )}
+                          {populatedMember.userId === currentUser?.$id && (
+                            <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs">
+                              You
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate mt-1">
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate mt-1">
                         {populatedMember.email}
                       </p>
                     </div>
@@ -208,7 +212,7 @@ export const MembersList = () => {
                     {isCurrentUserAdmin && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
                             <MoreVerticalIcon className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -258,14 +262,14 @@ export const MembersList = () => {
                 );
               })
             ) : (
-              <div className="text-center py-12">
-                <UsersIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-lg font-medium text-gray-900 mb-2">No members found</p>
-                <p className="text-sm text-muted-foreground mb-4">
+              <div className="text-center py-8 sm:py-12">
+                <UsersIcon className="h-10 w-10 sm:h-12 sm:w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-base sm:text-lg font-medium text-gray-900 mb-2">No members found</p>
+                <p className="text-xs sm:text-sm text-muted-foreground mb-4">
                   {search ? 'Try adjusting your search terms' : 'This workspace has no members yet'}
                 </p>
                 {isCurrentUserAdmin && !search && (
-                  <Button onClick={addMemberModal.open} className="bg-blue-600 hover:bg-blue-700">
+                  <Button onClick={addMemberModal.open} className="bg-blue-600 hover:bg-blue-700" size="sm">
                     <UserPlusIcon className="h-4 w-4 mr-2" />
                     Add First Member
                   </Button>
@@ -276,13 +280,14 @@ export const MembersList = () => {
 
           {/* Admin Help Text */}
           {isCurrentUserAdmin && filteredMembers.length > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mt-4 sm:mt-6">
               <div className="flex items-start gap-3">
-                <div className="bg-blue-100 rounded-full p-1">
+                <div className="bg-blue-100 rounded-full p-1 hidden sm:block">
                   <ShieldIcon className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-blue-900 mb-1">
+                  <p className="text-xs sm:text-sm font-medium text-blue-900 mb-1 flex items-center gap-2">
+                    <ShieldIcon className="h-4 w-4 text-blue-600 sm:hidden" />
                     Administrator Privileges
                   </p>
                   <p className="text-xs text-blue-700">

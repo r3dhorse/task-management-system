@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { 
@@ -82,6 +82,9 @@ export const AddMemberModal = ({ isOpen, onClose, workspaceId }: AddMemberModalP
             <UserPlusIcon className="h-5 w-5 text-blue-600" />
             Add Member to Workspace
           </DialogTitle>
+          <DialogDescription>
+            Search for existing users and add them to your workspace with the appropriate role.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

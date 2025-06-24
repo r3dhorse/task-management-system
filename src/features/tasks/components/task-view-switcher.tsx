@@ -83,7 +83,9 @@ export const TaskViewSwitcher = () => {
           </TabsList>
 
           {/* User Welcome Badge */}
-          <UserWelcomeBadge />
+          <div className="hidden sm:block">
+            <UserWelcomeBadge />
+          </div>
 
         </div>
 
