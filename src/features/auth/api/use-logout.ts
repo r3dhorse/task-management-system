@@ -1,36 +1,26 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { InferResponseType } from "hono";
-import { client } from "@/lib/rpc";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner"
-
-
-type ResponseType = InferResponseType<typeof client.api.auth.logout["$post"]>;
+import { toast } from "sonner";
+import { signOut } from "next-auth/react";
 
 export const useLogout = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
 
-  const mutation = useMutation<ResponseType, Error>({
+  const mutation = useMutation<void, Error>({
     mutationFn: async () => {
-      const response = await client.api.auth.logout["$post"]();
-
-      if (!response.ok) {
-        throw new Error("Failed to logout");
-      }
-
-      return await response.json();
+      await signOut({ redirect: false });
     },
 
     onSuccess: () => {
-      toast.success("Logout");
-      queryClient.invalidateQueries();
-      window.location.href = "/";
+      toast.success("Signed out successfully");
+      queryClient.clear(); // Clear all queries
+      router.push("/sign-in");
+      router.refresh();
     },
 
     onError: () => {
-      toast.error("Failed to logout");
-      router.refresh();
+      toast.error("Failed to sign out");
     },
   });
 

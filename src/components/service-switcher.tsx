@@ -37,7 +37,7 @@ export const ServiceSwitcher = () => {
   const { data: currentUser } = useCurrent();
   const { data: membersData } = useGetMembers({ workspaceId });
   const currentMember = membersData?.documents?.find(member => 
-    (member as Member).userId === currentUser?.$id
+    (member as Member).userId === currentUser?.id
   ) as Member;
   const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
 
@@ -101,7 +101,7 @@ export const ServiceSwitcher = () => {
             {services?.documents?.length ? (
               services.documents.map((service) => (
                 <div
-                  key={service.$id}
+                  key={service.id}
                   className="flex items-center justify-between p-2 bg-neutral-50 rounded-md border hover:bg-neutral-100 transition-colors"
                 >
                   <div className="flex items-center gap-2">
@@ -123,13 +123,13 @@ export const ServiceSwitcher = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-32">
                         <DropdownMenuItem 
-                          onClick={() => handleEdit(service.$id)}
+                          onClick={() => handleEdit(service.id)}
                           className="text-xs cursor-pointer"
                         >
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => handleDelete(service.$id, service.name)}
+                          onClick={() => handleDelete(service.id, service.name)}
                           className="text-xs cursor-pointer text-red-600 focus:text-red-600"
                         >
                           Delete

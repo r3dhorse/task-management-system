@@ -1,27 +1,39 @@
-import { createSessionClient } from "@/lib/appwrite";
-import { getMember } from "../members/utils";
-import { DATABASE_ID, SERVICES_ID } from "@/config";
-import { Service } from "./types";
+import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth-utils";
 
 interface GetServiceProps {
   serviceId: string;
-};
+}
 
 export const getService = async ({ serviceId }: GetServiceProps) => {
-  const { databases, account } = await createSessionClient();
-  const user = await account.get();
+  const user = await getCurrentUser();
+  
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
 
-  const service = await databases.getDocument<Service>(
-    DATABASE_ID,
-    SERVICES_ID,
-    serviceId,
-  );
+  const service = await prisma.service.findUnique({
+    where: {
+      id: serviceId,
+    },
+    include: {
+      workspace: true,
+    },
+  });
 
-  const member = await getMember({
-    databases,
-    userId: user.$id,
-    workspaceId: service.workspaceId,
-  })
+  if (!service) {
+    throw new Error("Service not found");
+  }
+
+  // Check if user is a member of the workspace
+  const member = await prisma.member.findUnique({
+    where: {
+      userId_workspaceId: {
+        userId: user.id,
+        workspaceId: service.workspaceId,
+      },
+    },
+  });
 
   if (!member) {
     throw new Error("Unauthorized");

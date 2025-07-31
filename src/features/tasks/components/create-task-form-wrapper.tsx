@@ -20,12 +20,12 @@ export const CreateTaskFormWrapper = ({
   const { data: users, isLoading: isLoadingUsers } = useGetUsers();
 
   const workspaceOptions = workspaces?.documents.map((workspace) => ({
-    id: workspace.$id,
+    id: workspace.id,
     name: workspace.name,
   }));
 
   const userOptions = users?.users.map((user) => ({
-    id: user.$id,
+    id: user.id,
     name: user.name,
   }));
 

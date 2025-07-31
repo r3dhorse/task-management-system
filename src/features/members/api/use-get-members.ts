@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { client } from "@/lib/rpc";
 
 interface useGetMembersProps {
-  workspaceId: string;
+  workspaceId: string | undefined;
 }
 
 
@@ -23,6 +23,7 @@ export const useGetMembers = ({
       return data;
 
     },
+    enabled: !!workspaceId, // Only run query if workspaceId is truthy
 
   });
 

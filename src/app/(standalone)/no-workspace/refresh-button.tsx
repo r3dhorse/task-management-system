@@ -3,13 +3,16 @@
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export const RefreshButton = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const router = useRouter();
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    window.location.reload();
+    // Navigate to home page which will handle proper workspace routing
+    router.push("/");
   };
 
   return (
@@ -19,7 +22,7 @@ export const RefreshButton = () => {
       className="flex-1 bg-blue-600 hover:bg-blue-700"
     >
       <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-      {isRefreshing ? "Refreshing..." : "Refresh Page"}
+      {isRefreshing ? "Checking..." : "Check for Workspaces"}
     </Button>
   );
 };

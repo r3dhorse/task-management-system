@@ -55,8 +55,8 @@ export const WorkspaceSwitcher = () => {
             {workspaces?.documents?.length ? (
               workspaces.documents.map((workspace) => (
                 <SelectItem
-                  key={workspace.$id}
-                  value={workspace.$id}
+                  key={workspace.id}
+                  value={workspace.id}
                   className="flex items-center gap-2"
                 >
                   <span className="flex items-center gap-2">

@@ -1,28 +1,35 @@
-import { Query, type Databases } from "node-appwrite"
-import { DATABASE_ID, MEMBERS_ID } from "@/config"
-
+import { PrismaClient } from "@prisma/client"
 
 interface getMemberProps {
-  databases: Databases;
+  prisma: PrismaClient;
   workspaceId: string;
   userId: string;
 };
 
 export const getMember = async ({
-  databases,
+  prisma,
   workspaceId,
   userId,
 }: getMemberProps) => {
-  const members = await databases.listDocuments(
-    DATABASE_ID,
-    MEMBERS_ID,
-    [
-      Query.equal("workspaceId", workspaceId),
-      Query.equal("userId", userId),
-    ]
-  );
+  const member = await prisma.member.findUnique({
+    where: {
+      userId_workspaceId: {
+        userId,
+        workspaceId,
+      },
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
 
-  return members.documents[0];
+  return member;
 };
 
 

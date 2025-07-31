@@ -1,51 +1,66 @@
-import { Models } from "node-appwrite";
+// NextAuth.js user type
+interface AuthUser {
+  id?: string;
+  $id?: string; // For backward compatibility
+  name?: string | null;
+  email?: string | null;
+  isAdmin?: boolean;
+}
 
 /**
- * Check if a user has admin privileges based on their labels
- * @param user - The user object from Appwrite
+ * Check if a user has admin privileges
+ * @param user - The user object from NextAuth.js or legacy format
  * @returns boolean indicating if user is admin
  */
-export const isAdminUser = (user: Models.User<Models.Preferences> | null): boolean => {
-  if (!user || !user.labels) {
+export const isAdminUser = (user: AuthUser | null): boolean => {
+  if (!user) {
     return false;
   }
   
-  return user.labels.includes("admin");
+  // Check for NextAuth.js format
+  if ('isAdmin' in user) {
+    return user.isAdmin === true;
+  }
+  
+  // Legacy Appwrite format support
+  if ('labels' in user && Array.isArray((user as any).labels)) {
+    return (user as any).labels.includes("admin");
+  }
+  
+  return false;
 };
 
 /**
- * Check if a user has member privileges based on their labels
- * @param user - The user object from Appwrite
+ * Check if a user has member privileges (legacy support)
+ * @param user - The user object
  * @returns boolean indicating if user is a member
  */
-export const isMemberUser = (user: Models.User<Models.Preferences> | null): boolean => {
-  if (!user || !user.labels) {
+export const isMemberUser = (user: AuthUser | null): boolean => {
+  if (!user) {
     return false;
   }
   
-  return user.labels.includes("member");
+  // In NextAuth.js, all authenticated users are members
+  return true;
 };
 
 /**
- * Check if a user is authorized (admin or member)
- * @param user - The user object from Appwrite
+ * Check if a user is authorized (authenticated)
+ * @param user - The user object
  * @returns boolean indicating if user is authorized
  */
-export const isAuthorizedUser = (user: Models.User<Models.Preferences> | null): boolean => {
-  return isAdminUser(user) || isMemberUser(user);
+export const isAuthorizedUser = (user: AuthUser | null): boolean => {
+  return user !== null;
 };
 
 /**
- * Check if a user can create workspaces (admin users or new users with no workspaces)
- * @param user - The user object from Appwrite
+ * Check if a user can create workspaces
+ * @param user - The user object
  * @returns boolean indicating if user can create workspaces
  */
-export const canCreateWorkspace = (user: Models.User<Models.Preferences> | null): boolean => {
+export const canCreateWorkspace = (user: AuthUser | null): boolean => {
   if (!user) return false;
   
-  // Admin users can always create workspaces
-  if (isAdminUser(user)) return true;
-  
-  // Allow any authenticated user to create their first workspace
-  return true;
+  // Only admin users can create workspaces
+  return isAdminUser(user);
 };

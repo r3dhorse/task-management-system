@@ -14,7 +14,7 @@ export const useWorkspaceAuthorization = ({ workspaceId }: UseWorkspaceAuthoriza
 
   useEffect(() => {
     if (error) {
-      router.push("/no-workspace");
+      router.push("/");
     }
   }, [error, router]);
 

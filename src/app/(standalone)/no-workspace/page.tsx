@@ -1,6 +1,5 @@
 import { getCurrent } from "@/features/auth/queries";
 import { redirect } from "next/navigation";
-import { getWorkspaces } from "@/features/workspaces/queries";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { LogoutButton } from "./logout-button";
@@ -14,15 +13,6 @@ export const dynamic = 'force-dynamic';
 const NoWorkspacePage = async () => {
   const user = await getCurrent();
   if (!user) { redirect("/sign-in"); }
-
-  // Check if user now has workspaces (in case they were invited)
-  const workspaces = await getWorkspaces();
-  if (workspaces && workspaces.total > 0 && workspaces.documents && workspaces.documents.length > 0) {
-    const firstWorkspace = workspaces.documents[0];
-    if (firstWorkspace && firstWorkspace.$id) {
-      redirect(`/workspaces/${firstWorkspace.$id}`);
-    }
-  }
 
   const isAdmin = isAdminUser(user);
 

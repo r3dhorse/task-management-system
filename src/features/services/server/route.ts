@@ -1,14 +1,9 @@
-import { DATABASE_ID, SERVICES_ID } from "@/config";
-import { getMember } from "@/features/members/utils";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { ID, Query } from "node-appwrite";
 import { z } from "zod";
-import { createServiceSchema, updateServiceSchema } from "../schemas"
-import { Service } from "../types";
+import { createServiceSchema, updateServiceSchema } from "../schemas";
 import { MemberRole } from "@/features/members/types";
-
 
 const app = new Hono()
 
@@ -18,47 +13,46 @@ const app = new Hono()
     zValidator("form", createServiceSchema),
     async (c) => {
       try {
-        const databases = c.get("databases");
+        const prisma = c.get("prisma");
         const user = c.get("user");
-        const { name, workspaceId } = c.req.valid("form")
+        const { name, workspaceId } = c.req.valid("form");
 
-        const member = await getMember({
-          databases,
-          workspaceId,
-          userId: user.$id
+        // Check if user is admin of the workspace
+        const member = await prisma.member.findUnique({
+          where: {
+            userId_workspaceId: {
+              userId: user.id,
+              workspaceId,
+            },
+          },
         });
 
         if (!member) {
-          return c.json({ error: "Unauthorized" }, 401)
+          return c.json({ error: "Unauthorized" }, 401);
         }
 
         if (member.role !== MemberRole.ADMIN) {
-          return c.json({ error: "Only workspace administrators can create services" }, 403)
+          return c.json({ error: "Only workspace administrators can create services" }, 403);
         }
 
         // Check if service name already exists in this workspace
-        const existingServices = await databases.listDocuments(
-          DATABASE_ID,
-          SERVICES_ID,
-          [
-            Query.equal("workspaceId", workspaceId),
-            Query.equal("name", name),
-          ],
-        );
+        const existingService = await prisma.service.findFirst({
+          where: {
+            workspaceId,
+            name,
+          },
+        });
 
-        if (existingServices.documents.length > 0) {
+        if (existingService) {
           return c.json({ error: "Service name already exists in this workspace" }, 400);
         }
 
-        const service = await databases.createDocument(
-          DATABASE_ID,
-          SERVICES_ID,
-          ID.unique(),
-          {
+        const service = await prisma.service.create({
+          data: {
             name,
             workspaceId,
           },
-        );
+        });
 
         return c.json({ data: service });
       } catch (error) {
@@ -74,34 +68,38 @@ const app = new Hono()
     zValidator("query", z.object({ workspaceId: z.string() })),
     async (c) => {
       const user = c.get("user");
-      const databases = c.get("databases");
-
+      const prisma = c.get("prisma");
       const { workspaceId } = c.req.valid("query");
 
       if (!workspaceId) {
         return c.json({ error: "Missing workspaceId" }, 400);
       }
 
-      const member = await getMember({
-        databases,
-        workspaceId,
-        userId: user.$id,
+      // Check if user is a member of the workspace
+      const member = await prisma.member.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: user.id,
+            workspaceId,
+          },
+        },
       });
 
       if (!member) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const services = await databases.listDocuments(
-        DATABASE_ID,
-        SERVICES_ID,
-        [
-          Query.equal("workspaceId", workspaceId),
-          Query.orderDesc("$createdAt"),
-        ],
-      );
+      const services = await prisma.service.findMany({
+        where: { workspaceId },
+        orderBy: { createdAt: 'desc' },
+      });
 
-      return c.json({ data: services });
+      return c.json({ 
+        data: {
+          documents: services,
+          total: services.length,
+        }
+      });
     }
   )
 
@@ -110,23 +108,29 @@ const app = new Hono()
     sessionMiddleware,
     zValidator("form", updateServiceSchema),
     async (c) => {
-      const databases = c.get("databases")
-      const user = c.get("user")
-
+      const prisma = c.get("prisma");
+      const user = c.get("user");
       const { serviceId } = c.req.param();
       const { name } = c.req.valid("form");
 
-      const existingService = await databases.getDocument<Service>(
-        DATABASE_ID,
-        SERVICES_ID,
-        serviceId,
-      );
-
-      const member = await getMember({
-        databases,
-        workspaceId: existingService.workspaceId,
-        userId: user.$id
+      const existingService = await prisma.service.findUnique({
+        where: { id: serviceId },
       });
+
+      if (!existingService) {
+        return c.json({ error: "Service not found" }, 404);
+      }
+
+      // Check if user is admin of the workspace
+      const member = await prisma.member.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: user.id,
+            workspaceId: existingService.workspaceId,
+          },
+        },
+      });
+
       if (!member) {
         return c.json({ error: "Unauthorized" }, 401);
       }
@@ -136,68 +140,78 @@ const app = new Hono()
       }
 
       // Check if service name already exists in this workspace (excluding current service)
-      const existingServices = await databases.listDocuments(
-        DATABASE_ID,
-        SERVICES_ID,
-        [
-          Query.equal("workspaceId", existingService.workspaceId),
-          Query.equal("name", name),
-          Query.notEqual("$id", serviceId),
-        ],
-      );
+      const duplicateService = await prisma.service.findFirst({
+        where: {
+          workspaceId: existingService.workspaceId,
+          name,
+          NOT: { id: serviceId },
+        },
+      });
 
-      if (existingServices.documents.length > 0) {
+      if (duplicateService) {
         return c.json({ error: "Service name already exists in this workspace" }, 400);
       }
 
-      const service = await databases.updateDocument(
-        DATABASE_ID,
-        SERVICES_ID,
-        serviceId,
-        {
-          name
-        }
-      );
-      return c.json({ data: service })
-    }
+      const service = await prisma.service.update({
+        where: { id: serviceId },
+        data: { name },
+      });
 
+      return c.json({ data: service });
+    }
   )
 
   .delete(
     "/:serviceId",
     sessionMiddleware,
     async (c) => {
-      const databases = c.get("databases");
+      const prisma = c.get("prisma");
       const user = c.get("user");
       const { serviceId } = c.req.param();
 
-      const existingService = await databases.getDocument<Service>(
-        DATABASE_ID,
-        SERVICES_ID,
-        serviceId,
-      );
+      const existingService = await prisma.service.findUnique({
+        where: { id: serviceId },
+      });
 
-      const member = await getMember({
-        databases,
-        workspaceId: existingService.workspaceId,
-        userId: user.$id
+      if (!existingService) {
+        return c.json({ error: "Service not found" }, 404);
+      }
+
+      // Check if user is admin of the workspace
+      const member = await prisma.member.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: user.id,
+            workspaceId: existingService.workspaceId,
+          },
+        },
       });
 
       if (!member) {
-        return c.json({ error: "Unauthorized" }, 401)
+        return c.json({ error: "Unauthorized" }, 401);
       }
 
       if (member.role !== MemberRole.ADMIN) {
-        return c.json({ error: "Only workspace administrators can delete services" }, 403)
+        return c.json({ error: "Only workspace administrators can delete services" }, 403);
       }
 
-      await databases.deleteDocument(
-        DATABASE_ID,
-        SERVICES_ID,
-        serviceId,
-      );
+      // Check if there are tasks associated with this service
+      const taskCount = await prisma.task.count({
+        where: { serviceId },
+      });
 
-      return c.json({ data: { $id: existingService.$id } });
+      if (taskCount > 0) {
+        return c.json({ 
+          error: `Cannot delete service with ${taskCount} associated tasks. Please reassign or delete the tasks first.` 
+        }, 400);
+      }
+
+      await prisma.service.delete({
+        where: { id: serviceId },
+      });
+
+      return c.json({ data: { id: serviceId } });
     }
-  )
+  );
+
 export default app;

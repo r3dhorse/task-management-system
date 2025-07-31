@@ -42,10 +42,9 @@ export const CreateWorkspaceForm = ({ onCancel }: CreateWorkspaceFormProps) => {
     mutate({ json: values }, {
       onSuccess: ({ data }) => {
         form.reset();
-        router.push(`/workspaces/${data.$id}`);
+        router.push(`/workspaces/${data.id}`);
       }
     });
-
   };
 
   return (

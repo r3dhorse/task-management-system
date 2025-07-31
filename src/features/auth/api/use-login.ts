@@ -1,45 +1,54 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { InferRequestType, InferResponseType } from "hono";
-import { client } from "@/lib/rpc";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner"
+import { toast } from "sonner";
+import { signIn } from "next-auth/react";
 
-type ResponseType = InferResponseType<typeof client.api.auth.login["$post"], 200>;
-type RequestType = InferRequestType<typeof client.api.auth.login["$post"]>;
+type LoginRequest = {
+  json: {
+    email: string;
+    password: string;
+  };
+};
 
 export const useLogin = () => {
   const queryClient = useQueryClient();
   const router = useRouter();
 
   const mutation = useMutation<
-    ResponseType,
+    any,
     Error,
-    RequestType
+    LoginRequest
   >({
-
     mutationFn: async ({ json }) => {
-      const response = await client.api.auth.login["$post"]({ json });
+      const result = await signIn("credentials", {
+        email: json.email,
+        password: json.password,
+        redirect: false,
+      });
 
-      if (!response.ok) {
-        const data = await response.json() as { error?: string };
-        throw new Error(data.error || "Failed to login");
+      if (result?.error) {
+        throw new Error(result.error);
       }
 
-      return await response.json();
+      if (!result?.ok) {
+        throw new Error("Invalid credentials");
+      }
+
+      return result;
     },
 
     onSuccess: () => {
       toast.success("Welcome to Task Manager");
       queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       queryClient.invalidateQueries({ queryKey: ["current"] });
+      router.push("/");
       router.refresh();
     },
 
     onError: (error: Error) => {
       toast.error(error.message || "Login failed");
-      router.refresh();
     },
-
   });
+
   return mutation;
 };

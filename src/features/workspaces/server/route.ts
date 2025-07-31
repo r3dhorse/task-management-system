@@ -1,14 +1,10 @@
 import { Hono } from "hono";
-import { ID, Query } from "node-appwrite";
 import { zValidator } from "@hono/zod-validator";
 import { MemberRole } from "@/features/members/types";
-import { getMember } from "@/features/members/utils";
 import { generateInviteCode } from "@/lib/utils";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import { DATABASE_ID, MEMBERS_ID, WORKSPACES_ID } from "@/config";
 import { createWorkspaceSchema, updateWorkspaceSchema } from "../schemas";
-import { z } from "zod"
-import { Workspace } from "../types";
+import { z } from "zod";
 
 const app = new Hono()
 
@@ -16,31 +12,31 @@ const app = new Hono()
     "/",
     sessionMiddleware,
     async (c) => {
-      const user = c.get("user")
-      const databases = c.get("databases");
+      const user = c.get("user");
+      const prisma = c.get("prisma");
 
-      const members = await databases.listDocuments(
-        DATABASE_ID,
-        MEMBERS_ID,
-        [Query.equal("userId", user.$id)]
-      );
+      const workspaceMembers = await prisma.member.findMany({
+        where: {
+          userId: user.id,
+        },
+        include: {
+          workspace: true,
+        },
+        orderBy: {
+          workspace: {
+            createdAt: 'desc',
+          },
+        },
+      });
 
-      if (members.total === 0) {
-        return c.json({ data: { documents: [], total: 0 } })
-      }
-
-      const workspaceIds = members.documents.map((member) => member.workspaceId)
-
-      const workspaces = await databases.listDocuments(
-        DATABASE_ID,
-        WORKSPACES_ID,
-        [
-          Query.orderDesc("$createdAt"),
-          Query.contains("$id", workspaceIds)
-        ]
-      );
-
-      return c.json({ data: workspaces });
+      const workspaces = workspaceMembers.map(member => member.workspace);
+      
+      return c.json({ 
+        data: { 
+          documents: workspaces, 
+          total: workspaces.length 
+        } 
+      });
     }
   )
 
@@ -48,25 +44,33 @@ const app = new Hono()
     "/:workspaceId",
     sessionMiddleware,
     async (c) => {
-      const databases = c.get("databases");
       const user = c.get("user");
+      const prisma = c.get("prisma");
       const { workspaceId } = c.req.param();
 
-      const member = await getMember({
-        databases,
-        workspaceId,
-        userId: user.$id
+      // Check if user is a member of this workspace
+      const member = await prisma.member.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: user.id,
+            workspaceId,
+          },
+        },
       });
 
       if (!member) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const workspace = await databases.getDocument<Workspace>(
-        DATABASE_ID,
-        WORKSPACES_ID,
-        workspaceId
-      );
+      const workspace = await prisma.workspace.findUnique({
+        where: {
+          id: workspaceId,
+        },
+      });
+
+      if (!workspace) {
+        return c.json({ error: "Workspace not found" }, 404);
+      }
 
       return c.json({ data: workspace });
     }
@@ -77,43 +81,40 @@ const app = new Hono()
     zValidator("json", createWorkspaceSchema),
     sessionMiddleware,
     async (c) => {
-      const databases = c.get("databases");
       const user = c.get("user");
-      const { name, description } = c.req.valid("json")
+      const prisma = c.get("prisma");
+      const { name, description } = c.req.valid("json");
 
-      // Check if user has admin label (required for workspace creation)
-      const isAdmin = user.labels && user.labels.includes("admin");
-      
-      if (!isAdmin) {
+      // Check if user is admin (required for workspace creation)
+      if (!(user as any).isAdmin) {
         return c.json({ 
           error: "Unauthorized. Only admin users can create workspaces." 
         }, 403);
       }
 
-      const workspace = await databases.createDocument(
-        DATABASE_ID,
-        WORKSPACES_ID,
-        ID.unique(),
-        {
-          name,
-          description: description || undefined,
-          userId: user.$id,
-          inviteCode: generateInviteCode(10),
-        },
-      );
+      // Create workspace and add creator as admin member in a transaction
+      const result = await prisma.$transaction(async (tx) => {
+        const workspace = await tx.workspace.create({
+          data: {
+            name,
+            description: description || null,
+            userId: user.id,
+            inviteCode: generateInviteCode(10),
+          },
+        });
 
-      await databases.createDocument(
-        DATABASE_ID,
-        MEMBERS_ID,
-        ID.unique(),
-        {
-          userId: user.$id,
-          workspaceId: workspace.$id,
-          role: MemberRole.ADMIN
-        }
-      )
+        await tx.member.create({
+          data: {
+            userId: user.id,
+            workspaceId: workspace.id,
+            role: MemberRole.ADMIN,
+          },
+        });
 
-      return c.json({ data: workspace });
+        return workspace;
+      });
+
+      return c.json({ data: result });
     }
   )
 
@@ -122,59 +123,68 @@ const app = new Hono()
     sessionMiddleware,
     zValidator("form", updateWorkspaceSchema),
     async (c) => {
-      const databases = c.get("databases")
-      const user = c.get("user")
-
+      const user = c.get("user");
+      const prisma = c.get("prisma");
       const { workspaceId } = c.req.param();
       const { name, description } = c.req.valid("form");
 
-      const member = await getMember({
-        databases,
-        workspaceId,
-        userId: user.$id
+      // Check if user is admin of this workspace
+      const member = await prisma.member.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: user.id,
+            workspaceId,
+          },
+        },
       });
+
       if (!member || member.role !== MemberRole.ADMIN) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const workspace = await databases.updateDocument(
-        DATABASE_ID,
-        WORKSPACES_ID,
-        workspaceId,
-        {
+      const workspace = await prisma.workspace.update({
+        where: {
+          id: workspaceId,
+        },
+        data: {
           name,
-          ...(description !== undefined && { description })
-        }
-      );
-      return c.json({ data: workspace })
-    }
+          ...(description !== undefined && { description }),
+        },
+      });
 
+      return c.json({ data: workspace });
+    }
   )
 
   .delete(
     "/:workspaceId",
     sessionMiddleware,
     async (c) => {
-      const databases = c.get("databases");
       const user = c.get("user");
+      const prisma = c.get("prisma");
       const { workspaceId } = c.req.param();
-      const member = await getMember({
-        databases,
-        workspaceId,
-        userId: user.$id
+
+      // Check if user is admin of this workspace
+      const member = await prisma.member.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: user.id,
+            workspaceId,
+          },
+        },
       });
 
       if (!member || member.role !== MemberRole.ADMIN) {
-        return c.json({ error: "Unauthorized" }, 401)
+        return c.json({ error: "Unauthorized" }, 401);
       }
 
-      await databases.deleteDocument(
-        DATABASE_ID,
-        WORKSPACES_ID,
-        workspaceId,
-      );
+      await prisma.workspace.delete({
+        where: {
+          id: workspaceId,
+        },
+      });
 
-      return c.json({ data: { $id: workspaceId } });
+      return c.json({ data: { id: workspaceId } });
     }
   )
 
@@ -182,29 +192,34 @@ const app = new Hono()
     "/:workspaceId/reset-invite-code",
     sessionMiddleware,
     async (c) => {
-      const databases = c.get("databases");
       const user = c.get("user");
+      const prisma = c.get("prisma");
       const { workspaceId } = c.req.param();
-      const member = await getMember({
-        databases,
-        workspaceId,
-        userId: user.$id
+
+      // Check if user is admin of this workspace
+      const member = await prisma.member.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: user.id,
+            workspaceId,
+          },
+        },
       });
 
       if (!member || member.role !== MemberRole.ADMIN) {
-        return c.json({ error: "Unauthorized" }, 401)
+        return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const workspace = await databases.updateDocument(
-        DATABASE_ID,
-        WORKSPACES_ID,
-        workspaceId,
-        {
+      const workspace = await prisma.workspace.update({
+        where: {
+          id: workspaceId,
+        },
+        data: {
           inviteCode: generateInviteCode(10),
-        }
-      );
+        },
+      });
 
-      return c.json({ data: { $id: workspace } });
+      return c.json({ data: workspace });
     }
   )
 
@@ -215,42 +230,49 @@ const app = new Hono()
     async (c) => {
       const { workspaceId } = c.req.param();
       const { code } = c.req.valid("json");
-      const databases = c.get("databases");
       const user = c.get("user");
-      const member = await getMember({
-        databases,
-        workspaceId,
-        userId: user.$id
+      const prisma = c.get("prisma");
+
+      // Check if user is already a member
+      const existingMember = await prisma.member.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: user.id,
+            workspaceId,
+          },
+        },
       });
 
-      if (member) {
+      if (existingMember) {
         return c.json({ error: "Already a member" }, 400);
       }
 
-      const workspace = await databases.getDocument<Workspace>(
-        DATABASE_ID,
-        WORKSPACES_ID,
-        workspaceId
-      );
+      // Get workspace and validate invite code
+      const workspace = await prisma.workspace.findUnique({
+        where: {
+          id: workspaceId,
+        },
+      });
+
+      if (!workspace) {
+        return c.json({ error: "Workspace not found" }, 404);
+      }
 
       if (workspace.inviteCode !== code) {
         return c.json({ error: "Invalid invite code" }, 400);
       }
 
-      await databases.createDocument(
-        DATABASE_ID,
-        MEMBERS_ID,
-        ID.unique(),
-        {
+      // Add user as member
+      await prisma.member.create({
+        data: {
           workspaceId,
-          userId: user.$id,
+          userId: user.id,
           role: MemberRole.MEMBER,
         },
-      );
+      });
 
       return c.json({ data: workspace });
     }
-
   );
 
 

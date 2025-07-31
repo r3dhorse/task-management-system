@@ -8,10 +8,14 @@ import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 export const UserWelcomeBadge = () => {
   const workspaceId = useWorkspaceId();
   const { data: currentUser } = useCurrent();
-  const { data: members } = useGetMembers({ workspaceId });
+  
+  // Only fetch members if we have a valid workspaceId
+  const { data: members } = useGetMembers({ 
+    workspaceId
+  });
   
   // Find current user's member record to get role
-  const currentMember = members?.documents.find(member => 
+  const currentMember = workspaceId && members?.documents.find(member => 
     (member as Member).userId === currentUser?.$id
   ) as Member;
 

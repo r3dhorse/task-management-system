@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSessionClient } from "@/lib/appwrite";
-import { IMAGES_BUCKET_ID } from "@/config";
+import { getFile } from "@/lib/file-storage";
+import { getCurrentUser } from "@/lib/auth-utils";
+import { promises as fs } from "fs";
+import { prisma } from "@/lib/prisma";
 
 interface RouteProps {
   params: {
@@ -10,7 +12,15 @@ interface RouteProps {
 
 export async function GET(request: NextRequest, { params }: RouteProps) {
   try {
-    const { storage } = await createSessionClient();
+    // Check authentication
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { fileId } = params;
 
     if (!fileId) {
@@ -20,47 +30,59 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       );
     }
 
-    // Get file info to determine content type
-    const fileInfo = await storage.getFile(IMAGES_BUCKET_ID, fileId);
+    // Get file info from storage
+    const fileInfo = await getFile(fileId);
     
-    // Get file from Appwrite Storage
-    const file = await storage.getFileDownload(IMAGES_BUCKET_ID, fileId);
+    if (!fileInfo) {
+      return NextResponse.json(
+        { error: "File not found" },
+        { status: 404 }
+      );
+    }
 
-    // Determine content type based on file extension or mime type
-    const getContentType = (fileName: string, mimeType?: string) => {
-      if (mimeType) {
-        return mimeType;
-      }
-      
-      const extension = fileName.toLowerCase().split('.').pop();
-      switch (extension) {
-        case 'jpg':
-        case 'jpeg':
-          return 'image/jpeg';
-        case 'png':
-          return 'image/png';
-        case 'svg':
-          return 'image/svg+xml';
-        case 'pdf':
-          return 'application/pdf';
-        default:
-          return 'application/octet-stream';
-      }
-    };
+    // Check if user has access to this file
+    // First check if it's a task attachment
+    const taskAttachment = await prisma.taskAttachment.findFirst({
+      where: { id: fileId },
+      include: {
+        task: {
+          include: {
+            workspace: {
+              include: {
+                members: {
+                  where: { userId: user.id },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
-    const contentType = getContentType(fileInfo.name, fileInfo.mimeType);
+    if (taskAttachment) {
+      // User must be a member of the workspace
+      if (taskAttachment.task.workspace.members.length === 0) {
+        return NextResponse.json(
+          { error: "Access denied" },
+          { status: 403 }
+        );
+      }
+    }
+
+    // Read file from disk
+    const fileBuffer = await fs.readFile(fileInfo.filePath);
     
     // For images, use inline disposition to allow viewing in browser
     // For PDFs and other files, use attachment to force download
-    const isImage = contentType.startsWith('image/');
+    const isImage = fileInfo.mimeType.startsWith('image/');
     const disposition = isImage 
-      ? `inline; filename="${fileInfo.name}"`
-      : `attachment; filename="${fileInfo.name}"`;
+      ? `inline; filename="${fileInfo.fileName}"`
+      : `attachment; filename="${fileInfo.fileName}"`;
 
     // Return the file as a response with proper headers
-    return new NextResponse(file, {
+    return new NextResponse(fileBuffer, {
       headers: {
-        "Content-Type": contentType,
+        "Content-Type": fileInfo.mimeType,
         "Content-Disposition": disposition,
         "Cache-Control": "public, max-age=31536000, immutable",
       },
