@@ -16,7 +16,7 @@ export const UserWelcomeBadge = () => {
   
   // Find current user's member record to get role
   const currentMember = workspaceId && members?.documents.find(member => 
-    (member as Member).userId === currentUser?.$id
+    (member as Member).userId === currentUser?.id
   ) as Member;
 
   return (

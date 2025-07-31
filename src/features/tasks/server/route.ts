@@ -43,10 +43,11 @@ const app = new Hono()
         throw error;
       }
 
+      const prisma = c.get("prisma");
       const member = await getMember({
-        databases,
+        prisma,
         workspaceId: task.workspaceId,
-        userId: user.$id
+        userId: user.id
       });
 
       if (!member) {
@@ -110,10 +111,11 @@ const app = new Hono()
         includeArchived
       } = c.req.valid("query");
 
+      const prisma = c.get("prisma");
       const member = await getMember({
-        databases,
+        prisma,
         workspaceId,
-        userId: user.$id,
+        userId: user.id,
       });
 
       if (!member) {
@@ -314,7 +316,7 @@ const app = new Hono()
         const member = await getMember({
           databases,
           workspaceId,
-          userId: user.$id,
+          userId: user.id,
         });
 
         if (!member) {
@@ -395,7 +397,7 @@ const app = new Hono()
             ID.unique(),
             {
               taskId: task.$id,
-              userId: user.$id,
+              userId: user.id,
               userName: userInfo.name,
               action: TaskHistoryAction.CREATED,
               timestamp: new Date().toISOString(),
@@ -460,7 +462,7 @@ const app = new Hono()
         const member = await getMember({
           databases,
           workspaceId: existingTask.workspaceId,
-          userId: user.$id,
+          userId: user.id,
         });
 
         if (!member) {
@@ -588,7 +590,7 @@ const app = new Hono()
 
               const historyData = {
                 taskId,
-                userId: user.$id,
+                userId: user.id,
                 userName: userInfo.name,
                 action: action as string, // Convert enum to string
                 field: change.field,

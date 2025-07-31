@@ -40,32 +40,6 @@ export const UserInfoCard = () => {
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <span className="font-medium text-neutral-900 text-lg">{user.name}</span>
-              <div className="flex gap-2">
-                {user.labels && user.labels.length > 0 ? (
-                  user.labels.map((label: string) => (
-                    <Badge 
-                      key={label} 
-                      variant="outline"
-                      className={`text-sm px-3 py-1 h-6 ${
-                        label === "admin" 
-                          ? "bg-green-100 text-green-800 border-green-300" 
-                          : "bg-gray-100 text-gray-700 border-gray-300"
-                      }`}
-                    >
-                      <Tag className="w-4 h-4 mr-1" />
-                      {label}
-                    </Badge>
-                  ))
-                ) : (
-                  <Badge 
-                    variant="outline"
-                    className="text-sm px-3 py-1 h-6 bg-gray-100 text-gray-700 border-gray-300"
-                  >
-                    <Tag className="w-4 h-4 mr-1" />
-                    member
-                  </Badge>
-                )}
-              </div>
             </div>
             <div className="flex items-center gap-2 text-sm text-neutral-600">
               <Mail className="w-4 h-4" />

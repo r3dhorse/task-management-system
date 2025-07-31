@@ -11,9 +11,9 @@ export const useCurrent = () => {
       if (!session?.user) return null;
       
       return {
-        $id: session.user.id,
+        id: session.user.id,
         name: session.user.name,
-        email: session.user.email,
+        email: session.user.email,  
         isAdmin: (session.user as any).isAdmin || false,
       };
     },
