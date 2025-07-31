@@ -6,6 +6,7 @@ import { deleteCookie, setCookie } from "hono/cookie"
 import { AUTH_COOKIE } from "../constants";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { forgotPasswordRateLimiter, formatRemainingTime } from "@/lib/rate-limiter";
+import bcrypt from "bcryptjs";
 
 const app = new Hono()
 
@@ -61,13 +62,38 @@ const app = new Hono()
     async (c) => {
       try {
         const { oldPassword, newPassword } = c.req.valid("json");
-        const account = c.get("account");
+        const prisma = c.get("prisma");
+        const user = c.get("user");
 
-        await account.updatePassword(newPassword, oldPassword);
+        // Get the current user's password from database
+        const currentUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { password: true }
+        });
+
+        if (!currentUser || !currentUser.password) {
+          return c.json({ error: "User not found or no password set" }, 400);
+        }
+
+        // Verify old password
+        const isOldPasswordValid = await bcrypt.compare(oldPassword, currentUser.password);
+        if (!isOldPasswordValid) {
+          return c.json({ error: "Current password is incorrect" }, 400);
+        }
+
+        // Hash new password
+        const hashedNewPassword = await bcrypt.hash(newPassword, 12);
+
+        // Update password in database
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { password: hashedNewPassword }
+        });
 
         return c.json({ success: true });
-      } catch {
-        return c.json({ error: "Invalid current password or failed to update password" }, 400);
+      } catch (error) {
+        console.error("Change password error:", error);
+        return c.json({ error: "Failed to update password" }, 500);
       }
     }
   )

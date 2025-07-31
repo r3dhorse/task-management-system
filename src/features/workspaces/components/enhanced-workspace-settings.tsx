@@ -43,17 +43,14 @@ import { MemberRole } from "@/features/members/types";
 import { format } from "date-fns";
 
 interface PopulatedMember {
-  $id: string;
+  id: string;
   userId: string;
   workspaceId: string;
   role: MemberRole;
   name: string;
   email: string;
-  $createdAt: string;
-  $updatedAt: string;
-  $permissions: string[];
-  $collectionId: string;
-  $databaseId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface EnhancedWorkspaceSettingsProps {
@@ -69,7 +66,7 @@ const extendedWorkspaceSchema = updateWorkspaceSchema.extend({
 export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedWorkspaceSettingsProps) => {
   const router = useRouter();
   const { data: currentUser } = useCurrent();
-  const { data: membersData } = useGetMembers({ workspaceId: initialValues.$id });
+  const { data: membersData } = useGetMembers({ workspaceId: initialValues.id });
   const [activeTab, setActiveTab] = useState("general");
   const [origin, setOrigin] = useState("");
   
@@ -84,7 +81,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
   const { mutate: resetInviteCode, isPending: isResettingInviteCode } = useResetInviteCode();
 
   // Find current user's role
-  const currentMember = membersData?.documents?.find(member => (member as PopulatedMember).userId === currentUser?.$id) as PopulatedMember | undefined;
+  const currentMember = membersData?.documents?.find(member => (member as PopulatedMember).userId === currentUser?.id) as PopulatedMember | undefined;
   const isAdmin = currentMember?.role === MemberRole.ADMIN;
 
   const [DeleteDialog, confirmDelete] = useConfirm(
@@ -111,7 +108,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
     const ok = await confirmDelete();
     if (!ok) return;
     deleteWorkspace({
-      param: { workspaceId: initialValues.$id },
+      param: { workspaceId: initialValues.id },
     }, {
       onSuccess: () => {
         toast.success("Workspace deleted successfully");
@@ -124,14 +121,14 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
     const ok = await confirmReset();
     if (!ok) return;
     resetInviteCode({
-      param: { workspaceId: initialValues.$id },
+      param: { workspaceId: initialValues.id },
     });
   };
 
   const onSubmit = (values: z.infer<typeof extendedWorkspaceSchema>) => {
     updateWorkspace({
       form: { name: values.name, description: values.description },
-      param: { workspaceId: initialValues.$id }
+      param: { workspaceId: initialValues.id }
     }, {
       onSuccess: () => {
         form.reset(values);
@@ -139,7 +136,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
     });
   };
 
-  const fullInviteLink = `${origin}/workspaces/${initialValues.$id}/join/${initialValues.inviteCode}`;
+  const fullInviteLink = `${origin}/workspaces/${initialValues.id}/join/${initialValues.inviteCode}`;
   
   const handleCopyInviteLink = () => {
     if (typeof window !== "undefined" && navigator.clipboard) {
@@ -175,7 +172,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
             <Button
               size="sm"
               variant="secondary"
-              onClick={onCancel ? onCancel : () => router.push(`/workspaces/${initialValues.$id}`)}
+              onClick={onCancel ? onCancel : () => router.push(`/workspaces/${initialValues.id}`)}
               className="flex items-center gap-2 hover:bg-slate-100 transition-all duration-200"
             >
               <ArrowLeftIcon className="h-4 w-4" />
@@ -220,13 +217,13 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
                   </div>
                   <div className="flex items-center gap-1">
                     <CalendarIcon className="h-3 sm:h-4 w-3 sm:w-4" />
-                    <span className="hidden sm:inline">Created {format(new Date(initialValues.$createdAt), 'MMM d, yyyy')}</span>
-                    <span className="sm:hidden">{format(new Date(initialValues.$createdAt), 'MMM d')}</span>
+                    <span className="hidden sm:inline">Created {format(new Date(initialValues.createdAt), 'MMM d, yyyy')}</span>
+                    <span className="sm:hidden">{format(new Date(initialValues.createdAt), 'MMM d')}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <ClockIcon className="h-3 sm:h-4 w-3 sm:w-4" />
-                    <span className="hidden sm:inline">Updated {format(new Date(initialValues.$updatedAt), 'MMM d, yyyy')}</span>
-                    <span className="sm:hidden">{format(new Date(initialValues.$updatedAt), 'MMM d')}</span>
+                    <span className="hidden sm:inline">Updated {format(new Date(initialValues.updatedAt), 'MMM d, yyyy')}</span>
+                    <span className="sm:hidden">{format(new Date(initialValues.updatedAt), 'MMM d')}</span>
                   </div>
                 </div>
               </div>

@@ -1,19 +1,32 @@
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
-import { InferRequestType, InferResponseType } from "hono";
-import { client } from "@/lib/rpc";
 
-type ResponseType = InferResponseType<typeof client.api.auth["change-password"]["$post"], 200>;
-type RequestType = InferRequestType<typeof client.api.auth["change-password"]["$post"]>;
+type ChangePasswordRequest = {
+  json: {
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+  };
+};
+
+type ChangePasswordResponse = {
+  success: boolean;
+};
 
 export const useChangePassword = () => {
   const mutation = useMutation<
-    ResponseType,
+    ChangePasswordResponse,
     Error,
-    RequestType
+    ChangePasswordRequest
   >({
     mutationFn: async ({ json }) => {
-      const response = await client.api.auth["change-password"]["$post"]({ json });
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(json),
+      });
 
       if (!response.ok) {
         const errorData = await response.json() as { error?: string };
