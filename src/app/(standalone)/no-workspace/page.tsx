@@ -17,8 +17,11 @@ const NoWorkspacePage = async () => {
 
   // Check if user now has workspaces (in case they were invited)
   const workspaces = await getWorkspaces();
-  if (workspaces.total > 0) {
-    redirect(`/workspaces/${workspaces.documents[0].$id}`);
+  if (workspaces && workspaces.total > 0 && workspaces.documents && workspaces.documents.length > 0) {
+    const firstWorkspace = workspaces.documents[0];
+    if (firstWorkspace && firstWorkspace.$id) {
+      redirect(`/workspaces/${firstWorkspace.$id}`);
+    }
   }
 
   const isAdmin = isAdminUser(user);
