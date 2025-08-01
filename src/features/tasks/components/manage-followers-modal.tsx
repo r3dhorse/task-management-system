@@ -50,19 +50,19 @@ export const ManageFollowersModal = ({
   // Get member options - include all workspace members
   const memberOptions = availableMembers
     .map(member => ({
-      value: member.$id,
+      value: member.id || member.$id || '',
       label: `${member.name}`,
       role: member.role
     }));
 
   // Get current follower details
   const currentFollowerDetails = availableMembers.filter(member => 
-    currentFollowers.includes(member.$id)
+    currentFollowers.includes(member.id || member.$id || '')
   );
 
   // Get selected follower details
   const selectedFollowerDetails = availableMembers.filter(member => 
-    selectedFollowers.includes(member.$id)
+    selectedFollowers.includes(member.id || member.$id || '')
   );
 
   const hasChanges = JSON.stringify(selectedFollowers.sort()) !== JSON.stringify(currentFollowers.sort());
@@ -96,7 +96,7 @@ export const ManageFollowersModal = ({
               <div className="max-h-20 overflow-y-auto">
                 <div className="flex flex-wrap gap-2">
                   {currentFollowerDetails.map((follower) => (
-                    <div key={follower.$id} className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200">
+                    <div key={follower.id || follower.$id} className="flex items-center gap-2 bg-blue-50 px-3 py-1.5 rounded-full border border-blue-200">
                       <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-xs font-medium text-white">
                         {follower.name.charAt(0).toUpperCase()}
                       </div>
@@ -137,7 +137,7 @@ export const ManageFollowersModal = ({
               <div className="max-h-24 overflow-y-auto border rounded-lg p-3 bg-gray-50">
                 <div className="flex flex-wrap gap-2">
                   {selectedFollowerDetails.map((follower) => (
-                    <div key={follower.$id} className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
+                    <div key={follower.id || follower.$id} className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
                       <div className="w-4 h-4 rounded-full bg-green-600 flex items-center justify-center text-xs font-medium text-white">
                         {follower.name.charAt(0).toUpperCase()}
                       </div>

@@ -192,6 +192,7 @@ const app = new Hono()
           name: task.assignee.user.name,
           email: task.assignee.user.email,
         }] : [],
+        followedIds: JSON.stringify(task.followers.map(f => f.id)),
       }));
 
       // If user is a visitor, only show tasks they are following
@@ -300,7 +301,11 @@ const app = new Hono()
           try {
             const parsedIds = JSON.parse(followedIds);
             if (Array.isArray(parsedIds)) {
-              followerIds.push(...parsedIds);
+              // Filter out null, undefined, empty strings, and non-string values
+              const validIds = parsedIds.filter((id: any) => 
+                id && typeof id === 'string' && id.trim().length > 0
+              );
+              followerIds.push(...validIds);
             }
           } catch {
             // Invalid JSON, ignore
@@ -461,11 +466,26 @@ const app = new Hono()
           try {
             const parsedIds = JSON.parse(followedIds);
             if (Array.isArray(parsedIds)) {
+              // Filter out null, undefined, empty strings, and non-string values
+              const validIds = parsedIds.filter((id: any) => 
+                id && typeof id === 'string' && id.trim().length > 0
+              );
+              
+              // Verify that these member IDs exist in the workspace
+              const existingMembers = await prisma.member.findMany({
+                where: {
+                  id: { in: validIds },
+                  workspaceId: existingTask.workspaceId
+                }
+              });
+              
+              const existingMemberIds = existingMembers.map(m => m.id);
               updateData.followers = {
-                set: parsedIds.map((id: string) => ({ id }))
+                set: existingMemberIds.map((id: string) => ({ id }))
               };
             }
-          } catch {
+          } catch (error) {
+            console.error("Error processing followers:", error);
             // Invalid JSON, ignore followers update
           }
         }
@@ -708,6 +728,7 @@ const app = new Hono()
           createdAt: task.createdAt.toISOString(),
           updatedAt: task.updatedAt.toISOString(),
           assignees,
+          followedIds: JSON.stringify(task.followers.map(f => f.id)),
         },
       });
     }

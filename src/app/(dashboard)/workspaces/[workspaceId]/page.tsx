@@ -83,7 +83,7 @@ const WorkspaceIdPage = () => {
 
   // Find current user's member record to check role
   const currentMember = members?.documents.find(member => 
-    (member as Member).userId === currentUser?.$id
+    (member as Member).userId === currentUser?.id
   ) as Member;
 
   // Redirect visitors to workspace tasks page automatically
@@ -102,7 +102,7 @@ const WorkspaceIdPage = () => {
   // @ts-expect-error - Tasks are enriched with project and assignees from the API
   const filteredTasks = (tasks?.documents.filter((task) => {
     if (!dateFrom || !dateTo) return true;
-    const taskDate = new Date(task.$createdAt);
+    const taskDate = new Date(task.createdAt);
     return isAfter(taskDate, dateFrom) && isBefore(taskDate, dateTo);
   }) || []) as PopulatedTask[];
 
@@ -125,14 +125,14 @@ const WorkspaceIdPage = () => {
   const memberPerformance: MemberPerformance[] = members?.documents
     .filter(member => (member as Member).role !== MemberRole.VISITOR) // Exclude visitors
     .map(member => {
-      const memberTasks = filteredTasks.filter(task => task.assigneeId === member.$id);
+      const memberTasks = filteredTasks.filter(task => task.assigneeId === member.id);
       const memberCompletedTasks = memberTasks.filter(task => task.status === TaskStatus.DONE).length;
       const memberInProgressTasks = memberTasks.filter(task => task.status === TaskStatus.IN_PROGRESS).length;
       const memberTotalTasks = memberTasks.length;
       const completionRate = memberTotalTasks > 0 ? (memberCompletedTasks / memberTotalTasks) * 100 : 0;
 
       return {
-        id: member.$id,
+        id: member.id,
         name: member.name,
         tasksCompleted: memberCompletedTasks,
         tasksInProgress: memberInProgressTasks,
@@ -146,14 +146,14 @@ const WorkspaceIdPage = () => {
 
   // Calculate service performance
   const servicePerformance: ServicePerformance[] = services?.documents.map(service => {
-    const serviceTasks = filteredTasks.filter(task => task.serviceId === service.$id);
+    const serviceTasks = filteredTasks.filter(task => task.serviceId === service.id);
     const serviceCompletedTasks = serviceTasks.filter(task => task.status === TaskStatus.DONE).length;
     const serviceInProgressTasks = serviceTasks.filter(task => task.status === TaskStatus.IN_PROGRESS).length;
     const serviceTotalTasks = serviceTasks.length;
     const completionRate = serviceTotalTasks > 0 ? (serviceCompletedTasks / serviceTotalTasks) * 100 : 0;
 
     return {
-      id: service.$id,
+      id: service.id,
       name: service.name,
       tasksCompleted: serviceCompletedTasks,
       tasksInProgress: serviceInProgressTasks,
