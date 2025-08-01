@@ -10,6 +10,7 @@ import { useCurrent } from "@/features/auth/api/use-current";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { TaskStatus } from "@/features/tasks/types";
+import { TaskListModal } from "@/features/tasks/components/task-list-modal";
 
 interface MemberDocument {
   id: string;
@@ -26,24 +27,22 @@ interface TaskDocument {
   name: string;
   status: TaskStatus;
   workspaceId: string;
-  assigneeId: string;
   serviceId: string;
-  position: number;
-  dueDate: string;
+  dueDate: string | null;
   description?: string;
-  attachmentId?: string;
   createdAt: string;
   updatedAt: string;
   service?: {
     id: string;
     name: string;
-    workspaceId: string;
   };
-  assignees?: Array<{
+  assignee?: {
     id: string;
-    name: string;
-    email: string;
-  }>;
+    user: {
+      name: string;
+      email: string;
+    };
+  };
 }
 
 
@@ -84,6 +83,10 @@ export const MyTasksClient = () => {
   const [dateFrom, setDateFrom] = useState<Date | undefined>(subDays(new Date(), 30));
   const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalTasks, setModalTasks] = useState<TaskDocument[]>([]);
+  const [modalFilterType, setModalFilterType] = useState("");
 
   // Find the current user's member record
   const currentMember = members?.documents.find((member) => (member as MemberDocument).userId === user?.id) as MemberDocument | undefined;
@@ -267,6 +270,58 @@ export const MyTasksClient = () => {
     [TaskStatus.ARCHIVED]: { color: 'gray', bgColor: 'bg-gray-400', lightBg: 'bg-gray-100', textColor: 'text-gray-500' }
   };
 
+  // Modal handlers for metric cards
+  const handleCardClick = (filterType: string) => {
+    let filteredModalTasks: TaskDocument[] = [];
+    let title = "";
+    
+    switch (filterType) {
+      case 'completed':
+        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.DONE);
+        title = "Completed Tasks";
+        break;
+      case 'progress':
+        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.IN_PROGRESS);
+        title = "In Progress Tasks";
+        break;
+      case 'overdue':
+        filteredModalTasks = filteredTasks.filter((task) => {
+          if (!(task as unknown as TaskDocument).dueDate) return false;
+          const dueDate = new Date((task as unknown as TaskDocument).dueDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          return dueDate < today && (task as unknown as TaskDocument).status !== TaskStatus.DONE;
+        });
+        title = "Overdue Tasks";
+        break;
+      case 'total':
+        filteredModalTasks = filteredTasks;
+        title = "All Tasks";
+        break;
+      case 'todo':
+        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.TODO);
+        title = "To Do Tasks";
+        break;
+      case 'backlog':
+        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.BACKLOG);
+        title = "Backlog Tasks";
+        break;
+      case 'review':
+        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.IN_REVIEW);
+        title = "In Review Tasks";
+        break;
+      default:
+        filteredModalTasks = filteredTasks;
+        title = "All Tasks";
+        break;
+    }
+    
+    setModalTasks(filteredModalTasks as TaskDocument[]);
+    setModalTitle(title);
+    setModalFilterType(filterType);
+    setModalOpen(true);
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100">
       {/* Enhanced Header */}
@@ -422,9 +477,10 @@ export const MyTasksClient = () => {
           {/* Primary Metrics Cards with hover effects */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card 
-              className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 bg-white/90 backdrop-blur-sm cursor-pointer"
+              className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 bg-white/90 backdrop-blur-sm cursor-pointer"
               onMouseEnter={() => setHoveredCard('total')}
               onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => handleCardClick('total')}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-slate-600">Total Tasks</CardTitle>
@@ -438,13 +494,15 @@ export const MyTasksClient = () => {
                 <div className="mt-2 h-1 bg-slate-100 rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-slate-400 to-slate-600 rounded-full transition-all duration-500" style={{ width: '100%' }} />
                 </div>
+                <p className="text-xs text-slate-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Click to view all tasks</p>
               </CardContent>
             </Card>
 
             <Card 
-              className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 bg-white/90 backdrop-blur-sm cursor-pointer"
+              className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 bg-white/90 backdrop-blur-sm cursor-pointer"
               onMouseEnter={() => setHoveredCard('completed')}
               onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => handleCardClick('completed')}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-emerald-600">Completed</CardTitle>
@@ -461,13 +519,15 @@ export const MyTasksClient = () => {
                 <div className="mt-2 h-1 bg-emerald-100 rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-500" style={{ width: `${completionRate}%` }} />
                 </div>
+                <p className="text-xs text-emerald-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Click to view completed tasks</p>
               </CardContent>
             </Card>
 
             <Card 
-              className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 bg-white/90 backdrop-blur-sm cursor-pointer"
+              className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 bg-white/90 backdrop-blur-sm cursor-pointer"
               onMouseEnter={() => setHoveredCard('progress')}
               onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => handleCardClick('progress')}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-amber-600">In Progress</CardTitle>
@@ -483,13 +543,15 @@ export const MyTasksClient = () => {
                     <div key={i} className={`h-1 flex-1 rounded-full ${i < Math.min(inProgressTasks, 3) ? 'bg-amber-400' : 'bg-amber-100'}`} />
                   ))}
                 </div>
+                <p className="text-xs text-amber-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Click to view in progress tasks</p>
               </CardContent>
             </Card>
 
             <Card 
-              className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 bg-white/90 backdrop-blur-sm cursor-pointer"
+              className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 bg-white/90 backdrop-blur-sm cursor-pointer"
               onMouseEnter={() => setHoveredCard('overdue')}
               onMouseLeave={() => setHoveredCard(null)}
+              onClick={() => handleCardClick('overdue')}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-red-600">Overdue</CardTitle>
@@ -505,13 +567,27 @@ export const MyTasksClient = () => {
                     Action required
                   </div>
                 )}
+                <p className="text-xs text-red-400 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Click to view overdue tasks</p>
               </CardContent>
             </Card>
           </div>
 
           {/* Secondary Metrics Cards with enhanced styling */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm">
+            <Card 
+              className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm cursor-pointer"
+              onClick={() => {
+                const thisWeekFilteredTasks = filteredTasks.filter((task) => {
+                  if (!(task as unknown as TaskDocument).dueDate) return false;
+                  const dueDate = new Date((task as unknown as TaskDocument).dueDate);
+                  return isAfter(dueDate, thisWeekStart) && isBefore(dueDate, thisWeekEnd) && (task as unknown as TaskDocument).status !== TaskStatus.DONE;
+                });
+                setModalTasks(thisWeekFilteredTasks as TaskDocument[]);
+                setModalTitle("Due This Week");
+                setModalFilterType("due-this-week");
+                setModalOpen(true);
+              }}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-orange-700">Due This Week</CardTitle>
                 <Calendar className="h-4 w-4 text-orange-600" />
@@ -524,7 +600,20 @@ export const MyTasksClient = () => {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm">
+            <Card 
+              className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm cursor-pointer"
+              onClick={() => {
+                const weeklyCompletedTasks = filteredTasks.filter((task) => {
+                  if ((task as unknown as TaskDocument).status !== TaskStatus.DONE) return false;
+                  const completedDate = new Date((task as unknown as TaskDocument).updatedAt);
+                  return isAfter(completedDate, thisWeekStart) && isBefore(completedDate, thisWeekEnd);
+                });
+                setModalTasks(weeklyCompletedTasks as TaskDocument[]);
+                setModalTitle("Completed This Week");
+                setModalFilterType("weekly-completed");
+                setModalOpen(true);
+              }}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-green-700">Weekly Progress</CardTitle>
                 <Zap className="h-4 w-4 text-green-600" />
@@ -554,7 +643,10 @@ export const MyTasksClient = () => {
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-slate-50 to-slate-100/50 backdrop-blur-sm">
+            <Card 
+              className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-slate-50 to-slate-100/50 backdrop-blur-sm cursor-pointer"
+              onClick={() => handleCardClick('backlog')}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-slate-700">Backlog</CardTitle>
                 <FolderOpen className="h-4 w-4 text-slate-600" />
@@ -636,7 +728,8 @@ export const MyTasksClient = () => {
                       return (
                         <div 
                           key={(task as unknown as TaskDocument).id} 
-                          className="group p-4 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100/50 hover:from-slate-100 hover:to-slate-200/50 transition-all duration-300 cursor-pointer"
+                          onClick={() => router.push(`/workspaces/${workspaceId}/tasks/${(task as unknown as TaskDocument).id}`)}
+                          className="group p-4 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100/50 hover:from-slate-100 hover:to-slate-200/50 border border-transparent hover:border-black transition-all duration-300 cursor-pointer"
                           style={{ animationDelay: `${index * 50}ms` }}
                         >
                           <div className="flex items-start justify-between gap-3">
@@ -688,6 +781,15 @@ export const MyTasksClient = () => {
           </div>
         </div>
       </div>
+      
+      {/* Task List Modal */}
+      <TaskListModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalTitle}
+        tasks={modalTasks}
+        filterType={modalFilterType}
+      />
     </div>
   );
 };
