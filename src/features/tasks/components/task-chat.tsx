@@ -408,71 +408,63 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
 
                         {/* Attachment */}
                         {message.attachmentId && (
-                          <div className={cn(
-                            "mt-2 rounded-lg border overflow-hidden",
-                            message.isOwn 
-                              ? "bg-blue-600 border-blue-400" 
-                              : "bg-white border-gray-300"
-                          )}>
+                          <div className="mt-2">
                             {isImage(message.attachmentType || '') ? (
-                              <div className="relative">
+                              <div className="w-full max-w-sm max-h-80 overflow-hidden rounded-lg border-0 bg-gray-100">
                                 <Image
                                   src={`/api/download/${message.attachmentId}`}
-                                  alt={message.attachmentName}
-                                  width={200}
-                                  height={200}
-                                  className="max-w-[200px] max-h-[200px] object-cover cursor-pointer"
+                                  alt={message.attachmentName || "Image attachment"}
+                                  width={400}
+                                  height={320}
+                                  className="w-full h-auto object-contain cursor-pointer hover:scale-105 transition-transform duration-200"
                                   onClick={() => handleDownloadFile(message.attachmentId!)}
                                 />
-                                <div className="absolute top-2 right-2">
-                                  <Button
-                                    size="icon"
-                                    variant="secondary"
-                                    className="h-6 w-6 rounded-full bg-black/20 hover:bg-black/40"
-                                    onClick={() => handleDownloadFile(message.attachmentId!)}
-                                  >
-                                    <Download className="h-3 w-3 text-white" />
-                                  </Button>
-                                </div>
                               </div>
                             ) : (
-                              <div className="p-3 flex items-center gap-3">
-                                <div className={cn(
-                                  "p-2 rounded",
-                                  message.isOwn ? "bg-blue-400" : "bg-gray-100"
-                                )}>
-                                  <FileIcon className={cn(
-                                    "h-4 w-4",
-                                    message.isOwn ? "text-white" : "text-gray-600"
-                                  )} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className={cn(
-                                    "text-sm font-medium truncate",
-                                    message.isOwn ? "text-white" : "text-gray-900"
+                              <div className={cn(
+                                "rounded-lg border overflow-hidden",
+                                message.isOwn 
+                                  ? "bg-blue-600 border-blue-400" 
+                                  : "bg-white border-gray-300"
+                              )}>
+                                <div className="p-3 flex items-center gap-3">
+                                  <div className={cn(
+                                    "p-2 rounded",
+                                    message.isOwn ? "bg-blue-400" : "bg-gray-100"
                                   )}>
-                                    {message.attachmentName}
-                                  </p>
-                                  <p className={cn(
-                                    "text-xs",
-                                    message.isOwn ? "text-blue-100" : "text-gray-500"
-                                  )}>
-                                    {formatFileSize(message.attachmentSize || '0')}
-                                  </p>
+                                    <FileIcon className={cn(
+                                      "h-4 w-4",
+                                      message.isOwn ? "text-white" : "text-gray-600"
+                                    )} />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className={cn(
+                                      "text-sm font-medium truncate",
+                                      message.isOwn ? "text-white" : "text-gray-900"
+                                    )}>
+                                      {message.attachmentName}
+                                    </p>
+                                    <p className={cn(
+                                      "text-xs",
+                                      message.isOwn ? "text-blue-100" : "text-gray-500"
+                                    )}>
+                                      {formatFileSize(message.attachmentSize || '0')}
+                                    </p>
+                                  </div>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className={cn(
+                                      "h-8 w-8",
+                                      message.isOwn 
+                                        ? "text-white hover:bg-blue-400" 
+                                        : "text-gray-600 hover:bg-gray-200"
+                                    )}
+                                    onClick={() => handleDownloadFile(message.attachmentId!)}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
                                 </div>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className={cn(
-                                    "h-8 w-8",
-                                    message.isOwn 
-                                      ? "text-white hover:bg-blue-400" 
-                                      : "text-gray-600 hover:bg-gray-200"
-                                  )}
-                                  onClick={() => handleDownloadFile(message.attachmentId!)}
-                                >
-                                  <Download className="h-4 w-4" />
-                                </Button>
                               </div>
                             )}
                           </div>

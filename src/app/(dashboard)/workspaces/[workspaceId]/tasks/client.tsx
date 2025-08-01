@@ -10,16 +10,19 @@ import { useCurrent } from "@/features/auth/api/use-current";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { TaskStatus } from "@/features/tasks/types";
-import { Models } from "node-appwrite";
 
-interface MemberDocument extends Models.Document {
+interface MemberDocument {
+  id: string;
   userId: string;
+  workspaceId: string;
+  role: string;
+  joinedAt: string;
   name: string;
   email: string;
-  role: string;
 }
 
-interface TaskDocument extends Models.Document {
+interface TaskDocument {
+  id: string;
   name: string;
   status: TaskStatus;
   workspaceId: string;
@@ -29,13 +32,15 @@ interface TaskDocument extends Models.Document {
   dueDate: string;
   description?: string;
   attachmentId?: string;
+  createdAt: string;
+  updatedAt: string;
   service?: {
-    $id: string;
+    id: string;
     name: string;
     workspaceId: string;
   };
   assignees?: Array<{
-    $id: string;
+    id: string;
     name: string;
     email: string;
   }>;
@@ -81,11 +86,11 @@ export const MyTasksClient = () => {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   // Find the current user's member record
-  const currentMember = members?.documents.find((member) => (member as MemberDocument).userId === user?.$id) as MemberDocument | undefined;
+  const currentMember = members?.documents.find((member) => (member as MemberDocument).userId === user?.id) as MemberDocument | undefined;
 
   const { data: allTasks, isLoading: isLoadingTasks } = useGetTasks({
     workspaceId,
-    assigneeId: currentMember?.$id || null,
+    assigneeId: currentMember?.id || null,
   });
 
   const isLoading = isLoadingMembers || isLoadingTasks;
@@ -177,7 +182,7 @@ export const MyTasksClient = () => {
   // Filter tasks by date range
   const filteredTasks = tasks.filter((task) => {
     if (!dateFrom || !dateTo) return true;
-    const taskDate = new Date(task.$createdAt);
+    const taskDate = new Date(task.createdAt);
     return isAfter(taskDate, dateFrom) && isBefore(taskDate, dateTo);
   });
 
@@ -211,7 +216,7 @@ export const MyTasksClient = () => {
   // Weekly productivity (tasks completed this week)
   const thisWeekCompleted = filteredTasks.filter((task) => {
     if ((task as unknown as TaskDocument).status !== TaskStatus.DONE) return false;
-    const completedDate = new Date((task as unknown as TaskDocument).$updatedAt);
+    const completedDate = new Date((task as unknown as TaskDocument).updatedAt);
     return isAfter(completedDate, thisWeekStart) && isBefore(completedDate, thisWeekEnd);
   }).length;
 
@@ -220,7 +225,7 @@ export const MyTasksClient = () => {
   const lastWeekEnd = subDays(thisWeekEnd, 7);
   const lastWeekCompleted = filteredTasks.filter((task) => {
     if ((task as unknown as TaskDocument).status !== TaskStatus.DONE) return false;
-    const completedDate = new Date((task as unknown as TaskDocument).$updatedAt);
+    const completedDate = new Date((task as unknown as TaskDocument).updatedAt);
     return isAfter(completedDate, lastWeekStart) && isBefore(completedDate, lastWeekEnd);
   }).length;
 
@@ -240,14 +245,14 @@ export const MyTasksClient = () => {
 
   // Calculate average completion time
   const completedTasksWithTime = filteredTasks.filter((task) => 
-    (task as unknown as TaskDocument).status === TaskStatus.DONE && (task as unknown as TaskDocument).$createdAt && (task as unknown as TaskDocument).$updatedAt
+    (task as unknown as TaskDocument).status === TaskStatus.DONE && (task as unknown as TaskDocument).createdAt && (task as unknown as TaskDocument).updatedAt
   );
   
   const avgCompletionTime = completedTasksWithTime.length > 0
     ? Math.round(
         completedTasksWithTime.reduce((acc, task) => {
-          const created = new Date((task as unknown as TaskDocument).$createdAt);
-          const updated = new Date((task as unknown as TaskDocument).$updatedAt);
+          const created = new Date((task as unknown as TaskDocument).createdAt);
+          const updated = new Date((task as unknown as TaskDocument).updatedAt);
           return acc + differenceInDays(updated, created);
         }, 0) / completedTasksWithTime.length
       )
@@ -630,7 +635,7 @@ export const MyTasksClient = () => {
                       
                       return (
                         <div 
-                          key={(task as unknown as TaskDocument).$id} 
+                          key={(task as unknown as TaskDocument).id} 
                           className="group p-4 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100/50 hover:from-slate-100 hover:to-slate-200/50 transition-all duration-300 cursor-pointer"
                           style={{ animationDelay: `${index * 50}ms` }}
                         >

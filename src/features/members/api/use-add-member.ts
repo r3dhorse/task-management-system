@@ -15,8 +15,17 @@ export const useAddMember = () => {
       const response = await client.api.members["add-user"].$post({ json });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { error?: string };
-        throw new Error(errorData.error || "Failed to add member");
+        let errorMessage = "Failed to add member";
+        try {
+          const errorData = await response.json() as { error?: string };
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          errorMessage = `Failed to add member (${response.status})`;
+        }
+        throw new Error(errorMessage);
       }
 
       return await response.json();
@@ -33,7 +42,8 @@ export const useAddMember = () => {
     },
     onError: (error) => {
       console.error("Add member error:", error);
-      toast.error(error.message || "Failed to add member");
+      const errorMessage = error instanceof Error ? error.message : "Failed to add member";
+      toast.error(errorMessage);
     },
   });
 

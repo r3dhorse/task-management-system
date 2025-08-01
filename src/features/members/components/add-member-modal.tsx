@@ -26,10 +26,10 @@ interface AddMemberModalProps {
 }
 
 interface User {
-  $id: string;
+  id: string;
   name: string;
   email: string;
-  avatar?: string | null;
+  image?: string | null;
 }
 
 export const AddMemberModal = ({ isOpen, onClose, workspaceId }: AddMemberModalProps) => {
@@ -46,12 +46,12 @@ export const AddMemberModal = ({ isOpen, onClose, workspaceId }: AddMemberModalP
   const { mutate: addMember, isPending: isAddingMember } = useAddMember();
 
   const handleAddUser = (user: User) => {
-    setAddingUserId(user.$id);
+    setAddingUserId(user.id);
     addMember(
       {
         json: {
           workspaceId,
-          userId: user.$id,
+          userId: user.id,
           role: selectedRole,
         },
       },
@@ -160,7 +160,7 @@ export const AddMemberModal = ({ isOpen, onClose, workspaceId }: AddMemberModalP
                     <div className="space-y-1">
                       {searchResults.map((user: User) => (
                         <div
-                          key={user.$id}
+                          key={user.id}
                           className="flex items-center justify-between p-3 rounded-md bg-white border hover:border-blue-200 hover:bg-blue-50 transition-colors"
                         >
                           <div className="flex items-center gap-3 flex-1">
@@ -182,15 +182,15 @@ export const AddMemberModal = ({ isOpen, onClose, workspaceId }: AddMemberModalP
                           <Button
                             size="sm"
                             onClick={() => handleAddUser(user)}
-                            disabled={isAddingMember || addingUserId === user.$id}
+                            disabled={isAddingMember || addingUserId === user.id}
                             className="shrink-0 bg-blue-600 hover:bg-blue-700"
                           >
-                            {addingUserId === user.$id ? (
+                            {addingUserId === user.id ? (
                               <LoadingSpinner size="sm" className="mr-1" />
                             ) : (
                               <UserPlusIcon className="h-3 w-3 mr-1" />
                             )}
-                            {addingUserId === user.$id ? "Adding..." : "Add"}
+                            {addingUserId === user.id ? "Adding..." : "Add"}
                           </Button>
                         </div>
                       ))}
