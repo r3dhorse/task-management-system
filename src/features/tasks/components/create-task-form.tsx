@@ -19,7 +19,7 @@ import { FileUpload } from "@/components/file-upload";
 import { MultiSelect } from "@/components/ui/multi-select-simple";
 import { useGetServices } from "@/features/services/api/use-get-services";
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { Member, MemberRole } from "@/features/members/types";
+import { MemberRole } from "@/features/members/types";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
@@ -76,8 +76,12 @@ export const CreateTaskForm = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       workspaceId: workspaceId, // Set current workspace as default
+      serviceId: "", // Initialize as empty string
+      assigneeId: "", // Initialize as empty string
       status: TaskStatus.TODO, // Set default status to TODO
       isConfidential: false, // Default to not confidential
+      name: "",
+      description: "",
     },
   });
 
@@ -99,28 +103,28 @@ export const CreateTaskForm = ({
 
   // Create options from the loaded data
   const serviceOptions = services?.documents?.map((service) => ({
-    id: service.$id,
+    id: service.id,
     name: service.name,
   })) || [];
 
   const memberOptions = members?.documents?.map((member) => ({
-    id: member.$id,
+    id: member.id,
     name: member.name,
     email: member.email,
-    role: (member as Member).role,
+    role: member.role as MemberRole,
   })) || [];
 
   // Create follower options from workspace members
   const followerOptions = members?.documents?.map((member) => ({
-    value: member.$id,
+    value: member.id,
     label: member.name,
     email: member.email,
   })) || [];
 
   // Find current user's member record
   const currentMember = members?.documents?.find(member => 
-    (member as Member).userId === currentUser?.$id
-  ) as Member;
+    member.userId === currentUser?.id
+  );
 
   // Reset service and assignee when workspace changes
   useEffect(() => {
@@ -138,15 +142,24 @@ export const CreateTaskForm = ({
   }, [isConfidentialValue, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // Validate that serviceId is selected
+    if (!values.serviceId || values.serviceId === "") {
+      form.setError("serviceId", { message: "Service is required" });
+      return;
+    }
 
     const formattedValues = {
       ...values,
+      serviceId: values.serviceId || "", // Convert undefined to empty string
       dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : "", // Convert date to ISO string
       attachmentId: attachmentId || "", // Send empty string instead of undefined
       assigneeId: values.assigneeId === "unassigned" ? "" : values.assigneeId || "", // Send empty string if unassigned
       followedIds: JSON.stringify(selectedFollowers), // JSON string array of follower IDs
       isConfidential: values.isConfidential || false, // Ensure boolean value
     };
+
+    console.log("Frontend: Form values before submission:", values);
+    console.log("Frontend: Formatted values being sent:", formattedValues);
 
     mutate({ json: formattedValues }, {
       onSuccess: () => {
@@ -158,6 +171,9 @@ export const CreateTaskForm = ({
         setAttachmentId("");
         setSelectedFollowers([]);
         onCancel?.();
+      },
+      onError: (_error) => {
+        // The error is already handled by the useCreateTask hook
       },
     });
   };
@@ -276,8 +292,8 @@ export const CreateTaskForm = ({
                 name="serviceId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Service</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange} disabled={isLoadingServices || !selectedWorkspaceId}>
+                    <FormLabel>Service *</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={isLoadingServices || !selectedWorkspaceId} required>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={
@@ -285,12 +301,17 @@ export const CreateTaskForm = ({
                               ? "Loading services..." 
                               : !selectedWorkspaceId 
                                 ? "Select workspace first"
-                                : "Select Service"
+                                : "Select Service *"
                           } />
                         </SelectTrigger>
                       </FormControl>
                       <FormMessage />
                       <SelectContent>
+                        {serviceOptions.length === 0 && !isLoadingServices && selectedWorkspaceId && (
+                          <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                            No services found in this workspace
+                          </div>
+                        )}
                         {serviceOptions.map((service) => (
                           <SelectItem key={service.id} value={String(service.id)}>
                             <div className="flex items-center gap-x-2">

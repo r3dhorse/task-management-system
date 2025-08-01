@@ -16,9 +16,9 @@ const routes = app
   .route("/workspaces", workspaces)
   .route("/members", members)
   .route("/services", services)
+  .route("/tasks/messages", taskMessages)
   .route("/tasks", tasks)
   .route("/task-history", taskHistory)
-  .route("/tasks/messages", taskMessages)
   .route("/users", users)
 
 export const GET = handle(routes);

@@ -187,11 +187,11 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   }
 
   const assignee = members?.documents.find(
-    (member) => member.$id === task.assigneeId
+    (member) => member.id === task.assigneeId
   );
 
   const service = services?.documents.find(
-    (serv) => serv.$id === task.serviceId
+    (serv) => serv.id === task.serviceId
   );
 
 
@@ -206,15 +206,15 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
   // Get follower members
   const followers = members?.documents.filter(member => 
-    followedIds.includes(member.$id)
+    followedIds.includes(member.id)
   ) || [];
 
   // Find current user's member record to check delete permissions
   const currentMember = members?.documents.find(member => 
-    (member as Member).userId === currentUser?.$id
+    (member as Member).userId === currentUser?.id
   ) as Member;
   
-  const isCreator = currentUser && task?.creatorId ? currentUser.$id === task.creatorId : false;
+  const isCreator = currentUser && task?.creatorId ? currentUser.id === task.creatorId : false;
   const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
   const canDelete = isCreator || isWorkspaceAdmin;
   
@@ -283,7 +283,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
     updateTask(
       {
-        param: { taskId: task.$id },
+        param: { taskId: task.id },
         json: updatePayload,
       },
       {
@@ -301,7 +301,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       // Track the view action
       createHistory({
         json: {
-          taskId: task.$id,
+          taskId: task.id,
           action: TaskHistoryAction.ATTACHMENT_VIEWED,
         }
       });
@@ -339,7 +339,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     if (!ok) return;
 
     deleteTask(
-      { param: { taskId: task!.$id } },
+      { param: { taskId: task!.id } },
       {
         onSuccess: () => {
           router.back(); // Navigate back after successful archiving
@@ -357,7 +357,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
     updateTask(
       {
-        param: { taskId: task.$id },
+        param: { taskId: task.id },
         json: updatePayload,
       },
       {
@@ -584,7 +584,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
               </CardHeader>
               <CardContent className="flex-1 overflow-hidden p-0">
                 <div className="h-full overflow-y-auto px-6 pb-6">
-                  <TaskHistory taskId={task.$id} />
+                  <TaskHistory taskId={task.id} />
                 </div>
               </CardContent>
             </Card>
@@ -593,7 +593,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
           {/* Chat Section - More Space */}
           <div className="lg:col-span-1 xl:col-span-2">
             <div className="sticky top-6">
-              <TaskChat taskId={task.$id} className="h-[705px] shadow-lg border-2 border-neutral-200/60 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300" />
+              <TaskChat taskId={task.id} className="h-[705px] shadow-lg border-2 border-neutral-200/60 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300" />
             </div>
           </div>
 
@@ -696,7 +696,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                           {members?.documents
                             .filter(member => (member as Member).role !== MemberRole.VISITOR)
                             .map((member) => (
-                            <SelectItem key={member.$id} value={member.$id}>
+                            <SelectItem key={member.id} value={member.id}>
                               👤 {member.name}
                             </SelectItem>
                           ))}
@@ -729,7 +729,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                         </SelectTrigger>
                         <SelectContent>
                           {services?.documents.map((serv) => (
-                            <SelectItem key={serv.$id} value={serv.$id}>
+                            <SelectItem key={serv.id} value={serv.id}>
                               📁 {serv.name}
                             </SelectItem>
                           ))}
@@ -857,7 +857,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                       {followers.length > 0 ? (
                         <div className="space-y-2">
                           {followers.map((follower) => (
-                            <div key={follower.$id} className="flex items-center gap-2 text-sm">
+                            <div key={follower.id} className="flex items-center gap-2 text-sm">
                               <UsersIcon className="size-3 text-gray-500" />
                               <span className="font-medium">{follower.name}</span>
                             </div>

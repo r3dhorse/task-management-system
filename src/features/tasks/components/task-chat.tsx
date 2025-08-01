@@ -39,7 +39,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
   const workspaceId = useWorkspaceId();
   
   const { data: currentUser } = useCurrent();
-  const { data: messagesData, isLoading: isLoadingMessages } = useGetTaskMessages({ 
+  const { data: messagesData, isLoading: isLoadingMessages, error: messagesError } = useGetTaskMessages({ 
     taskId, 
     workspaceId 
   });
@@ -53,12 +53,12 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       const msg = doc as TaskMessage;
       return {
         ...msg,
-        id: msg.$id,
+        id: msg.id || msg.$id,
         timestamp: new Date(msg.timestamp),
-        isOwn: msg.senderId === currentUser?.$id,
+        isOwn: msg.senderId === currentUser?.id,
       };
     });
-  }, [messagesData?.documents, currentUser?.$id]);
+  }, [messagesData?.documents, currentUser?.id]);
 
   const scrollToBottom = () => {
     if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
@@ -137,7 +137,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
 
       const result = await response.json();
       return {
-        id: result.data.$id,
+        id: result.data.id || result.data.$id,
         name: selectedFile.name,
         size: selectedFile.size.toString(),
         type: selectedFile.type,
@@ -298,6 +298,25 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
     );
   }
 
+  if (messagesError) {
+    return (
+      <Card className={cn("flex flex-col", className)}>
+        <CardHeader className="pb-3 flex-shrink-0">
+          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <div className="w-1 h-6 bg-blue-500 rounded-full" />
+            Team Chat
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-500 mb-2">Failed to load messages</p>
+            <p className="text-sm text-gray-500">{messagesError.message}</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className={cn("flex flex-col", className)}>
       <CardHeader className="pb-3 flex-shrink-0">
@@ -351,7 +370,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                         {showAvatar ? (
                           <Avatar className="w-8 h-8">
                             <AvatarFallback className="text-xs bg-blue-100 text-blue-600">
-                              {getInitials(message.senderName)}
+                              {getInitials(message.sender?.name || 'Unknown')}
                             </AvatarFallback>
                           </Avatar>
                         ) : null}
@@ -365,7 +384,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                       {/* Sender name */}
                       {showAvatar && (
                         <span className="text-xs text-gray-500 mb-1 px-2">
-                          {message.isOwn ? "You" : message.senderName}
+                          {message.isOwn ? "You" : message.sender?.name || 'Unknown'}
                         </span>
                       )}
                       
@@ -378,7 +397,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                             : "bg-gray-100 text-gray-900 rounded-bl-sm border-gray-200/80 shadow-sm",
                           !isLast && "mb-1",
                           // Add opacity for optimistic messages
-                          message.$id?.startsWith('temp-') && "opacity-70"
+                          message.id?.startsWith('temp-') && "opacity-70"
                         )}
                       >
                         {message.content && (

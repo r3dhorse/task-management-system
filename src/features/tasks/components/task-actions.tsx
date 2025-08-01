@@ -26,10 +26,10 @@ export const TaskActions = ({ id, serviceId, children, deleteOnly = false, creat
   
   // Find current user's member record to check role
   const currentMember = members?.documents.find(member => 
-    (member as Member).userId === currentUser?.$id
+    (member as Member).userId === currentUser?.id
   ) as Member;
   
-  const isCreator = currentUser && creatorId ? currentUser.$id === creatorId : false;
+  const isCreator = currentUser && creatorId ? currentUser.id === creatorId : false;
   const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
   const canDelete = isCreator || isWorkspaceAdmin;
 

@@ -4,12 +4,8 @@ import { Hono } from "hono";
 import { createTaskSchema, updateTaskSchema } from "../schemas";
 import { getMember } from "@/features/members/utils";
 import { MemberRole } from "@/features/members/types";
-import { DATABASE_ID, MEMBERS_ID, SERVICES_ID, TASKS_ID, TASK_HISTORY_ID } from "@/config";
-import { ID, Query } from "node-appwrite";
 import { z } from "zod";
-import { Task, TaskStatus } from "../types";
-import { createAdminClient } from "@/lib/appwrite";
-import { Service } from "@/features/services/types";
+import { TaskStatus } from "../types";
 import { TaskHistoryAction } from "../types/history";
 import { detectTaskChanges } from "../utils/history";
 
@@ -21,7 +17,7 @@ const app = new Hono()
     sessionMiddleware,
     async (c) => {
       const user = c.get("user");
-      const databases = c.get("databases");
+      const prisma = c.get("prisma");
       const { taskId } = c.req.param();
 
       // Validate taskId format
@@ -29,21 +25,14 @@ const app = new Hono()
         return c.json({ error: "Invalid task ID format" }, 400);
       }
 
-      let task: Task;
-      try {
-        task = await databases.getDocument<Task>(
-          DATABASE_ID,
-          TASKS_ID,
-          taskId,
-        );
-      } catch (error: unknown) {
-        if (error && typeof error === 'object' && 'type' in error && error.type === 'document_not_found') {
-          return c.json({ error: "Task not found" }, 404);
-        }
-        throw error;
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+      });
+
+      if (!task) {
+        return c.json({ error: "Task not found" }, 404);
       }
 
-      const prisma = c.get("prisma");
       const member = await getMember({
         prisma,
         workspaceId: task.workspaceId,
@@ -60,7 +49,7 @@ const app = new Hono()
       }
 
       // Only the task creator or workspace admin can archive the task
-      const isTaskCreator = task.creatorId && task.creatorId === user.$id;
+      const isTaskCreator = task.creatorId && task.creatorId === user.id;
       const isWorkspaceAdmin = member.role === MemberRole.ADMIN;
       
       if (!isTaskCreator && !isWorkspaceAdmin) {
@@ -68,16 +57,14 @@ const app = new Hono()
       }
 
       // Archive the task by setting status to ARCHIVED for audit purposes
-      const archivedTask = await databases.updateDocument(
-        DATABASE_ID,
-        TASKS_ID,
-        taskId,
-        {
+      const archivedTask = await prisma.task.update({
+        where: { id: taskId },
+        data: {
           status: TaskStatus.ARCHIVED,
         }
-      );
+      });
 
-      return c.json({ data: { $id: archivedTask.$id } });
+      return c.json({ data: { id: archivedTask.id } });
     }
   )
 
@@ -98,8 +85,7 @@ const app = new Hono()
       })
     ),
     async (c) => {
-      const { users } = await createAdminClient();
-      const databases = c.get("databases");
+      const prisma = c.get("prisma");
       const user = c.get("user");
       const {
         workspaceId,
@@ -111,7 +97,6 @@ const app = new Hono()
         includeArchived
       } = c.req.valid("query");
 
-      const prisma = c.get("prisma");
       const member = await getMember({
         prisma,
         workspaceId,
@@ -122,17 +107,17 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      const query = [
-        Query.equal("workspaceId", workspaceId),
-        Query.orderDesc("$createdAt")
-      ];
+      // Build the where clause for filtering
+      const where: any = {
+        workspaceId,
+      };
 
       if (serviceId) {
-        query.push(Query.equal("serviceId", serviceId));
+        where.serviceId = serviceId;
       }
 
       if (status) {
-        query.push(Query.equal("status", status));
+        where.status = status;
         
         // If filtering for archived status, user must have permission to view archived tasks
         if (status === TaskStatus.ARCHIVED) {
@@ -151,117 +136,92 @@ const app = new Hono()
         // and user hasn't explicitly requested to include archived tasks
         const canViewArchived = member.role === MemberRole.ADMIN || member.role === MemberRole.MEMBER;
         if (!includeArchived || !canViewArchived) {
-          query.push(Query.notEqual("status", TaskStatus.ARCHIVED));
+          where.status = { not: TaskStatus.ARCHIVED };
         }
       }
 
       if (assigneeId) {
-        query.push(Query.equal("assigneeId", assigneeId));
+        where.assigneeId = assigneeId;
       }
 
       if (dueDate) {
-        query.push(Query.equal("dueDate", dueDate));
+        where.dueDate = new Date(dueDate);
       }
 
       if (search) {
-        query.push(Query.search("name", search));
+        where.name = { contains: search, mode: 'insensitive' };
       }
 
-      const tasks = await databases.listDocuments(
-        DATABASE_ID,
-        TASKS_ID,
-        query,
-      );
-
-
-      const serviceIds = tasks.documents.map((task) => task.serviceId);
-      const assigneeIds = [...new Set(tasks.documents.map((task) => task.assigneeId).filter(Boolean))];
-
-      const services = await databases.listDocuments<Service>(
-        DATABASE_ID,
-        SERVICES_ID,
-        serviceIds.length > 0 ? [Query.contains("$id", serviceIds)] : [],
-      );
-
-      const members = await databases.listDocuments(
-        DATABASE_ID,
-        MEMBERS_ID,
-        assigneeIds.length > 0 ? [Query.contains("$id", assigneeIds)] : [],
-      );
-
-      const assignees = await Promise.all(
-        members.documents.map(async (member) => {
-          const user = await users.get(member.userId);
-
-          return {
-            ...member,
-            name: user.name,
-            email: user.email,
+      const tasks = await prisma.task.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          service: true,
+          assignee: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
+          followers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
           }
-        })
-      );
-
-      let populatedTasks = tasks.documents.map((task) => {
-        const service = services.documents.find(
-          (service) => service.$id === task.serviceId,
-        );
-        const taskAssignee = assignees.find(
-          (assignee) => assignee.$id === task.assigneeId,
-        );
-        const taskAssignees = taskAssignee ? [taskAssignee] : [];
-
-        return {
-          ...task,
-          service,
-          assignees: taskAssignees,
-        };
+        }
       });
+
+      let populatedTasks = tasks.map((task) => ({
+        ...task,
+        dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+        createdAt: task.createdAt.toISOString(),
+        updatedAt: task.updatedAt.toISOString(),
+        assignees: task.assignee ? [{
+          ...task.assignee,
+          name: task.assignee.user.name,
+          email: task.assignee.user.email,
+        }] : [],
+      }));
 
       // If user is a visitor, only show tasks they are following
       if (member.role === MemberRole.VISITOR) {
         populatedTasks = populatedTasks.filter((task) => {
-          const followedIds = (task as unknown as { followedIds?: string }).followedIds;
-          if (!followedIds) return false;
-          try {
-            const parsedFollowedIds = JSON.parse(followedIds);
-            // Use member.$id instead of user.$id for comparison
-            return Array.isArray(parsedFollowedIds) && parsedFollowedIds.includes(member.$id);
-          } catch {
-            return false;
-          }
+          return task.followers.some(follower => follower.id === member.id);
         });
       }
 
       // Filter confidential tasks - only visible to creator, assignee, and followers
       populatedTasks = populatedTasks.filter((task) => {
-        const taskData = task as unknown as Task;
-        
         // If task is not confidential, everyone can see it
-        if (!taskData.isConfidential) {
+        if (!task.isConfidential) {
           return true;
         }
 
         // If task is confidential, check permissions:
         // 1. Task creator can always see it
-        if (taskData.creatorId === user.$id) {
+        if (task.creatorId === user.id) {
           return true;
         }
 
         // 2. Task assignee can see it
-        if (taskData.assigneeId && taskData.assigneeId === member.$id) {
+        if (task.assigneeId === member.id) {
           return true;
         }
 
         // 3. Followers can see it
-        if (taskData.followedIds) {
-          try {
-            const parsedFollowedIds = JSON.parse(taskData.followedIds);
-            if (Array.isArray(parsedFollowedIds) && parsedFollowedIds.includes(member.$id)) {
-              return true;
-            }
-          } catch {
-            // If followedIds parsing fails, deny access
-          }
+        if (task.followers.some(follower => follower.id === member.id)) {
+          return true;
         }
 
         // If none of the above conditions are met, deny access
@@ -270,9 +230,8 @@ const app = new Hono()
 
       return c.json({
         data: {
-          ...tasks,
           documents: populatedTasks,
-          total: populatedTasks.length, // Update total to reflect filtered count
+          total: populatedTasks.length,
         },
       });
     }
@@ -285,7 +244,7 @@ const app = new Hono()
     async (c) => {
       try {
         const user = c.get("user");
-        const databases = c.get("databases");
+        const prisma = c.get("prisma");
 
         const {
           name,
@@ -314,7 +273,7 @@ const app = new Hono()
         });
 
         const member = await getMember({
-          databases,
+          prisma,
           workspaceId,
           userId: user.id,
         });
@@ -323,93 +282,104 @@ const app = new Hono()
           return c.json({ error: "Unauthorized" }, 401);
         }
 
-        const highestPositionTask = await databases.listDocuments(
-          DATABASE_ID,
-          TASKS_ID,
-          [
-            Query.equal("status", status),
-            Query.equal("workspaceId", workspaceId),
-            Query.orderDesc("position"),
-            Query.limit(1),
-          ]
-        );
+        const highestPositionTask = await prisma.task.findFirst({
+          where: {
+            status,
+            workspaceId,
+          },
+          orderBy: {
+            position: 'desc',
+          },
+        });
 
-        const newPosition =
-          highestPositionTask.documents.length > 0
-            ? highestPositionTask.documents[0].position + 1000
-            : 1000;
+        const newPosition = highestPositionTask ? highestPositionTask.position + 1000 : 1000;
 
-
-        // Automatically add the task creator as a follower
-        let creatorFollowedIds: string[] = [];
+        // Prepare followers - automatically add the task creator as a follower
+        const followerIds: string[] = [];
         if (followedIds) {
           try {
-            creatorFollowedIds = JSON.parse(followedIds);
+            const parsedIds = JSON.parse(followedIds);
+            if (Array.isArray(parsedIds)) {
+              followerIds.push(...parsedIds);
+            }
           } catch {
-            creatorFollowedIds = [];
+            // Invalid JSON, ignore
           }
         }
         
         // Ensure creator is always included in followers
-        if (!creatorFollowedIds.includes(member.$id)) {
-          creatorFollowedIds.push(member.$id);
-          console.log(`✅ Auto-added creator ${member.$id} as follower to task`);
+        if (!followerIds.includes(member.id)) {
+          followerIds.push(member.id);
+          console.log(`✅ Auto-added creator ${member.id} as follower to task`);
         } else {
-          console.log(`ℹ️ Creator ${member.$id} already in followers list`);
+          console.log(`ℹ️ Creator ${member.id} already in followers list`);
         }
         
-        const taskData: Record<string, unknown> = {
-          name,
-          status,
-          workspaceId,
-          serviceId,
-          dueDate,
-          assigneeId,
-          description,
-          position: newPosition,
-          attachmentId: attachmentId || "", // Always include attachmentId, empty string if not provided
-          followedIds: JSON.stringify(creatorFollowedIds), // Include creator in followers
-          creatorId: user.$id, // Track who created the task
-          isConfidential: isConfidential || false, // Track if task is confidential
-        };
+        // Validate required fields and convert string 'undefined' to proper values
+        if (!serviceId || serviceId === 'undefined' || serviceId === '') {
+          return c.json({ error: "Service is required" }, 400);
+        }
 
-        console.log("Task creation - Data being sent to database:", taskData);
-        
-        const task = await databases.createDocument(
-          DATABASE_ID,
-          TASKS_ID,
-          ID.unique(),
-          taskData
-        );
+        const task = await prisma.task.create({
+          data: {
+            name,
+            status,
+            workspaceId,
+            serviceId,
+            dueDate: dueDate ? new Date(dueDate) : null,
+            assigneeId: assigneeId === 'undefined' || !assigneeId ? null : assigneeId,
+            description,
+            position: newPosition,
+            attachmentId: attachmentId === 'undefined' || !attachmentId ? null : attachmentId,
+            creatorId: user.id,
+            isConfidential: isConfidential || false,
+            followers: {
+              connect: followerIds.map(id => ({ id }))
+            }
+          },
+          include: {
+            service: true,
+            assignee: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  }
+                }
+              }
+            }
+          }
+        });
 
         console.log("Task creation - Created task:", {
-          id: task.$id
+          id: task.id
         });
 
         // Create history entry for task creation
         try {
-          const { users } = await createAdminClient();
-          const userInfo = await users.get(user.$id);
-          
-          await databases.createDocument(
-            DATABASE_ID,
-            TASK_HISTORY_ID,
-            ID.unique(),
-            {
-              taskId: task.$id,
+          await prisma.taskHistory.create({
+            data: {
+              taskId: task.id,
               userId: user.id,
-              userName: userInfo.name,
               action: TaskHistoryAction.CREATED,
-              timestamp: new Date().toISOString(),
             }
-          );
+          });
         } catch (historyError) {
           console.error("Failed to create task history entry:", historyError);
           // Don't fail the task creation if history fails
         }
 
-        console.log("Task created successfully:", task.$id);
-        return c.json({ data: task });
+        console.log("Task created successfully:", task.id);
+        return c.json({ 
+          data: {
+            ...task,
+            dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+            createdAt: task.createdAt.toISOString(),
+            updatedAt: task.updatedAt.toISOString(),
+          }
+        });
       } catch (error) {
         console.error("Task creation error:", error);
         return c.json({ error: error instanceof Error ? error.message : "Failed to create task" }, 500);
@@ -424,7 +394,7 @@ const app = new Hono()
     async (c) => {
       try {
         const user = c.get("user");
-        const databases = c.get("databases");
+        const prisma = c.get("prisma");
 
         const {
           name,
@@ -445,22 +415,19 @@ const app = new Hono()
           return c.json({ error: "Invalid task ID format" }, 400);
         }
 
-        let existingTask: Task;
-        try {
-          existingTask = await databases.getDocument<Task>(
-            DATABASE_ID,
-            TASKS_ID,
-            taskId,
-          );
-        } catch (error: unknown) {
-          if (error && typeof error === 'object' && 'type' in error && error.type === 'document_not_found') {
-            return c.json({ error: "Task not found" }, 404);
+        const existingTask = await prisma.task.findUnique({
+          where: { id: taskId },
+          include: {
+            followers: true,
           }
-          throw error;
+        });
+
+        if (!existingTask) {
+          return c.json({ error: "Task not found" }, 404);
         }
 
         const member = await getMember({
-          databases,
+          prisma,
           workspaceId: existingTask.workspaceId,
           userId: user.id,
         });
@@ -474,52 +441,84 @@ const app = new Hono()
           return c.json({ error: "Visitors cannot update task status" }, 403);
         }
 
-        const updateData: Record<string, unknown> = {
-          name,
-          serviceId,
-          dueDate,
-          assigneeId,
-          description,
-        };
+        const updateData: any = {};
+
+        if (name !== undefined) updateData.name = name;
+        if (serviceId !== undefined) updateData.serviceId = serviceId;
+        if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
+        if (assigneeId !== undefined) updateData.assigneeId = assigneeId === 'undefined' || !assigneeId ? null : assigneeId;
+        if (description !== undefined) updateData.description = description;
+        if (attachmentId !== undefined) updateData.attachmentId = attachmentId === 'undefined' || !attachmentId ? null : attachmentId;
+        if (isConfidential !== undefined) updateData.isConfidential = isConfidential;
 
         // Only include status if user is not a visitor
-        if (member.role !== MemberRole.VISITOR) {
+        if (member.role !== MemberRole.VISITOR && status !== undefined) {
           updateData.status = status;
         }
 
-        // Handle isConfidential - include if provided
-        if (isConfidential !== undefined) {
-          updateData.isConfidential = isConfidential;
-        }
-
-        // Handle followedIds - always include if provided
+        // Handle followers update
         if (followedIds !== undefined) {
-          updateData.followedIds = followedIds;
+          try {
+            const parsedIds = JSON.parse(followedIds);
+            if (Array.isArray(parsedIds)) {
+              updateData.followers = {
+                set: parsedIds.map((id: string) => ({ id }))
+              };
+            }
+          } catch {
+            // Invalid JSON, ignore followers update
+          }
         }
-
-        // Handle attachmentId - always include if provided, allow empty string to clear attachment
-        if (attachmentId !== undefined) {
-          updateData.attachmentId = attachmentId; // Include attachmentId even if empty to clear it
-        }
-
 
         // Detect what changed for history tracking
         const updatePayload = c.req.valid("json");
-        const changes = detectTaskChanges(existingTask, updatePayload);
+        // Convert Prisma task to match the expected format
+        const taskForComparison = {
+          ...existingTask,
+          $id: existingTask.id,
+          $collectionId: '',
+          $databaseId: '',
+          $createdAt: existingTask.createdAt.toISOString(),
+          $updatedAt: existingTask.updatedAt.toISOString(),
+          $permissions: [],
+          dueDate: existingTask.dueDate?.toISOString() || '',
+          followedIds: JSON.stringify(existingTask.followers.map(f => f.id))
+        };
+        const changes = detectTaskChanges(taskForComparison as any, updatePayload);
 
-        const task = await databases.updateDocument<Task>(
-          DATABASE_ID,
-          TASKS_ID,
-          taskId,
-          updateData
-        );
+        const task = await prisma.task.update({
+          where: { id: taskId },
+          data: updateData,
+          include: {
+            service: true,
+            assignee: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  }
+                }
+              }
+            },
+            followers: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  }
+                }
+              }
+            }
+          }
+        });
 
         // Create history entries for changes
         if (changes.length > 0) {
           try {
-            const { users } = await createAdminClient();
-            const userInfo = await users.get(user.$id);
-            
             for (const change of changes) {
               let action: TaskHistoryAction;
               let oldValue = change.oldValue || "";
@@ -535,9 +534,11 @@ const app = new Hono()
                   // Resolve assignee IDs to names
                   if (change.oldValue) {
                     try {
-                      const oldMember = await databases.getDocument(DATABASE_ID, MEMBERS_ID, change.oldValue);
-                      const oldUser = await users.get(oldMember.userId);
-                      oldValue = oldUser.name;
+                      const oldMember = await prisma.member.findUnique({
+                        where: { id: change.oldValue },
+                        include: { user: true }
+                      });
+                      oldValue = oldMember?.user.name || "Unknown User";
                     } catch {
                       oldValue = "Unknown User";
                     }
@@ -547,9 +548,11 @@ const app = new Hono()
                   
                   if (change.newValue) {
                     try {
-                      const newMember = await databases.getDocument(DATABASE_ID, MEMBERS_ID, change.newValue);
-                      const newUser = await users.get(newMember.userId);
-                      newValue = newUser.name;
+                      const newMember = await prisma.member.findUnique({
+                        where: { id: change.newValue },
+                        include: { user: true }
+                      });
+                      newValue = newMember?.user.name || "Unknown User";
                     } catch {
                       newValue = "Unknown User";
                     }
@@ -558,12 +561,14 @@ const app = new Hono()
                   }
                   break;
                 case "serviceId":
-                  action = TaskHistoryAction.UPDATED; // Temporary: Use UPDATED until SERVICE_CHANGED is added to DB
+                  action = TaskHistoryAction.SERVICE_CHANGED;
                   // Resolve service IDs to names
                   if (change.newValue) {
                     try {
-                      const service = await databases.getDocument(DATABASE_ID, SERVICES_ID, change.newValue);
-                      newValue = service.name;
+                      const service = await prisma.service.findUnique({
+                        where: { id: change.newValue }
+                      });
+                      newValue = service?.name || "Unknown Service";
                     } catch {
                       newValue = "Unknown Service";
                     }
@@ -582,28 +587,22 @@ const app = new Hono()
                   action = change.newValue ? TaskHistoryAction.ATTACHMENT_ADDED : TaskHistoryAction.ATTACHMENT_REMOVED;
                   break;
                 case "followedIds":
-                  action = TaskHistoryAction.UPDATED; // Temporary: Use UPDATED until FOLLOWERS_CHANGED is added to DB
+                  action = TaskHistoryAction.FOLLOWERS_CHANGED;
                   break;
                 default:
                   action = TaskHistoryAction.UPDATED;
               }
 
-              const historyData = {
-                taskId,
-                userId: user.id,
-                userName: userInfo.name,
-                action: action as string, // Convert enum to string
-                field: change.field,
-                oldValue,
-                newValue,
-                timestamp: new Date().toISOString(),
-              };
-              await databases.createDocument(
-                DATABASE_ID,
-                TASK_HISTORY_ID,
-                ID.unique(),
-                historyData
-              );
+              await prisma.taskHistory.create({
+                data: {
+                  taskId,
+                  userId: user.id,
+                  action,
+                  field: change.field,
+                  oldValue,
+                  newValue,
+                }
+              });
             }
           } catch (historyError) {
             console.error("Failed to create task history entries:", historyError);
@@ -611,7 +610,14 @@ const app = new Hono()
           }
         }
 
-        return c.json({ data: task });
+        return c.json({ 
+          data: {
+            ...task,
+            dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+            createdAt: task.createdAt.toISOString(),
+            updatedAt: task.updatedAt.toISOString(),
+          }
+        });
       } catch (error) {
         console.error("Task update error:", error);
         return c.json({ error: error instanceof Error ? error.message : "Failed to update task" }, 500);
@@ -624,8 +630,7 @@ const app = new Hono()
     sessionMiddleware,
     async (c) => {
       const currentUser = c.get("user");
-      const databases = c.get("databases")
-      const { users } = await createAdminClient();
+      const prisma = c.get("prisma");
       const { taskId } = c.req.param();
 
       // Validate taskId format
@@ -633,24 +638,43 @@ const app = new Hono()
         return c.json({ error: "Invalid task ID format" }, 400);
       }
 
-      let task: Task;
-      try {
-        task = await databases.getDocument<Task>(
-          DATABASE_ID,
-          TASKS_ID,
-          taskId
-        );
-      } catch (error: unknown) {
-        if (error && typeof error === 'object' && 'type' in error && error.type === 'document_not_found') {
-          return c.json({ error: "Task not found" }, 404);
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: {
+          service: true,
+          assignee: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
+          followers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          }
         }
-        throw error;
+      });
+
+      if (!task) {
+        return c.json({ error: "Task not found" }, 404);
       }
 
       const currentMember = await getMember({
-        databases,
+        prisma,
         workspaceId: task.workspaceId,
-        userId: currentUser.$id
+        userId: currentUser.id
       });
 
       if (!currentMember) {
@@ -665,39 +689,24 @@ const app = new Hono()
 
       // If user is a visitor, only allow access to tasks they are following
       if (currentMember.role === MemberRole.VISITOR) {
-        const followedIds = task.followedIds ? JSON.parse(task.followedIds) : [];
-        if (!followedIds.includes(currentMember.$id)) {
+        const isFollowing = task.followers.some(follower => follower.id === currentMember.id);
+        if (!isFollowing) {
           return c.json({ error: "Unauthorized" }, 401);
         }
       }
 
-      const service = await databases.getDocument<Service>(
-        DATABASE_ID,
-        SERVICES_ID,
-        task.serviceId,
-      );
-
-      const members = await databases.listDocuments(
-        DATABASE_ID,
-        MEMBERS_ID,
-        task.assigneeId ? [Query.equal("$id", task.assigneeId)] : [],
-      );
-
-      const assignees = await Promise.all(
-        members.documents.map(async (member) => {
-          const user = await users.get(member.userId);
-          return {
-            ...member,
-            name: user.name,
-            email: user.email,
-          };
-        })
-      );
+      const assignees = task.assignee ? [{
+        ...task.assignee,
+        name: task.assignee.user.name,
+        email: task.assignee.user.email,
+      }] : [];
 
       return c.json({
         data: {
           ...task,
-          service,
+          dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+          createdAt: task.createdAt.toISOString(),
+          updatedAt: task.updatedAt.toISOString(),
           assignees,
         },
       });

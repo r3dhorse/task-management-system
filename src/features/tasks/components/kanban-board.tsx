@@ -160,11 +160,11 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
               >
                 {tasks.map((task, index) => (
                   <KanbanCard 
-                    key={task.$id} 
+                    key={task.id} 
                     task={task} 
                     index={index} 
                     isDragDisabled={isArchived} // Disable dragging for archived tasks
-                    isBeingDragged={dragState.draggedTaskId === task.$id}
+                    isBeingDragged={dragState.draggedTaskId === task.id}
                   />
                 ))}
                 {provided.placeholder}
@@ -296,11 +296,11 @@ export const KanbanBoard = ({ data, onChange, onRequestBacklog }: KanbanBoardPro
         navigator.vibrate(50);
       }
 
-      let updatesPayload: { $id: string; status?: TaskStatus; position: number }[] = [];
+      let updatesPayload: { id: string; status?: TaskStatus; position: number }[] = [];
 
       if (sourceStatus !== destStatus) {
         const tasksToUpdate = [...data];
-        const taskToMove = tasksToUpdate.find((task) => task.$id === taskId);
+        const taskToMove = tasksToUpdate.find((task) => task.id === taskId);
         
         if (!taskToMove) {
           console.error("Task not found for ID:", taskId);
@@ -310,7 +310,7 @@ export const KanbanBoard = ({ data, onChange, onRequestBacklog }: KanbanBoardPro
         taskToMove.status = destStatus;
         
         updatesPayload.push({
-          $id: taskToMove.$id,
+          id: taskToMove.id,
           status: destStatus,
           position: Math.min((destination.index + 1) * 1000, 1_000_000),
         });
@@ -320,15 +320,15 @@ export const KanbanBoard = ({ data, onChange, onRequestBacklog }: KanbanBoardPro
         // Update task with correct API format
         const taskUpdate = updatesPayload[0];
         updateTask({
-          param: { taskId: taskUpdate.$id },
+          param: { taskId: taskUpdate.id },
           json: {
             name: taskToMove.name,
             status: taskUpdate.status!,
             serviceId: taskToMove.serviceId,
-            dueDate: taskToMove.dueDate,
-            assigneeId: taskToMove.assigneeId,
-            description: taskToMove.description,
-            attachmentId: taskToMove.attachmentId,
+            dueDate: taskToMove.dueDate || undefined,
+            assigneeId: taskToMove.assigneeId || undefined,
+            description: taskToMove.description || undefined,
+            attachmentId: taskToMove.attachmentId || undefined,
           }
         });
       } else {
@@ -343,14 +343,14 @@ export const KanbanBoard = ({ data, onChange, onRequestBacklog }: KanbanBoardPro
         const minimumPosition = tasksToUpdate[0]?.position ?? 0;
 
         updatesPayload = tasksToUpdate.map((task, index) => ({
-          $id: task.$id,
+          id: task.id,
           status: sourceStatus,
           position: minimumPosition + (index + 1) * 1000,
         }));
 
         onChange?.(
           data.map((task) => {
-            const update = updatesPayload.find((u) => u.$id === task.$id);
+            const update = updatesPayload.find((u) => u.id === task.id);
             if (update) {
               return { ...task, ...update };
             }
@@ -360,22 +360,22 @@ export const KanbanBoard = ({ data, onChange, onRequestBacklog }: KanbanBoardPro
 
         // Update each task with correct API format
         updatesPayload.forEach((update) => {
-          const task = data.find(t => t.$id === update.$id);
+          const task = data.find(t => t.id === update.id);
           if (!task) {
-            console.error("Task not found for position update:", update.$id);
+            console.error("Task not found for position update:", update.id);
             return;
           }
           
           updateTask({
-            param: { taskId: update.$id },
+            param: { taskId: update.id },
             json: {
               name: task.name,
               status: update.status!,
               serviceId: task.serviceId,
-              dueDate: task.dueDate,
-              assigneeId: task.assigneeId,
-              description: task.description,
-              attachmentId: task.attachmentId,
+              dueDate: task.dueDate || undefined,
+              assigneeId: task.assigneeId || undefined,
+              description: task.description || undefined,
+              attachmentId: task.attachmentId || undefined,
             }
           });
         });

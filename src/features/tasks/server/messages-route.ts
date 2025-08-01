@@ -1,61 +1,113 @@
 import { Hono } from "hono";
-import { ID, Query, Permission, Role } from "node-appwrite";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 
 import { getMember } from "@/features/members/utils";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import { DATABASE_ID, TASK_MESSAGES_ID } from "@/config";
 
 const app = new Hono()
   .get(
-    "/:taskId",
+    "/",
     sessionMiddleware,
-    zValidator("param", z.object({ taskId: z.string() })),
-    zValidator("query", z.object({ workspaceId: z.string().optional() })),
+    zValidator("query", z.object({ 
+      workspaceId: z.string(),
+      taskId: z.string().optional()
+    })),
     async (c) => {
-      const { taskId } = c.req.valid("param");
-      const { workspaceId } = c.req.valid("query");
       const user = c.get("user");
-
+      const prisma = c.get("prisma");
+      const { workspaceId, taskId } = c.req.valid("query");
+      
+      console.log("=== Messages Route Debug ===");
+      console.log("workspaceId:", workspaceId);
+      console.log("taskId:", taskId);
+      
       if (!user) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      // If workspaceId is provided, verify membership
-      if (workspaceId) {
-        const member = await getMember({
-          databases: c.get("databases"),
-          workspaceId,
-          userId: user.$id,
+      const member = await getMember({
+        prisma,
+        workspaceId,
+        userId: user.id,
+      });
+
+      if (!member) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      // If taskId is provided, get messages for that specific task
+      if (taskId) {
+        // Verify the task exists and belongs to the workspace
+        const task = await prisma.task.findFirst({
+          where: {
+            id: taskId,
+            workspaceId,
+          },
         });
 
-        if (!member) {
-          return c.json({ error: "Unauthorized" }, 401);
+        if (!task) {
+          return c.json({ error: "Task not found" }, 404);
+        }
+
+        try {
+          const messages = await prisma.taskMessage.findMany({
+            where: {
+              taskId,
+              workspaceId,
+            },
+            include: {
+              sender: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                }
+              }
+            },
+            orderBy: {
+              createdAt: 'asc'
+            }
+          });
+
+          // Transform messages to match expected format
+          const transformedMessages = messages.map(message => ({
+            id: message.id,
+            taskId: message.taskId,
+            senderId: message.senderId,
+            workspaceId: message.workspaceId,
+            content: message.content,
+            timestamp: message.createdAt.toISOString(),
+            attachmentId: message.attachmentId,
+            attachmentName: message.attachmentName,
+            attachmentSize: message.attachmentSize,
+            attachmentType: message.attachmentType,
+            sender: message.sender,
+          }));
+
+          return c.json({ 
+            data: {
+              documents: transformedMessages,
+              total: transformedMessages.length,
+            }
+          });
+        } catch (error) {
+          console.error("Error fetching task messages:", error);
+          return c.json({ 
+            error: "Failed to fetch messages", 
+            details: error instanceof Error ? error.message : "Unknown error" 
+          }, 500);
         }
       }
-
-      // Use user's database client to respect Appwrite permissions
-      const databases = c.get("databases");
-
-      try {
-        const messages = await databases.listDocuments(
-          DATABASE_ID,
-          TASK_MESSAGES_ID,
-          [
-            Query.equal("taskId", taskId),
-            Query.orderAsc("timestamp"),
-          ]
-        );
-
-        return c.json({ data: messages });
-      } catch (error) {
-        console.error("Error fetching task messages:", error);
-        return c.json({ 
-          error: "Failed to fetch messages", 
-          details: error instanceof Error ? error.message : "Unknown error" 
-        }, 500);
-      }
+      
+      // If no taskId provided, return empty messages (for general workspace messages)
+      return c.json({ 
+        data: {
+          documents: [],
+          total: 0,
+        }
+      });
     },
   )
   .post(
@@ -86,67 +138,74 @@ const app = new Hono()
         attachmentType
       } = c.req.valid("json");
       const user = c.get("user");
+      const prisma = c.get("prisma");
 
       if (!user) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
       const member = await getMember({
-        databases: c.get("databases"),
+        prisma,
         workspaceId,
-        userId: user.$id,
+        userId: user.id,
       });
 
       if (!member) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      // Use user's database client to respect Appwrite permissions
-      const databases = c.get("databases");
+      // Verify the task exists and belongs to the workspace
+      const task = await prisma.task.findFirst({
+        where: {
+          id: taskId,
+          workspaceId,
+        },
+      });
+
+      if (!task) {
+        return c.json({ error: "Task not found" }, 404);
+      }
 
       try {
-        const messageData: {
-          taskId: string;
-          senderId: string;
-          senderName: string;
-          content: string;
-          timestamp: string;
-          workspaceId: string;
-          attachmentId?: string;
-          attachmentName?: string;
-          attachmentSize?: string;
-          attachmentType?: string;
-        } = {
-          taskId,
-          senderId: user.$id,
-          senderName: user.name || "Unknown User",
-          content: content.trim(),
-          timestamp: new Date().toISOString(),
-          workspaceId,
+        const message = await prisma.taskMessage.create({
+          data: {
+            taskId,
+            senderId: user.id,
+            workspaceId,
+            content: content.trim(),
+            attachmentId,
+            attachmentName,
+            attachmentSize,
+            attachmentType,
+          },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              }
+            }
+          }
+        });
+
+        // Transform to match expected format
+        const transformedMessage = {
+          id: message.id,
+          taskId: message.taskId,
+          senderId: message.senderId,
+          workspaceId: message.workspaceId,
+          content: message.content,
+          timestamp: message.createdAt.toISOString(),
+          attachmentId: message.attachmentId,
+          attachmentName: message.attachmentName,
+          attachmentSize: message.attachmentSize,
+          attachmentType: message.attachmentType,
+          sender: message.sender,
         };
 
-        // Add attachment fields if provided
-        if (attachmentId) {
-          messageData.attachmentId = attachmentId;
-          messageData.attachmentName = attachmentName;
-          messageData.attachmentSize = attachmentSize;
-          messageData.attachmentType = attachmentType;
-        }
-
-        const message = await databases.createDocument(
-          DATABASE_ID,
-          TASK_MESSAGES_ID,
-          ID.unique(),
-          messageData,
-          [
-            Permission.read(Role.user(user.$id)),
-            Permission.update(Role.user(user.$id)),
-            Permission.delete(Role.user(user.$id)),
-            Permission.read(Role.any()), // Allow any authenticated user to read
-          ]
-        );
-
-        return c.json({ data: message });
+        return c.json({ data: transformedMessage });
       } catch (error) {
         console.error("Error creating task message:", error);
         return c.json({ 

@@ -1,33 +1,39 @@
 import { Hono } from "hono";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import { createAdminClient } from "@/lib/appwrite";
-import { Query } from "node-appwrite";
 
 const app = new Hono()
   .get("/",
     sessionMiddleware,
     async (c) => {
       try {
-        const { users } = await createAdminClient();
+        const prisma = c.get("prisma");
         
         // Get all users with a reasonable limit
-        const userList = await users.list([
-          Query.limit(100), // Adjust limit as needed
-          Query.orderDesc("$createdAt")
-        ]);
+        const users = await prisma.user.findMany({
+          take: 100, // Limit to 100 users
+          orderBy: {
+            createdAt: 'desc'
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            createdAt: true,
+          }
+        });
 
-        // Format the response to only include necessary user data
-        const formattedUsers = userList.users.map(user => ({
-          $id: user.$id,
+        // Format the response to match expected format
+        const formattedUsers = users.map(user => ({
+          id: user.id,
           name: user.name,
           email: user.email,
-          status: user.status,
+          status: true, // All users in the database are considered active
         }));
 
         return c.json({ 
           data: {
             users: formattedUsers,
-            total: userList.total
+            total: formattedUsers.length
           }
         });
       } catch (error) {

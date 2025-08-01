@@ -4,11 +4,13 @@ import { GetTaskMessagesRequest } from "../types/messages";
 
 export const useGetTaskMessages = ({ taskId, workspaceId }: GetTaskMessagesRequest) => {
   const query = useQuery({
-    queryKey: ["task-messages", taskId],
+    queryKey: ["task-messages", taskId, workspaceId],
     queryFn: async () => {
-      const response = await client.api.tasks.messages[":taskId"].$get({
-        param: { taskId },
-        query: workspaceId ? { workspaceId } : {},
+      const response = await client.api.tasks.messages.$get({
+        query: { 
+          workspaceId: workspaceId || '', 
+          taskId: taskId || ''
+        },
       });
 
       if (!response.ok) {

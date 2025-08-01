@@ -26,7 +26,7 @@ export const useCreateTaskMessage = () => {
     
     // Optimistic update - show message immediately
     onMutate: async ({ json }) => {
-      const queryKey = ["task-messages", json.taskId];
+      const queryKey = ["task-messages", json.taskId, json.workspaceId];
       
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey });
@@ -35,18 +35,13 @@ export const useCreateTaskMessage = () => {
       const previousMessages = queryClient.getQueryData(queryKey);
       
       // Get current user data for optimistic message
-      const currentUser = queryClient.getQueryData(['current-user']) as { $id: string; name: string } | undefined;
+      const currentUser = queryClient.getQueryData(['current']) as { id: string; name: string } | undefined;
       
       // Create optimistic message
       const optimisticMessage: TaskMessage = {
-        $id: `temp-${Date.now()}`,
-        $createdAt: new Date().toISOString(),
-        $updatedAt: new Date().toISOString(),
-        $permissions: [],
-        $databaseId: "",
-        $collectionId: "",
+        id: `temp-${Date.now()}`,
         taskId: json.taskId,
-        senderId: currentUser?.$id || "temp-user",
+        senderId: currentUser?.id || "temp-user",
         senderName: currentUser?.name || "You",
         content: json.content,
         timestamp: new Date().toISOString(),
@@ -55,6 +50,11 @@ export const useCreateTaskMessage = () => {
         attachmentName: json.attachmentName,
         attachmentSize: json.attachmentSize,
         attachmentType: json.attachmentType,
+        sender: {
+          id: currentUser?.id || "temp-user",
+          name: currentUser?.name || "You",
+          email: null,
+        }
       };
       
       // Optimistically update the cache
@@ -72,13 +72,14 @@ export const useCreateTaskMessage = () => {
     onSuccess: (data) => {
       // Check if response has data property (success case)
       if ('data' in data) {
-        const queryKey = ["task-messages", (data as { data: TaskMessage }).data.taskId];
+        const messageData = (data as { data: TaskMessage }).data;
+        const queryKey = ["task-messages", messageData.taskId, messageData.workspaceId];
         queryClient.setQueryData(queryKey, (old: { documents: TaskMessage[] } | undefined) => {
           if (!old) return { documents: [(data as { data: TaskMessage }).data] };
           
           // Remove temporary message and add real one
           const filteredMessages = old.documents.filter(
-            (msg: TaskMessage) => !msg.$id.startsWith('temp-')
+            (msg: TaskMessage) => !msg.id.startsWith('temp-')
           );
           
           return {
@@ -96,7 +97,7 @@ export const useCreateTaskMessage = () => {
       // Revert optimistic update
       if (context && typeof context === 'object' && 'previousMessages' in context) {
         queryClient.setQueryData(
-          ["task-messages", variables.json.taskId], 
+          ["task-messages", variables.json.taskId, variables.json.workspaceId], 
           (context as { previousMessages: unknown }).previousMessages
         );
       }

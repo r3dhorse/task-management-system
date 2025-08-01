@@ -23,14 +23,32 @@ export const useUpdateTask = () => {
       const response = await client.api.tasks[":taskId"]["$patch"]({ json, param, });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: "Unknown error" })) as { error?: string };
-        throw new Error(errorData.error || `Failed to update task (${response.status})`);
+        let errorMessage = `Failed to update task (${response.status})`;
+        try {
+          const errorData = await response.json();
+          console.log("Update task error response:", errorData);
+          
+          // Handle different error formats
+          if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          } else if (errorData.error) {
+            errorMessage = typeof errorData.error === 'string' ? errorData.error : JSON.stringify(errorData.error);
+          } else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+        }
+        
+        throw new Error(errorMessage);
       }
       return await response.json();
     },
 
     onError: (error) => {
-      toast.error(error.message || "Failed to update task");
+      console.error("Task update error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update task";
+      toast.error(errorMessage);
     },
 
     onSuccess: (data, variables) => {

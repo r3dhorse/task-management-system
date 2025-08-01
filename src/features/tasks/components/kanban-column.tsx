@@ -35,7 +35,7 @@ export const KanbanColumn = ({ board, tasks }: KanbanColumnProps) => {
             className="flex flex-col gap-y-2 min-h-[200px]"
           >
             {tasks.map((task, index) => (
-              <KanbanCard key={task.$id} task={task} index={index} />
+              <KanbanCard key={task.id} task={task} index={index} />
             ))}
             {provided.placeholder}
           </div>

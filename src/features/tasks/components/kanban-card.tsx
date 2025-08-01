@@ -26,7 +26,7 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
 
   // Find the single assignee (not multiple assignees)
   const assignee = members?.documents?.find((member) => 
-    member.$id === task.assigneeId
+    member.id === task.assigneeId
   );
 
   // Find the creator from members using creatorId (which is a userId)
@@ -40,13 +40,13 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
     e.stopPropagation();
     
     // Validate task ID format before navigation
-    if (!task.$id || task.$id.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(task.$id)) {
-      console.error("Invalid task ID format:", task.$id);
+    if (!task.id || task.id.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(task.id)) {
+      console.error("Invalid task ID format:", task.id);
       toast.error("Invalid task ID format");
       return;
     }
     
-    router.push(`/workspaces/${workspaceId}/tasks/${task.$id}`);
+    router.push(`/workspaces/${workspaceId}/tasks/${task.id}`);
   };
 
   const handleCardDoubleClick = (e: React.MouseEvent) => {
@@ -54,18 +54,18 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
     e.stopPropagation();
     
     // Validate task ID format before navigation
-    if (!task.$id || task.$id.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(task.$id)) {
-      console.error("Invalid task ID format:", task.$id);
+    if (!task.id || task.id.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(task.id)) {
+      console.error("Invalid task ID format:", task.id);
       toast.error("Invalid task ID format");
       return;
     }
     
-    router.push(`/workspaces/${workspaceId}/tasks/${task.$id}`);
+    router.push(`/workspaces/${workspaceId}/tasks/${task.id}`);
   };
 
 
   return (
-    <Draggable draggableId={task.$id} index={index} isDragDisabled={isDragDisabled}>
+    <Draggable draggableId={task.id} index={index} isDragDisabled={isDragDisabled}>
       {(provided, snapshot) => (
         <div
           {...provided.draggableProps}
@@ -94,7 +94,7 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
                   </div>
                 )}
               </div>
-              <TaskActions id={task.$id} serviceId={task.serviceId} creatorId={task.creatorId}>
+              <TaskActions id={task.id} serviceId={task.serviceId} creatorId={task.creatorId}>
                 <div className="opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity duration-200 p-2 hover:bg-neutral-100 rounded touch-manipulation">
                   <MoreHorizontal className="size-4 text-neutral-500" />
                 </div>

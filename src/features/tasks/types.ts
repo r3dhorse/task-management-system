@@ -1,5 +1,3 @@
-import { Models } from "node-appwrite"
-
 export enum TaskStatus {
   BACKLOG = "BACKLOG",
   TODO = "TODO",
@@ -9,22 +7,33 @@ export enum TaskStatus {
   ARCHIVED = "ARCHIVED" // For soft-deleted tasks, accessible by admins and members
 };
 
-export type Task = Models.Document & {
+export type Task = {
+  id: string;
   name: string;
   status: TaskStatus;
   workspaceId: string;
-  assigneeId: string;
+  assigneeId: string | null;
   serviceId: string;
   position: number;
-  dueDate: string;
-  description?: string;
-  attachmentId?: string;
+  dueDate: string | null;
+  description?: string | null;
+  attachmentId?: string | null;
   followedIds?: string; // JSON string array of user IDs following this task
-  creatorId?: string; // User ID of the task creator
+  creatorId?: string | null; // User ID of the task creator
   isConfidential?: boolean; // If true, only visible to creator, assignee, and followers
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type PopulatedTask = Task & {
-  service?: Models.Document;
-  assignees?: Models.Document[];
+  service?: {
+    id: string;
+    name: string;
+    workspaceId: string;
+  };
+  assignees?: Array<{
+    id: string;
+    name: string;
+    email: string;
+  }>;
 }
