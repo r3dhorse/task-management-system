@@ -213,7 +213,7 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
 CollapsibleColumn.displayName = "CollapsibleColumn";
 
 export const KanbanBoard = ({ data, onChange, onRequestBacklog }: KanbanBoardProps) => {
-  const { mutate: updateTask, isPending: isUpdating } = useUpdateTask();
+  const { mutate: updateTask, isPending: isUpdating } = useUpdateTask({ showSuccessToast: false });
   
   // Track expanded state for each column
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({

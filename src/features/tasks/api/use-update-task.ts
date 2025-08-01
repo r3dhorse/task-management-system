@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 type ResponseType = InferResponseType<typeof client.api.tasks[":taskId"]["$patch"], 200>;
 type RequestType = InferRequestType<typeof client.api.tasks[":taskId"]["$patch"]>;
 
-export const useUpdateTask = () => {
+export const useUpdateTask = (options?: { showSuccessToast?: boolean }) => {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -53,7 +53,11 @@ export const useUpdateTask = () => {
 
     onSuccess: (data, variables) => {
       router.refresh();
-      toast.success("Task updated successfully");
+      
+      // Only show success toast if explicitly requested (default: true)
+      if (options?.showSuccessToast !== false) {
+        toast.success("Task updated successfully");
+      }
       
       // Invalidate all queries to ensure fresh data
       queryClient.invalidateQueries();
