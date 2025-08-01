@@ -1,5 +1,3 @@
-import { Models } from "node-appwrite";
-
 export enum TaskHistoryAction {
   CREATED = "CREATED",
   UPDATED = "UPDATED",
@@ -15,7 +13,8 @@ export enum TaskHistoryAction {
   FOLLOWERS_CHANGED = "FOLLOWERS_CHANGED"
 }
 
-export interface TaskHistoryEntry extends Models.Document {
+export interface TaskHistoryEntry {
+  id: string;
   taskId: string;
   userId: string;
   userName: string;

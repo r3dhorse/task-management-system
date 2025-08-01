@@ -46,7 +46,7 @@ export const TaskHistory = ({ taskId }: TaskHistoryProps) => {
   return (
     <div className="space-y-4 pt-4">
       {history.map((entry, index) => (
-        <div key={entry.$id} className="relative">
+        <div key={entry.id} className="relative">
           {/* Timeline line */}
           {index < history.length - 1 && (
             <div className="absolute left-1.5 top-6 w-0.5 h-8 bg-gray-200"></div>

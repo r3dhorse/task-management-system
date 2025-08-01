@@ -1,12 +1,9 @@
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { DATABASE_ID, TASK_HISTORY_ID, TASKS_ID } from "@/config";
-import { ID, Query } from "node-appwrite";
 import { z } from "zod";
-import { TaskHistoryEntry, TaskHistoryAction } from "../types/history";
+import { TaskHistoryAction } from "../types/history";
 import { getMember } from "@/features/members/utils";
-import { createAdminClient } from "@/lib/appwrite";
 
 const createHistorySchema = z.object({
   taskId: z.string(),
@@ -23,7 +20,7 @@ const app = new Hono()
     sessionMiddleware,
     async (c) => {
       console.log("Task history GET request for taskId:", c.req.param().taskId);
-      const databases = c.get("databases");
+      const prisma = c.get("prisma");
       const user = c.get("user");
       const { taskId } = c.req.param();
 
@@ -33,20 +30,18 @@ const app = new Hono()
       }
 
       // Verify task exists and user has access
-      let task;
-      try {
-        task = await databases.getDocument(DATABASE_ID, TASKS_ID, taskId);
-      } catch (error: unknown) {
-        if (error && typeof error === 'object' && 'type' in error && error.type === 'document_not_found') {
-          return c.json({ error: "Task not found" }, 404);
-        }
-        throw error;
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+      });
+
+      if (!task) {
+        return c.json({ error: "Task not found" }, 404);
       }
       
       const member = await getMember({
-        databases,
+        prisma,
         workspaceId: task.workspaceId,
-        userId: user.$id,
+        userId: user.id,
       });
 
       if (!member) {
@@ -54,19 +49,43 @@ const app = new Hono()
       }
 
       // Get history entries
-      console.log("Fetching history from collection:", TASK_HISTORY_ID);
-      const history = await databases.listDocuments<TaskHistoryEntry>(
-        DATABASE_ID,
-        TASK_HISTORY_ID,
-        [
-          Query.equal("taskId", taskId),
-          Query.orderDesc("$createdAt"),
-          Query.limit(100)
-        ]
-      );
+      console.log("Fetching history from database for taskId:", taskId);
+      const history = await prisma.taskHistory.findMany({
+        where: { taskId },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100
+      });
       
-      console.log("Found history entries:", history.documents.length);
-      return c.json({ data: history });
+      console.log("Found history entries:", history.length);
+      
+      // Transform to match expected format
+      const transformedHistory = history.map(entry => ({
+        id: entry.id,
+        taskId: entry.taskId,
+        userId: entry.userId,
+        userName: entry.user.name,
+        action: entry.action,
+        field: entry.field,
+        oldValue: entry.oldValue,
+        newValue: entry.newValue,
+        details: entry.details,
+        timestamp: entry.createdAt.toISOString(),
+      }));
+
+      return c.json({ 
+        data: { 
+          documents: transformedHistory,
+          total: transformedHistory.length 
+        } 
+      });
     }
   )
   .post(
@@ -74,8 +93,7 @@ const app = new Hono()
     sessionMiddleware,
     zValidator("json", createHistorySchema),
     async (c) => {
-      const { users } = await createAdminClient();
-      const databases = c.get("databases");
+      const prisma = c.get("prisma");
       const user = c.get("user");
       const { taskId, action, field, oldValue, newValue, details } = c.req.valid("json");
 
@@ -85,48 +103,60 @@ const app = new Hono()
       }
 
       // Verify task exists and user has access
-      let task;
-      try {
-        task = await databases.getDocument(DATABASE_ID, TASKS_ID, taskId);
-      } catch (error: unknown) {
-        if (error && typeof error === 'object' && 'type' in error && error.type === 'document_not_found') {
-          return c.json({ error: "Task not found" }, 404);
-        }
-        throw error;
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+      });
+
+      if (!task) {
+        return c.json({ error: "Task not found" }, 404);
       }
       
       const member = await getMember({
-        databases,
+        prisma,
         workspaceId: task.workspaceId,
-        userId: user.$id,
+        userId: user.id,
       });
 
       if (!member) {
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      // Get user info
-      const userInfo = await users.get(user.$id);
-
       // Create history entry
-      const historyEntry = await databases.createDocument(
-        DATABASE_ID,
-        TASK_HISTORY_ID,
-        ID.unique(),
-        {
+      const historyEntry = await prisma.taskHistory.create({
+        data: {
           taskId,
-          userId: user.$id,
-          userName: userInfo.name,
+          userId: user.id,
           action,
           field,
           oldValue,
           newValue,
           details,
-          timestamp: new Date().toISOString(),
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            }
+          }
         }
-      );
+      });
 
-      return c.json({ data: historyEntry });
+      // Transform to match expected format
+      const transformedEntry = {
+        id: historyEntry.id,
+        taskId: historyEntry.taskId,
+        userId: historyEntry.userId,
+        userName: historyEntry.user.name,
+        action: historyEntry.action,
+        field: historyEntry.field,
+        oldValue: historyEntry.oldValue,
+        newValue: historyEntry.newValue,
+        details: historyEntry.details,
+        timestamp: historyEntry.createdAt.toISOString(),
+      };
+
+      return c.json({ data: transformedEntry });
     }
   );
 
