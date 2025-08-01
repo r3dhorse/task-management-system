@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWorkspaceId } from "../hooks/use-workspace-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeftIcon, MoreVerticalIcon, UserPlusIcon, ShieldIcon, UserIcon, SearchIcon, UsersIcon } from "lucide-react";
+import { ArrowLeftIcon, MoreVerticalIcon, UserPlusIcon, ShieldIcon, UserIcon, SearchIcon, UsersIcon, UserCheckIcon } from "lucide-react";
 import Link from "next/link";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { useGetMembers } from "@/features/members/api/use-get-members";
@@ -15,28 +15,28 @@ import { MemberRole } from "@/features/members/types";
 import { useConfirm } from "@/hooks/use-confirm";
 import { AddMemberModal } from "@/features/members/components/add-member-modal";
 import { useAddMemberModal } from "@/features/members/hooks/use-add-member-modal";
+import { RegisterUserModal } from "@/features/members/components/register-user-modal";
+import { useRegisterUserModal } from "@/features/members/hooks/use-register-user-modal";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useCurrent } from "@/features/auth/api/use-current";
 
 interface PopulatedMember {
-  $id: string;
+  id: string;
   userId: string;
   workspaceId: string;
   role: MemberRole;
   name: string;
   email: string;
-  $createdAt: string;
-  $updatedAt: string;
-  $permissions: string[];
-  $collectionId: string;
-  $databaseId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const MembersList = () => {
   const workspaceId = useWorkspaceId();
   const { data: currentUser } = useCurrent();
   const addMemberModal = useAddMemberModal();
+  const registerUserModal = useRegisterUserModal();
   
   const [ConfirmDialog, confirm] = useConfirm(
     "Remove Member",
@@ -55,7 +55,7 @@ export const MembersList = () => {
   } = useUpdateMember();
 
   // Find current user's member record to check if they're admin
-  const currentMember = data?.documents?.find(member => (member as PopulatedMember).userId === currentUser?.$id) as PopulatedMember | undefined;
+  const currentMember = data?.documents?.find(member => (member as PopulatedMember).userId === currentUser?.id) as PopulatedMember | undefined;
   const isCurrentUserAdmin = currentMember?.role === MemberRole.ADMIN;
 
   const handleUpdateMember = (memberId: string, role: MemberRole) => {
@@ -92,6 +92,11 @@ export const MembersList = () => {
         onClose={addMemberModal.close}
         workspaceId={workspaceId}
       />
+      <RegisterUserModal 
+        isOpen={registerUserModal.isOpen}
+        onClose={registerUserModal.close}
+        workspaceId={workspaceId}
+      />
       
       <Card className="w-full h-full border-none shadow-none">
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 sm:p-7 space-y-0">
@@ -111,15 +116,27 @@ export const MembersList = () => {
             </div>
           </div>
           {isCurrentUserAdmin && (
-            <Button 
-              onClick={addMemberModal.open}
-              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
-              size="sm"
-            >
-              <UserPlusIcon className="size-4 mr-2" />
-              <span className="hidden sm:inline">Add Member</span>
-              <span className="sm:hidden">Add</span>
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={addMemberModal.open}
+                variant="outline"
+                className="w-full sm:w-auto"
+                size="sm"
+              >
+                <UserPlusIcon className="size-4 mr-2" />
+                <span className="hidden sm:inline">Add Member</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+              <Button 
+                onClick={registerUserModal.open}
+                className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+                size="sm"
+              >
+                <UserCheckIcon className="size-4 mr-2" />
+                <span className="hidden sm:inline">Register New User</span>
+                <span className="sm:hidden">Register</span>
+              </Button>
+            </div>
           )}
         </CardHeader>
 
@@ -167,7 +184,7 @@ export const MembersList = () => {
               filteredMembers.map((member) => {
                 const populatedMember = member as PopulatedMember;
                 return (
-                <Fragment key={member.$id}>
+                <Fragment key={member.id}>
                   <div className="flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border bg-white hover:bg-gray-50 transition-colors">
                     <Avatar className="h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0">
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-semibold">
@@ -197,7 +214,7 @@ export const MembersList = () => {
                               Member
                             </Badge>
                           )}
-                          {populatedMember.userId === currentUser?.$id && (
+                          {populatedMember.userId === currentUser?.id && (
                             <Badge variant="outline" className="text-blue-600 border-blue-200 text-xs">
                               You
                             </Badge>
@@ -219,7 +236,7 @@ export const MembersList = () => {
                         <DropdownMenuContent side="bottom" align="end">
                           {populatedMember.role !== MemberRole.ADMIN && (
                             <DropdownMenuItem
-                              onClick={() => handleUpdateMember(populatedMember.$id, MemberRole.ADMIN)}
+                              onClick={() => handleUpdateMember(populatedMember.id, MemberRole.ADMIN)}
                               disabled={isUpdatingMember}
                               className="flex items-center gap-2"
                             >
@@ -229,7 +246,7 @@ export const MembersList = () => {
                           )}
                           {populatedMember.role !== MemberRole.MEMBER && (
                             <DropdownMenuItem
-                              onClick={() => handleUpdateMember(populatedMember.$id, MemberRole.MEMBER)}
+                              onClick={() => handleUpdateMember(populatedMember.id, MemberRole.MEMBER)}
                               disabled={isUpdatingMember}
                               className="flex items-center gap-2"
                             >
@@ -239,7 +256,7 @@ export const MembersList = () => {
                           )}
                           {populatedMember.role !== MemberRole.VISITOR && (
                             <DropdownMenuItem
-                              onClick={() => handleUpdateMember(populatedMember.$id, MemberRole.VISITOR)}
+                              onClick={() => handleUpdateMember(populatedMember.id, MemberRole.VISITOR)}
                               disabled={isUpdatingMember}
                               className="flex items-center gap-2"
                             >
@@ -248,7 +265,7 @@ export const MembersList = () => {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
-                            onClick={() => handleDeleteMember(populatedMember.$id)}
+                            onClick={() => handleDeleteMember(populatedMember.id)}
                             disabled={isDeletingMember}
                             className="flex items-center gap-2 text-red-600 focus:text-red-600"
                           >
@@ -269,10 +286,16 @@ export const MembersList = () => {
                   {search ? 'Try adjusting your search terms' : 'This workspace has no members yet'}
                 </p>
                 {isCurrentUserAdmin && !search && (
-                  <Button onClick={addMemberModal.open} className="bg-blue-600 hover:bg-blue-700" size="sm">
-                    <UserPlusIcon className="h-4 w-4 mr-2" />
-                    Add First Member
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                    <Button onClick={addMemberModal.open} variant="outline" size="sm">
+                      <UserPlusIcon className="h-4 w-4 mr-2" />
+                      Add Member
+                    </Button>
+                    <Button onClick={registerUserModal.open} className="bg-blue-600 hover:bg-blue-700" size="sm">
+                      <UserCheckIcon className="h-4 w-4 mr-2" />
+                      Register New User
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
