@@ -5,58 +5,87 @@ import { sessionMiddleware } from "@/lib/session-middleware";
 import { getWorkspaceMember } from "@/lib/auth-utils";
 
 const app = new Hono()
-  .get("/", sessionMiddleware, async (c) => {
-    const user = c.get("user");
-    const prisma = c.get("prisma");
+  .get(
+    "/",
+    sessionMiddleware,
+    zValidator(
+      "query",
+      z.object({
+        page: z.string().optional().transform(val => val ? parseInt(val) : 1),
+        limit: z.string().optional().transform(val => val ? parseInt(val) : 20),
+        type: z.enum(["MENTION", "NEW_MESSAGE", "TASK_ASSIGNED", "TASK_UPDATE", "TASK_COMMENT"]).optional(),
+      })
+    ),
+    async (c) => {
+      const user = c.get("user");
+      const prisma = c.get("prisma");
+      const { page, limit, type } = c.req.valid("query");
 
-    try {
-      const notifications = await prisma.notification.findMany({
-        where: {
+      try {
+        const skip = (page - 1) * limit;
+        
+        const where = {
           userId: user.id,
-        },
-        include: {
-          task: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          taskMessage: {
-            select: {
-              id: true,
-              content: true,
-            },
-          },
-          mentioner: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          workspace: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 50, // Limit to last 50 notifications
-      });
+          ...(type && { type }),
+        };
 
-      return c.json({
-        data: {
-          documents: notifications,
-          total: notifications.length,
-        },
-      });
-    } catch (error) {
-      console.error("Failed to fetch notifications:", error);
-      return c.json({ error: "Failed to fetch notifications" }, 500);
+        // Get total count for pagination
+        const totalCount = await prisma.notification.count({ where });
+
+        const notifications = await prisma.notification.findMany({
+          where,
+          include: {
+            task: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            taskMessage: {
+              select: {
+                id: true,
+                content: true,
+              },
+            },
+            mentioner: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            workspace: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          skip,
+          take: limit,
+        });
+
+        const totalPages = Math.ceil(totalCount / limit);
+
+        return c.json({
+          data: {
+            documents: notifications,
+            total: totalCount,
+            page,
+            limit,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+        return c.json({ error: "Failed to fetch notifications" }, 500);
+      }
     }
-  })
+  )
   .post(
     "/read",
     sessionMiddleware,

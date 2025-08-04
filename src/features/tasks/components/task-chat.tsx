@@ -73,7 +73,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
         userId: follower.user.id,
         role: follower.role || 'MEMBER', // Default role
         workspaceId: task.workspaceId,
-        joinedAt: follower.createdAt || new Date().toISOString(),
+        joinedAt: new Date().toISOString(), // Default joinedAt for followers
       }))
       .slice(0, 8); // Limit to 8 results
   }, [task?.followers, task?.workspaceId, currentUser?.id, showMentionDropdown, mentionQuery]);
@@ -252,7 +252,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       userId: follower.user?.id || '',
       role: follower.role || 'MEMBER',
       workspaceId: task.workspaceId,
-      joinedAt: follower.createdAt || new Date().toISOString(),
+      joinedAt: new Date().toISOString(), // Default joinedAt for followers
     })) || [];
     const mentions = extractMentions(messageContent, taskFollowers);
     
@@ -588,7 +588,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                                 userId: follower.user?.id || '',
                                 role: follower.role || 'MEMBER',
                                 workspaceId: task.workspaceId,
-                                joinedAt: follower.createdAt || new Date().toISOString(),
+                                joinedAt: new Date().toISOString(), // Default joinedAt for followers
                               })) || [];
                               const mentions = extractMentions(message.content, taskFollowers);
                               return mentions.length > 0 
@@ -774,7 +774,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                     >
                       <Avatar className="w-6 h-6">
                         <AvatarFallback className="text-xs bg-blue-100 text-blue-600">
-                          {getInitials(member.name)}
+                          {getInitials(member.name || '')}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
@@ -782,7 +782,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                           {member.name}
                         </div>
                         <div className="text-xs text-gray-500 truncate">
-                          @{member.name.toLowerCase().replace(/\s+/g, '')}
+                          @{(member.name || '').toLowerCase().replace(/\s+/g, '')}
                         </div>
                       </div>
                       {member.role === 'ADMIN' && (

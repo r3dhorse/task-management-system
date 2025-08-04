@@ -1,6 +1,6 @@
 "use client";
 
-import { SettingsIcon, UsersIcon, ListTodo } from "lucide-react";
+import { SettingsIcon, UsersIcon, ListTodo, Bell } from "lucide-react";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -42,6 +42,14 @@ const routes = [
     activeIcon: UsersIcon,
     serviceAware: true, // Can be service-specific
     restrictedForVisitors: true, // Visitors can't access Members
+  },
+  {
+    label: "Notifications",
+    href: "/notifications",
+    icon: Bell,
+    activeIcon: Bell,
+    serviceAware: false, // Always workspace-level
+    restrictedForVisitors: false, // Visitors can access Notifications
   },
    {
     label: "Setting",
