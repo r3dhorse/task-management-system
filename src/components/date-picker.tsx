@@ -20,8 +20,17 @@ interface DatePickerProps {
 
 export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
   ({ value, onChange, className, placeholder = "Select Date", disabled }, ref) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+
+    const handleDateSelect = (date: Date | undefined) => {
+      if (date) {
+        onChange(date);
+        setIsOpen(false); // Close popover after date selection
+      }
+    };
+
     return (
-    <Popover>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button
           ref={ref}
@@ -42,7 +51,7 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
         <Calendar
           mode="single"
           selected={value}
-          onSelect={(date) => onChange(date as Date)}
+          onSelect={handleDateSelect}
           initialFocus
         >
         </Calendar>

@@ -86,8 +86,8 @@ export const TaskPropertiesModal = ({
   return (
     <ResponsiveModal 
       open={isOpen} 
-      onOpenChange={(open) => !open && onClose()}
-      disableOutsideClick={isLoading}
+      onOpenChange={() => {}} // Disable auto-close, only close via buttons
+      disableOutsideClick={true} // Always disable outside click
     >
       <Card className="w-full max-w-2xl border-none shadow-none">
         <CardHeader className="pb-4">

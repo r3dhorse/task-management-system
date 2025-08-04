@@ -90,7 +90,9 @@ export default function MentionsPage() {
 
     // Navigate to task using the workspace ID from the notification
     if (notification.taskId && notification.workspaceId) {
-      router.push(`/workspaces/${notification.workspaceId}/tasks/${notification.taskId}`);
+      // Add a timestamp parameter to force refresh and ensure latest data is fetched
+      const url = `/workspaces/${notification.workspaceId}/tasks/${notification.taskId}?refresh=${Date.now()}`;
+      router.push(url);
     }
   };
 
@@ -211,6 +213,8 @@ export default function MentionsPage() {
         {[
           { value: "", label: "All", count: totalCount },
           { value: "MENTION", label: "Mentions" },
+          { value: "TASK_ASSIGNED", label: "Tasks" },
+          { value: "TASK_UPDATE", label: "Updates" },
         ].map((filter) => (
           <button
             key={filter.value}

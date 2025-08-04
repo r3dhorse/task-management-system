@@ -33,6 +33,7 @@ export const ResponsiveModal = ({
         <DialogContent 
           className="w-full sm:max-w-lg border-none overflow-y-auto hide-scrollbar max-h-[85vh] mx-4"
           onInteractOutside={disableOutsideClick ? (e) => e.preventDefault() : undefined}
+          onEscapeKeyDown={disableOutsideClick ? (e) => e.preventDefault() : undefined}
         >
           {title && (
             hideTitle ? (

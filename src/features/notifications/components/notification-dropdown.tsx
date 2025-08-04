@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { Bell, CheckCheck, MessageSquare, UserPlus, FileEdit, MessageCircle } from "lucide-react";
@@ -46,6 +47,7 @@ interface Notification {
 
 export const NotificationDropdown = () => {
   const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
   const { data: notifications, isLoading: isLoadingNotifications } = useGetNotifications();
   const { data: countData } = useGetNotificationCount();
   const { mutate: markAsRead } = useMarkNotificationsRead();
@@ -63,7 +65,9 @@ export const NotificationDropdown = () => {
 
     // Navigate to task using the workspace ID from the notification
     if (notification.taskId && notification.workspaceId) {
-      router.push(`/workspaces/${notification.workspaceId}/tasks/${notification.taskId}`);
+      // Add a timestamp parameter to force refresh and ensure latest data is fetched
+      const url = `/workspaces/${notification.workspaceId}/tasks/${notification.taskId}?refresh=${Date.now()}`;
+      router.push(url);
     }
   };
 
@@ -99,7 +103,7 @@ export const NotificationDropdown = () => {
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="outline" 
@@ -239,6 +243,7 @@ export const NotificationDropdown = () => {
                 size="sm"
                 className="w-full text-sm text-gray-600 hover:text-gray-900"
                 onClick={() => {
+                  setIsOpen(false);
                   router.push("/notifications");
                 }}
               >

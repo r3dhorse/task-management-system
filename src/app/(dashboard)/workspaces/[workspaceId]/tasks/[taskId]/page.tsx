@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { useGetTask } from "@/features/tasks/api/use-get-task";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetServices } from "@/features/services/api/use-get-services";
@@ -37,6 +39,8 @@ interface TaskDetailsPageProps {
 export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   const router = useRouter();
   const workspaceId = useWorkspaceId();
+  const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const [editForm, setEditForm] = useState({
     name: "",
     description: "",
@@ -75,6 +79,22 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     "This task will be archived and moved out of active views. You can still access it by filtering for 'Archived' tasks in the table view.",
     "destructive"
   );
+
+  // Handle refresh parameter from notifications
+  useEffect(() => {
+    const refreshParam = searchParams.get('refresh');
+    if (refreshParam) {
+      // Invalidate and refetch task data when coming from notification
+      queryClient.invalidateQueries({ queryKey: ["task", params.taskId] });
+      queryClient.invalidateQueries({ queryKey: ["task-messages", params.taskId] });
+      queryClient.invalidateQueries({ queryKey: ["task-history", params.taskId] });
+      
+      // Remove refresh parameter from URL without navigation
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('refresh');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [searchParams, queryClient, params.taskId]);
 
   // Validate task ID format after hooks
   const isInvalidTaskId = !params.taskId || params.taskId.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(params.taskId);

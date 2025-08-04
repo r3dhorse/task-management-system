@@ -327,6 +327,12 @@ const app = new Hono()
         } else {
           console.log(`ℹ️ Creator ${member.id} already in followers list`);
         }
+
+        // Ensure assignee is always included in followers (if different from creator)
+        if (assigneeId && assigneeId !== 'undefined' && assigneeId !== member.id && !followerIds.includes(assigneeId)) {
+          followerIds.push(assigneeId);
+          console.log(`✅ Auto-added assignee ${assigneeId} as follower to task`);
+        }
         
         // Validate required fields and convert string 'undefined' to proper values
         if (!serviceId || serviceId === 'undefined' || serviceId === '') {
@@ -382,6 +388,35 @@ const app = new Hono()
         } catch (historyError) {
           console.error("Failed to create task history entry:", historyError);
           // Don't fail the task creation if history fails
+        }
+
+        // Create task assignment notification if task is assigned to someone
+        if (task.assigneeId && task.assigneeId !== member.id) {
+          try {
+            // Get the assignee's user ID
+            const assigneeMember = await prisma.member.findUnique({
+              where: { id: task.assigneeId },
+              include: { user: true }
+            });
+            
+            if (assigneeMember) {
+              await prisma.notification.create({
+                data: {
+                  userId: assigneeMember.userId,
+                  type: "TASK_ASSIGNED",
+                  title: "Task assigned to you",
+                  message: `${user.name || 'Someone'} assigned you to task "${task.name}"`,
+                  workspaceId: task.workspaceId,
+                  taskId: task.id,
+                  mentionedBy: user.id,
+                }
+              });
+              console.log("Task assignment notification created for user:", assigneeMember.userId);
+            }
+          } catch (notificationError) {
+            console.error("Failed to create task assignment notification:", notificationError);
+            // Don't fail task creation if notification fails
+          }
         }
 
         console.log("Task created successfully:", task.id);
@@ -490,6 +525,12 @@ const app = new Hono()
                 id && typeof id === 'string' && id.trim().length > 0
               ) as string[];
               
+              // Ensure assignee is included in followers (if assignee is being updated)
+              if (updateData.assigneeId && updateData.assigneeId !== null && !validIds.includes(updateData.assigneeId)) {
+                validIds.push(updateData.assigneeId);
+                console.log(`✅ Auto-added assignee ${updateData.assigneeId} as follower during update`);
+              }
+              
               // Verify that these member IDs exist in the workspace
               const existingMembers = await prisma.member.findMany({
                 where: {
@@ -506,6 +547,17 @@ const app = new Hono()
           } catch (error) {
             console.error("Error processing followers:", error);
             // Invalid JSON, ignore followers update
+          }
+        } else if (updateData.assigneeId && updateData.assigneeId !== null) {
+          // If followers are not being explicitly updated but assignee is changing,
+          // add the new assignee to the existing followers
+          const currentFollowerIds = existingTask.followers.map(f => f.id);
+          if (!currentFollowerIds.includes(updateData.assigneeId)) {
+            const newFollowerIds = [...currentFollowerIds, updateData.assigneeId];
+            updateData.followers = {
+              set: newFollowerIds.map((id: string) => ({ id }))
+            };
+            console.log(`✅ Auto-added new assignee ${updateData.assigneeId} as follower`);
           }
         }
 
@@ -560,6 +612,80 @@ const app = new Hono()
             }
           }
         });
+
+        // Create task assignment notification if assignee changed
+        const assigneeChange = changes.find(change => change.field === 'assigneeId');
+        if (assigneeChange && assigneeChange.newValue && assigneeChange.newValue !== member.id) {
+          try {
+            // Get the assignee's user ID
+            const assigneeMember = await prisma.member.findUnique({
+              where: { id: assigneeChange.newValue },
+              include: { user: true }
+            });
+            
+            if (assigneeMember) {
+              await prisma.notification.create({
+                data: {
+                  userId: assigneeMember.userId,
+                  type: "TASK_ASSIGNED",
+                  title: "Task assigned to you",
+                  message: `${user.name || 'Someone'} assigned you to task "${task.name}"`,
+                  workspaceId: task.workspaceId,
+                  taskId: task.id,
+                  mentionedBy: user.id,
+                }
+              });
+              console.log("Task assignment notification created for user:", assigneeMember.userId);
+            }
+          } catch (notificationError) {
+            console.error("Failed to create task assignment notification:", notificationError);
+            // Don't fail task update if notification fails
+          }
+        }
+
+        // Create task update notifications for followers (for significant changes)
+        const significantChanges = changes.filter(change => 
+          ['status', 'assigneeId', 'serviceId', 'dueDate', 'name', 'description'].includes(change.field)
+        );
+
+        if (significantChanges.length > 0) {
+          try {
+            // Get all followers with their user information
+            const followers = await prisma.member.findMany({
+              where: {
+                id: { in: task.followers.map(f => f.id) }
+              },
+              include: { user: true }
+            });
+
+            // Create notifications for all followers except the person making the change
+            const notificationPromises = followers
+              .filter(follower => follower.userId !== user.id) // Don't notify the person making the change
+              .map(follower => {
+                const changeDescription = significantChanges.length === 1 
+                  ? `${significantChanges[0].field} was updated`
+                  : `${significantChanges.length} fields were updated`;
+
+                return prisma.notification.create({
+                  data: {
+                    userId: follower.userId,
+                    type: "TASK_UPDATE",
+                    title: "Task updated",
+                    message: `${user.name || 'Someone'} updated task "${task.name}" - ${changeDescription}`,
+                    workspaceId: task.workspaceId,
+                    taskId: task.id,
+                    mentionedBy: user.id,
+                  }
+                });
+              });
+
+            await Promise.all(notificationPromises);
+            console.log(`Task update notifications created for ${notificationPromises.length} followers`);
+          } catch (notificationError) {
+            console.error("Failed to create task update notifications:", notificationError);
+            // Don't fail task update if notification fails
+          }
+        }
 
         // Create history entries for changes
         if (changes.length > 0) {
