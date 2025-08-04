@@ -7,6 +7,7 @@ import services from "@/features/services/server/route";
 import tasks from "@/features/tasks/server/route";
 import taskHistory from "@/features/tasks/server/history-route";
 import taskMessages from "@/features/tasks/server/messages-route";
+import notifications from "@/features/notifications/server/route";
 import users from "@/features/users/server/route";
 
 const app = new Hono().basePath("/api");
@@ -19,6 +20,7 @@ const routes = app
   .route("/tasks/messages", taskMessages)
   .route("/tasks", tasks)
   .route("/task-history", taskHistory)
+  .route("/notifications", notifications)
   .route("/users", users)
 
 export const GET = handle(routes);

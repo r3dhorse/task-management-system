@@ -1,0 +1,102 @@
+import React from "react";
+
+export interface MentionMatch {
+  username: string;
+  startIndex: number;
+  endIndex: number;
+  member?: {
+    id: string;
+    name: string;
+    email: string;
+    userId: string;
+    role: string;
+    workspaceId: string;
+    joinedAt: string;
+  };
+}
+
+/**
+ * Extract @mentions from message content
+ * Returns array of mention matches with their positions
+ */
+export function extractMentions(content: string, members: any[] = []): MentionMatch[] {
+  const mentionRegex = /@(\w+)/g;
+  const mentions: MentionMatch[] = [];
+  let match;
+
+  while ((match = mentionRegex.exec(content)) !== null) {
+    const username = match[1].toLowerCase();
+    const startIndex = match.index;
+    const endIndex = match.index + match[0].length;
+
+    // Find matching member by name (case insensitive)
+    const member = members.find(m => 
+      m.name?.toLowerCase().includes(username) ||
+      m.name?.toLowerCase().replace(/\s+/g, '').includes(username)
+    );
+
+    mentions.push({
+      username: match[1],
+      startIndex,
+      endIndex,
+      member,
+    });
+  }
+
+  return mentions;
+}
+
+/**
+ * Render message content with highlighted mentions
+ */
+export function renderMessageWithMentions(content: string, mentions: MentionMatch[]): React.ReactNode {
+  if (mentions.length === 0) return content;
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  mentions.forEach((mention, index) => {
+    // Add text before mention
+    if (mention.startIndex > lastIndex) {
+      parts.push(content.slice(lastIndex, mention.startIndex));
+    }
+
+    // Add highlighted mention using React.createElement
+    parts.push(
+      React.createElement(
+        'span',
+        {
+          key: `mention-${index}`,
+          className: "bg-blue-100 text-blue-800 px-1 rounded font-medium"
+        },
+        `@${mention.username}`
+      )
+    );
+
+    lastIndex = mention.endIndex;
+  });
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts;
+}
+
+/**
+ * Create mention suggestions dropdown data
+ */
+export function createMentionSuggestions(members: any[]): Array<{
+  id: string;
+  name: string;
+  username: string;
+}> {
+  return members
+    .filter(member => member.name) // Only members with names
+    .map(member => ({
+      id: member.id,
+      name: member.name,
+      username: member.name.toLowerCase().replace(/\s+/g, ''),
+    }));
+}

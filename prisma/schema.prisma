@@ -68,6 +68,8 @@ model User {
   createdTasks    Task[]         @relation("TaskCreator")
   taskHistory     TaskHistory[]
   sentMessages    TaskMessage[]
+  notifications   Notification[]
+  mentionNotifications Notification[] @relation("MentionNotifications")
 
   @@map("users")
 }
@@ -82,11 +84,12 @@ model Workspace {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  owner    User      @relation("WorkspaceOwner", fields: [userId], references: [id], onDelete: Cascade)
-  members  Member[]
-  services Service[]
-  tasks    Task[]
-  messages TaskMessage[]
+  owner         User           @relation("WorkspaceOwner", fields: [userId], references: [id], onDelete: Cascade)
+  members       Member[]
+  services      Service[]
+  tasks         Task[]
+  messages      TaskMessage[]
+  notifications Notification[]
 
   @@map("workspaces")
 }
@@ -154,14 +157,15 @@ model Task {
   updatedAt     DateTime   @updatedAt
 
   // Relations
-  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  assignee  Member?       @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
-  service   Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  creator   User?         @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: SetNull)
-  followers Member[]      @relation("TaskFollowers")
-  history   TaskHistory[]
-  messages  TaskMessage[]
-  attachments TaskAttachment[]
+  workspace     Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assignee      Member?          @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  service       Service          @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  creator       User?            @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  followers     Member[]         @relation("TaskFollowers")
+  history       TaskHistory[]
+  messages      TaskMessage[]
+  attachments   TaskAttachment[]
+  notifications Notification[]
 
   @@map("tasks")
 }
@@ -212,9 +216,10 @@ model TaskMessage {
   createdAt      DateTime @default(now())
 
   // Relations
-  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  sender    User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  task          Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sender        User           @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  notifications Notification[]
 
   @@map("task_messages")
 }
@@ -233,4 +238,36 @@ model TaskAttachment {
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
   @@map("task_attachments")
+}
+
+enum NotificationType {
+  MENTION        // @username mention in chat
+  NEW_MESSAGE    // New message in task chat
+  TASK_ASSIGNED  // Task assigned to user
+  TASK_UPDATE    // Task status/details updated
+  TASK_COMMENT   // Comment added to task
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String           // Who receives the notification
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean          @default(false)
+  workspaceId String
+  taskId      String?          // Optional - for task-related notifications
+  messageId   String?          // Optional - for message-related notifications
+  mentionedBy String?          // Optional - who mentioned the user
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  task        Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskMessage TaskMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  mentioner   User?        @relation("MentionNotifications", fields: [mentionedBy], references: [id], onDelete: SetNull)
+
+  @@map("notifications")
 }

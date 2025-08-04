@@ -11,6 +11,7 @@ import { useCreateTaskModal } from "@/features/tasks/hooks/use-create-task-modal
 import { Button } from "./ui/button";
 import { LogOutIcon, Plus } from "lucide-react";
 import { useConfirm } from "@/hooks/use-confirm";
+import { NotificationDropdown } from "@/features/notifications/components/notification-dropdown";
 
 
 
@@ -49,6 +50,8 @@ export const Sidebar = () => {
           />
         </Link>
 
+        <DottedSeparator className="my-3 sm:my-4" />
+        <NotificationDropdown />
         <DottedSeparator className="my-3 sm:my-4" />
         <WorkspaceSwitcher />
         <DottedSeparator className="my-3 sm:my-4" />

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendIcon, SmileIcon, Paperclip, FileIcon, ImageIcon, X, Download } from "lucide-react";
+import { SendIcon, SmileIcon, Paperclip, FileIcon, ImageIcon, X, Download, AtSign } from "lucide-react";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { cn } from "@/lib/utils";
 import { useCurrent } from "@/features/auth/api/use-current";
@@ -16,6 +16,10 @@ import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { TaskMessage } from "../types/messages";
 import { toast } from "sonner";
+import { extractMentions, renderMessageWithMentions } from "@/features/notifications/utils/mention-utils";
+import { createMentionNotification } from "@/features/notifications/utils/create-mention-notification";
+import { useGetTask } from "../api/use-get-task";
+import { useMarkNotificationsRead } from "@/features/notifications/api/use-mark-notifications-read";
 
 interface TaskChatProps {
   taskId: string;
@@ -33,9 +37,14 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
   const [isTyping, setIsTyping] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [showMentionDropdown, setShowMentionDropdown] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
+  const [mentionStartPos, setMentionStartPos] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
+  const mentionDropdownRef = useRef<HTMLDivElement>(null);
   const workspaceId = useWorkspaceId();
   
   const { data: currentUser } = useCurrent();
@@ -44,6 +53,30 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
     workspaceId 
   });
   const { mutate: createMessage, isPending: isCreatingMessage } = useCreateTaskMessage();
+  const { data: task } = useGetTask({ taskId });
+  const { mutate: markNotificationsRead } = useMarkNotificationsRead();
+
+  // Filter task followers for mention dropdown (confidentiality)
+  const filteredMembers = useMemo(() => {
+    if (!task?.followers || !showMentionDropdown) return [];
+    
+    return task.followers
+      .filter(follower => 
+        follower.user?.name && 
+        follower.user.id !== currentUser?.id && // Don't include current user
+        follower.user.name.toLowerCase().includes(mentionQuery.toLowerCase())
+      )
+      .map(follower => ({
+        id: follower.id,
+        name: follower.user.name,
+        email: follower.user.email,
+        userId: follower.user.id,
+        role: follower.role || 'MEMBER', // Default role
+        workspaceId: task.workspaceId,
+        joinedAt: follower.createdAt || new Date().toISOString(),
+      }))
+      .slice(0, 8); // Limit to 8 results
+  }, [task?.followers, task?.workspaceId, currentUser?.id, showMentionDropdown, mentionQuery]);
 
   // Transform API messages to include isOwn property
   const messages = useMemo(() => {
@@ -89,6 +122,29 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
   useEffect(() => {
     scrollToBottom();
   }, []);
+
+  // Mark task-related notifications as read when chat is opened
+  useEffect(() => {
+    if (taskId && currentUser) {
+      markNotificationsRead({
+        json: { taskId }
+      });
+    }
+  }, [taskId, currentUser, markNotificationsRead]);
+
+  // Close mention dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mentionDropdownRef.current && !mentionDropdownRef.current.contains(event.target as Node)) {
+        setShowMentionDropdown(false);
+      }
+    };
+
+    if (showMentionDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showMentionDropdown]);
 
   const validateFile = (file: File): boolean => {
     const maxSize = 3 * 1024 * 1024; // 3MB
@@ -187,7 +243,48 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       messageData.attachmentType = attachmentData.type;
     }
 
-    createMessage({ json: messageData });
+    // Detect mentions in the message content (use task followers only)
+    const messageContent = messageData.content;
+    const taskFollowers = task?.followers?.map(follower => ({
+      id: follower.id,
+      name: follower.user?.name || '',
+      email: follower.user?.email || '',
+      userId: follower.user?.id || '',
+      role: follower.role || 'MEMBER',
+      workspaceId: task.workspaceId,
+      joinedAt: follower.createdAt || new Date().toISOString(),
+    })) || [];
+    const mentions = extractMentions(messageContent, taskFollowers);
+    
+    createMessage(
+      { json: messageData },
+      {
+        onSuccess: async (response) => {
+          // Create mention notifications after message is successfully sent
+          if (mentions.length > 0 && task && currentUser && 'data' in response) {
+            for (const mention of mentions) {
+              if (mention.member && mention.member.userId !== currentUser.id) {
+                try {
+                  await createMentionNotification({
+                    taskId,
+                    messageId: response.data.id,
+                    workspaceId,
+                    mentionedUserId: mention.member.userId,
+                    mentionerUserId: currentUser.id,
+                    mentionerName: currentUser.name || 'Unknown User',
+                    taskName: task.name,
+                    messageContent,
+                  });
+                } catch (error) {
+                  console.error('Failed to create mention notification:', error);
+                  // Don't show error to user, just log it
+                }
+              }
+            }
+          }
+        }
+      }
+    );
     
     setNewMessage("");
     setSelectedFile(null);
@@ -218,7 +315,87 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const cursorPos = e.target.selectionStart || 0;
+    
+    setNewMessage(value);
+    
+    // Check for @ mention trigger
+    const lastAtIndex = value.lastIndexOf('@', cursorPos - 1);
+    const lastSpaceIndex = value.lastIndexOf(' ', cursorPos - 1);
+    
+    if (lastAtIndex > lastSpaceIndex && lastAtIndex !== -1) {
+      // We're in a mention context
+      const query = value.slice(lastAtIndex + 1, cursorPos);
+      
+      // Only show dropdown if query doesn't contain spaces and cursor is right after @
+      if (!query.includes(' ') && cursorPos > lastAtIndex) {
+        setShowMentionDropdown(true);
+        setMentionQuery(query);
+        setMentionStartPos(lastAtIndex);
+        setSelectedMentionIndex(0);
+      } else {
+        setShowMentionDropdown(false);
+      }
+    } else {
+      setShowMentionDropdown(false);
+    }
+  };
+
+  const selectMention = (member: any) => {
+    if (!messageInputRef.current) return;
+    
+    const input = messageInputRef.current;
+    const beforeMention = newMessage.slice(0, mentionStartPos);
+    const afterMention = newMessage.slice(input.selectionStart || 0);
+    const username = member.name.toLowerCase().replace(/\s+/g, '');
+    
+    const newValue = beforeMention + `@${username} ` + afterMention;
+    setNewMessage(newValue);
+    setShowMentionDropdown(false);
+    
+    // Focus and set cursor position after the mention
+    setTimeout(() => {
+      input.focus();
+      const newCursorPos = beforeMention.length + username.length + 2; // +2 for @ and space
+      input.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Handle mention dropdown navigation
+    if (showMentionDropdown && filteredMembers.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedMentionIndex(prev => 
+          prev < filteredMembers.length - 1 ? prev + 1 : 0
+        );
+        return;
+      }
+      
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedMentionIndex(prev => 
+          prev > 0 ? prev - 1 : filteredMembers.length - 1
+        );
+        return;
+      }
+      
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        selectMention(filteredMembers[selectedMentionIndex]);
+        return;
+      }
+      
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShowMentionDropdown(false);
+        return;
+      }
+    }
+    
+    // Regular message sending
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -402,7 +579,22 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                       >
                         {message.content && (
                           <p className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
-                            {message.content}
+                            {(() => {
+                              // Use task followers for message mention highlighting (confidentiality)
+                              const taskFollowers = task?.followers?.map(follower => ({
+                                id: follower.id,
+                                name: follower.user?.name || '',
+                                email: follower.user?.email || '',
+                                userId: follower.user?.id || '',
+                                role: follower.role || 'MEMBER',
+                                workspaceId: task.workspaceId,
+                                joinedAt: follower.createdAt || new Date().toISOString(),
+                              })) || [];
+                              const mentions = extractMentions(message.content, taskFollowers);
+                              return mentions.length > 0 
+                                ? renderMessageWithMentions(message.content, mentions)
+                                : message.content;
+                            })()}
                           </p>
                         )}
 
@@ -553,13 +745,56 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
               <Input
                 ref={messageInputRef}
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder={selectedFile ? "Add a message..." : "Type a message..."}
                 className="pr-10 resize-none min-h-[40px] rounded-full border-2 border-gray-300/80 focus:border-blue-400/80 transition-colors shadow-sm"
                 maxLength={1000}
                 disabled={isUploadingFile}
               />
+              
+              {/* Mention Dropdown */}
+              {showMentionDropdown && filteredMembers.length > 0 && (
+                <div
+                  ref={mentionDropdownRef}
+                  className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50"
+                >
+                  <div className="p-2 text-xs text-gray-500 border-b bg-gray-50">
+                    <AtSign className="w-3 h-3 inline mr-1" />
+                    Mention someone
+                  </div>
+                  {filteredMembers.map((member, index) => (
+                    <button
+                      key={member.id}
+                      onClick={() => selectMention(member)}
+                      className={cn(
+                        "w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2 transition-colors",
+                        index === selectedMentionIndex && "bg-blue-50 border-l-2 border-blue-500"
+                      )}
+                    >
+                      <Avatar className="w-6 h-6">
+                        <AvatarFallback className="text-xs bg-blue-100 text-blue-600">
+                          {getInitials(member.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {member.name}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">
+                          @{member.name.toLowerCase().replace(/\s+/g, '')}
+                        </div>
+                      </div>
+                      {member.role === 'ADMIN' && (
+                        <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          Admin
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
               <EmojiPicker onEmojiSelect={handleEmojiSelect}>
                 <Button
                   size="icon"
