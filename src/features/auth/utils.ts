@@ -23,8 +23,8 @@ export const isAdminUser = (user: AuthUser | null): boolean => {
   }
   
   // Legacy Appwrite format support
-  if ('labels' in user && Array.isArray((user as any).labels)) {
-    return (user as any).labels.includes("admin");
+  if ('labels' in user && Array.isArray((user as { labels: string[] }).labels)) {
+    return (user as { labels: string[] }).labels.includes("admin");
   }
   
   return false;

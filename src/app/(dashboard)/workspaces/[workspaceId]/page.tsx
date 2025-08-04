@@ -82,9 +82,9 @@ const WorkspaceIdPage = () => {
   const isLoading = isLoadingWorkspace || isLoadingMembers || isLoadingTasks || isLoadingServices;
 
   // Find current user's member record to check role
-  const currentMember = members?.documents.find(member => 
+  const currentMember = members?.documents.find((member) => 
     (member as Member).userId === currentUser?.id
-  ) as Member;
+  ) as Member | undefined;
 
   // Redirect visitors to workspace tasks page automatically
   useEffect(() => {
@@ -123,8 +123,8 @@ const WorkspaceIdPage = () => {
 
   // Calculate member performance
   const memberPerformance: MemberPerformance[] = members?.documents
-    .filter(member => (member as Member).role !== MemberRole.VISITOR) // Exclude visitors
-    .map(member => {
+    .filter((member) => (member as Member).role !== MemberRole.VISITOR) // Exclude visitors
+    .map((member) => {
       const memberTasks = filteredTasks.filter(task => task.assigneeId === member.id);
       const memberCompletedTasks = memberTasks.filter(task => task.status === TaskStatus.DONE).length;
       const memberInProgressTasks = memberTasks.filter(task => task.status === TaskStatus.IN_PROGRESS).length;
@@ -145,7 +145,7 @@ const WorkspaceIdPage = () => {
   const topPerformers = memberPerformance.slice(0, 3);
 
   // Calculate service performance
-  const servicePerformance: ServicePerformance[] = services?.documents.map(service => {
+  const servicePerformance: ServicePerformance[] = services?.documents.map((service) => {
     const serviceTasks = filteredTasks.filter(task => task.serviceId === service.id);
     const serviceCompletedTasks = serviceTasks.filter(task => task.status === TaskStatus.DONE).length;
     const serviceInProgressTasks = serviceTasks.filter(task => task.status === TaskStatus.IN_PROGRESS).length;

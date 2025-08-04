@@ -15,7 +15,6 @@ import {
   UserIcon,
   KeyIcon,
   CheckCircleIcon,
-  AlertCircleIcon,
   EyeIcon,
   EyeOffIcon
 } from "lucide-react";
@@ -71,12 +70,12 @@ export const RegisterUserModal = ({ isOpen, onClose, workspaceId }: RegisterUser
         role: values.role,
       },
       {
-        onSuccess: (data) => {
+        onSuccess: (_data) => {
           setCreatedUser({ name: values.name, email: values.email });
           setRegistrationSuccess(true);
           form.reset();
         },
-        onError: (error) => {
+        onError: (_error) => {
           // Error handling is done in the hook
         },
       }

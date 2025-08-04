@@ -200,12 +200,12 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   })() : [];
 
   // Get follower members
-  const followers = members?.documents.filter(member => 
+  const followers = members?.documents.filter((member) => 
     followedIds.includes(member.id)
   ) || [];
 
   // Find current user's member record to check delete permissions
-  const currentMember = members?.documents.find(member => 
+  const currentMember = members?.documents.find((member) => 
     (member as Member).userId === currentUser?.id
   ) as Member;
   
@@ -225,7 +225,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       setEditForm({
         name: task.name,
         description: task.description || "",
-        status: task.status,
+        status: task.status as TaskStatus,
         assigneeId: task.assigneeId || "unassigned",
         serviceId: task.serviceId,
         dueDate: task.dueDate ? new Date(task.dueDate) : new Date(),

@@ -15,7 +15,7 @@ export const useLogin = () => {
   const router = useRouter();
 
   const mutation = useMutation<
-    any,
+    { ok?: boolean; error?: string },
     Error,
     LoginRequest
   >({

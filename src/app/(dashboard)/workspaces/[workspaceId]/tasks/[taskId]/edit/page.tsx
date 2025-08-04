@@ -63,9 +63,9 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
       setEditForm({
         name: task.name,
         description: task.description || "",
-        status: task.status,
-        assigneeId: task.assigneeId,
-        serviceId: task.serviceId,
+        status: task.status as TaskStatus,
+        assigneeId: task.assigneeId || "",
+        serviceId: task.serviceId || "",
         dueDate: task.dueDate ? new Date(task.dueDate) : new Date(),
         attachmentId: task.attachmentId || "",
       });
@@ -100,7 +100,7 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
   const handleSaveChanges = () => {
     updateTask(
       {
-        param: { taskId: task.$id },
+        param: { taskId: task.id },
         json: {
           name: editForm.name,
           description: editForm.description,
@@ -113,14 +113,14 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
       },
       {
         onSuccess: () => {
-          router.push(`/workspaces/${workspaceId}/tasks/${task.$id}`);
+          router.push(`/workspaces/${workspaceId}/tasks/${task.id}`);
         },
       }
     );
   };
 
   const handleCancel = () => {
-    router.push(`/workspaces/${workspaceId}/tasks/${task.$id}`);
+    router.push(`/workspaces/${workspaceId}/tasks/${task.id}`);
   };
 
   return (
@@ -206,7 +206,7 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
               <CardTitle>Activity History</CardTitle>
             </CardHeader>
             <CardContent>
-              <TaskHistory taskId={task.$id} />
+              <TaskHistory taskId={task.id} />
             </CardContent>
           </Card>
         </div>
@@ -254,7 +254,7 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {members?.documents.map((member) => (
-                    <SelectItem key={member.$id} value={member.$id}>
+                    <SelectItem key={member.id} value={member.id}>
                       {member.name}
                     </SelectItem>
                   ))}
@@ -279,7 +279,7 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {services?.documents.map((serv) => (
-                    <SelectItem key={serv.$id} value={serv.$id}>
+                    <SelectItem key={serv.id} value={serv.id}>
                       {serv.name}
                     </SelectItem>
                   ))}

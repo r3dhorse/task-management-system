@@ -2,9 +2,8 @@
 
 import { useCurrent } from "@/features/auth/api/use-current";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { User, Mail, Tag, Key } from "lucide-react";
+import { User, Mail, Key } from "lucide-react";
 import { ChangePasswordModal } from "@/features/auth/components/change-password-modal";
 import { useState } from "react";
 

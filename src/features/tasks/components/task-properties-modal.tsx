@@ -23,17 +23,30 @@ import {
 } from "lucide-react";
 import { TaskStatus } from "../types";
 import { Member, MemberRole } from "@/features/members/types";
+import { Service } from "@/features/services/types";
+import { Task } from "@/features/tasks/types";
+
+interface EditForm {
+  name: string;
+  description: string;
+  status: string;
+  assigneeId: string;
+  serviceId: string;
+  dueDate: Date;
+  attachmentId: string;
+  isConfidential: boolean;
+}
 
 interface TaskPropertiesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  task: any;
-  editForm: any;
-  setEditForm: (form: any) => void;
+  task: Task;
+  editForm: EditForm;
+  setEditForm: (form: EditForm) => void;
   onSave: () => void;
   isLoading?: boolean;
   members?: { documents: Member[] };
-  services?: { documents: any[] };
+  services?: { documents: Service[] };
   followers: Member[];
   canEditStatus: boolean;
   onManageFollowers: () => void;
