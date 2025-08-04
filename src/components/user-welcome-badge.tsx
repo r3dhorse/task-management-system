@@ -15,9 +15,10 @@ export const UserWelcomeBadge = () => {
   });
   
   // Find current user's member record to get role
-  const currentMember = workspaceId && members?.documents.find(member => 
-    (member as Member).userId === currentUser?.id
-  ) as Member;
+  const currentMember = workspaceId && members?.documents ? 
+    members.documents.find(member => 
+      (member as Member).userId === currentUser?.id
+    ) as Member | undefined : undefined;
 
   return (
     <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200 shadow-lg backdrop-blur-sm">

@@ -3,6 +3,7 @@
 import { formatHistoryMessage, getActionColor } from "../utils/history";
 import { formatDistanceToNow } from "date-fns";
 import { useGetTaskHistory } from "../api/use-get-task-history";
+import { TaskHistoryAction } from "../types/history";
 
 interface TaskHistoryProps {
   taskId: string;
@@ -55,7 +56,7 @@ export const TaskHistory = ({ taskId }: TaskHistoryProps) => {
           <div className="flex items-start gap-3">
             {/* Activity dot */}
             <div 
-              className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getActionColor(entry.action, entry.field)} shadow-sm`}
+              className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getActionColor(entry.action as TaskHistoryAction, entry.field || undefined)} shadow-sm`}
             ></div>
             
             {/* Content */}
@@ -63,11 +64,11 @@ export const TaskHistory = ({ taskId }: TaskHistoryProps) => {
               <div className="bg-gray-50/80 rounded-lg px-3 py-2 border border-gray-100">
                 <p className="text-sm text-gray-700 leading-relaxed">
                   {formatHistoryMessage(
-                    entry.action,
-                    entry.userName,
-                    entry.field,
-                    entry.oldValue,
-                    entry.newValue
+                    entry.action as TaskHistoryAction,
+                    entry.userName || 'Unknown User',
+                    entry.field || undefined,
+                    entry.oldValue || undefined,
+                    entry.newValue || undefined
                   )}
                 </p>
                 <p className="text-xs text-gray-500 mt-1.5 font-medium">

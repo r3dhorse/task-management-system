@@ -89,12 +89,18 @@ export const EditTaskForm = ({
   const form = useForm<z.infer<typeof trimmedSchema>>({
     resolver: zodResolver(trimmedSchema),
     defaultValues: {
-      ...initialValues,
+      status: initialValues.status,
+      name: initialValues.name,
+      description: initialValues.description || undefined,
+      serviceId: initialValues.serviceId,
       assigneeId: initialValues.assigneeId || "unassigned",
       dueDate: initialValues.dueDate
         ? new Date(initialValues.dueDate)
         : undefined,
       isConfidential: initialValues.isConfidential || false,
+      attachmentId: initialValues.attachmentId || undefined,
+      creatorId: initialValues.creatorId || undefined,
+      followedIds: initialValues.followedIds || undefined,
     }
   });
 
@@ -122,7 +128,7 @@ export const EditTaskForm = ({
 
     mutate(
       {
-        param: { taskId: initialValues.$id },
+        param: { taskId: initialValues.id },
         json: payload
       },
       {

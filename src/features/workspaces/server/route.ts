@@ -86,7 +86,7 @@ const app = new Hono()
       const { name, description } = c.req.valid("json");
 
       // Check if user is admin (required for workspace creation)
-      if (!(user as any).isAdmin) {
+      if (!user.isAdmin) {
         return c.json({ 
           error: "Unauthorized. Only admin users can create workspaces." 
         }, 403);

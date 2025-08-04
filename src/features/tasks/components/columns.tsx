@@ -82,13 +82,13 @@ export const columns: ColumnDef<PopulatedTask>[] = [
 
     cell: ({ row }) => {
       const assignees = row.original.assignees || [];
-      const assigneeWithName = assignees as Array<{ $id: string; name?: string; [key: string]: unknown }>;
+      const assigneeWithName = assignees as Array<{ id: string; name?: string; [key: string]: unknown }>;
 
       return (
         <div className="flex items-center gap-x-2">
           {assigneeWithName.length > 0 ? (
             assigneeWithName.map((assignee) => (
-              <span key={assignee.$id} className="text-sm font-medium">
+              <span key={assignee.id} className="text-sm font-medium">
                 {assignee.name || 'Unknown'}
               </span>
             ))
@@ -150,12 +150,12 @@ export const columns: ColumnDef<PopulatedTask>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const id = row.original.$id;
+      const id = row.original.id;
       const serviceId = row.original.serviceId;
       const creatorId = row.original.creatorId;
 
       return (
-        <TaskActions id={id} serviceId={serviceId} deleteOnly={true} creatorId={creatorId} >
+        <TaskActions id={id} serviceId={serviceId} deleteOnly={true} creatorId={creatorId || undefined} >
           <Button variant="ghost" className="size-8 p-0">
             <Trash2 className="size-4" />
           </Button>

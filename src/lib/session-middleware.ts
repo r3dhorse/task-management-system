@@ -24,7 +24,10 @@ export const sessionMiddleware = createMiddleware<AdditionalContext>(
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      c.set("user", user);
+      c.set("user", {
+        ...user,
+        name: user.name || undefined
+      });
       c.set("prisma", prisma);
 
       await next();

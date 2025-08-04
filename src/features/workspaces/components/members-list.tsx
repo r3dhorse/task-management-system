@@ -55,7 +55,7 @@ export const MembersList = () => {
   } = useUpdateMember();
 
   // Find current user's member record to check if they're admin
-  const currentMember = data?.documents?.find(member => (member as PopulatedMember).userId === currentUser?.id) as PopulatedMember | undefined;
+  const currentMember = data?.documents?.find(member => (member as unknown as PopulatedMember).userId === currentUser?.id) as unknown as PopulatedMember | undefined;
   const isCurrentUserAdmin = currentMember?.role === MemberRole.ADMIN;
 
   const handleUpdateMember = (memberId: string, role: MemberRole) => {
@@ -81,7 +81,7 @@ export const MembersList = () => {
 
   const filteredMembers =
     data?.documents?.filter((member) =>
-      (member as PopulatedMember).name.toLowerCase().includes(search.toLowerCase())
+      (member as unknown as PopulatedMember).name.toLowerCase().includes(search.toLowerCase())
     ) ?? [];
 
   return (
@@ -182,7 +182,7 @@ export const MembersList = () => {
               </div>
             ) : filteredMembers.length > 0 ? (
               filteredMembers.map((member) => {
-                const populatedMember = member as PopulatedMember;
+                const populatedMember = member as unknown as PopulatedMember;
                 return (
                 <Fragment key={member.id}>
                   <div className="flex items-start sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg border bg-white hover:bg-gray-50 transition-colors">

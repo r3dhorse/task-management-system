@@ -12,6 +12,9 @@ export const useGetMembers = ({
   const query = useQuery({
     queryKey: ["members", workspaceId],
     queryFn: async () => {
+      if (!workspaceId) {
+        throw new Error("Workspace ID is required");
+      }
 
       const response = await client.api.members.$get({ query: { workspaceId } });
 

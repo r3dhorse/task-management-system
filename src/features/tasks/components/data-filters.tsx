@@ -18,14 +18,14 @@ export const DataFilters = () => {
   const isLoading = isLoadingMembers || isLoadingServices;
 
   const serviceOptions = services?.documents.map((service) => ({
-    value: service.$id,
+    value: service.id,
     label: service.name,
   }));
 
   const memberOptions = members?.documents
     .filter((member) => (member as Member).role !== MemberRole.VISITOR)
     .map((member) => ({
-      value: member.$id,
+      value: member.id,
       label: member.name,
     }));
 

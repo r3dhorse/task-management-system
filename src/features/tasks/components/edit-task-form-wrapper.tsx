@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useGetTask } from "../api/use-get-task";
 import { EditTaskForm } from "./edit-task-form";
+import { Task } from "../types";
 
 interface EditTaskFormWrapperProps {
   onCancel: () => void;
@@ -29,18 +30,18 @@ export const EditTaskFormWrapper = ({
   const { data: members, isLoading: isLoadingMembers } = useGetMembers({ workspaceId });
 
   const serviceOptions = services?.documents.map((service) => ({
-    id: service.$id,
+    id: service.id,
     name: service.name,
   }));
 
   const memberOptions = members?.documents.map((member) => ({
-    id: member.$id,
+    id: member.id,
     name: member.name,
     role: (member as Member).role,
   }));
 
   const followerOptions = members?.documents.map((member) => ({
-    id: member.$id,
+    id: member.id,
     name: member.name,
   }));
 
@@ -62,7 +63,7 @@ export const EditTaskFormWrapper = ({
   return (
     <EditTaskForm
       onCancel={onCancel}
-      initialValues={initialValues}
+      initialValues={initialValues as Task}
       serviceOptions={serviceOptions ?? []}
       membertOptions={memberOptions ?? []}
       followerOptions={followerOptions ?? []}

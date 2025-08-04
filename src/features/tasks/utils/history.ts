@@ -50,8 +50,8 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
   if (newTask.assigneeId !== undefined && normalizeValue(newTask.assigneeId) !== normalizeValue(oldTask.assigneeId)) {
     changes.push({
       field: "assigneeId",
-      oldValue: oldTask.assigneeId,
-      newValue: newTask.assigneeId,
+      oldValue: oldTask.assigneeId || undefined,
+      newValue: newTask.assigneeId || undefined,
       displayName: "Assignee"
     });
   }
@@ -71,8 +71,8 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
   if (newTask.dueDate !== undefined && normalizeDateForComparison(newTask.dueDate) !== normalizeDateForComparison(oldTask.dueDate)) {
     changes.push({
       field: "dueDate",
-      oldValue: oldTask.dueDate,
-      newValue: newTask.dueDate,
+      oldValue: oldTask.dueDate || undefined,
+      newValue: newTask.dueDate || undefined,
       displayName: "Due Date"
     });
   }
@@ -82,7 +82,7 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
     changes.push({
       field: "description",
       oldValue: oldTask.description || "",
-      newValue: newTask.description,
+      newValue: newTask.description || undefined,
       displayName: "Description"
     });
   }
@@ -92,7 +92,7 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
     changes.push({
       field: "attachmentId",
       oldValue: oldTask.attachmentId || "",
-      newValue: newTask.attachmentId,
+      newValue: newTask.attachmentId || undefined,
       displayName: "Attachment"
     });
   }

@@ -56,7 +56,8 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
   const form = useForm<z.infer<typeof updateWorkspaceSchema>>({
     resolver: zodResolver(updateWorkspaceSchema),
     defaultValues: {
-      ...initialValues,
+      name: initialValues.name,
+      description: initialValues.description || undefined,
     },
   });
 
@@ -64,7 +65,7 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
     const ok = await confirmDelete();
     if (!ok) return;
     deleteWorkspace({
-      param: { workspaceId: initialValues.$id },
+      param: { workspaceId: initialValues.id },
     }, {
       onSuccess: () => {
         window.location.href = "/";
@@ -76,7 +77,7 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
     const ok = await confirmReset();
     if (!ok) return;
     resetInviteCode({
-      param: { workspaceId: initialValues.$id },
+      param: { workspaceId: initialValues.id },
     });
   }
 
@@ -87,7 +88,7 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
 
     mutate({
       form: finalValues,
-      param: { workspaceId: initialValues.$id }
+      param: { workspaceId: initialValues.id }
     }, {
       onSuccess: () => {
         form.reset();
@@ -96,7 +97,7 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
 
   };
 
-  const fullInviteLink = `${window.location.origin}/workspaces/${initialValues.$id}/join/${initialValues.inviteCode}`
+  const fullInviteLink = `${window.location.origin}/workspaces/${initialValues.id}/join/${initialValues.inviteCode}`
   const handleCopyInviteLink = () => {
     navigator.clipboard.writeText(fullInviteLink)
       .then(() => toast.success("Invite link copy to clipboard"))
@@ -111,7 +112,7 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
           <Button
             size="sm"
             variant="secondary"
-            onClick={onCancel ? onCancel : () => router.push(`/workspaces/${initialValues.$id}`)}
+            onClick={onCancel ? onCancel : () => router.push(`/workspaces/${initialValues.id}`)}
             className="flex items-center gap-2"
           >
             <ArrowLeftIcon className="w-4 h-4" />

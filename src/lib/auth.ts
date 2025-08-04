@@ -1,4 +1,5 @@
 import { NextAuthOptions } from "next-auth"
+import { Adapter } from "next-auth/adapters"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "./prisma"
@@ -11,7 +12,7 @@ const loginSchema = z.object({
 })
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -53,14 +54,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.isAdmin = (user as any).isAdmin
+        token.isAdmin = user.isAdmin
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id || token.sub
-        ;(session.user as any).isAdmin = token.isAdmin
+        session.user.id = token.id || token.sub!
+        session.user.isAdmin = token.isAdmin
       }
       return session
     },

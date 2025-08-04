@@ -22,6 +22,7 @@ import { TaskHistory } from "@/features/tasks/components/task-history";
 import { TaskChat } from "@/features/tasks/components/task-chat";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Member, MemberRole } from "@/features/members/types";
+import { Service } from "@/features/services/types";
 import { TaskStatus } from "@/features/tasks/types";
 import { ManageFollowersModal } from "@/features/tasks/components/manage-followers-modal";
 import { TaskPropertiesModal } from "@/features/tasks/components/task-properties-modal";
@@ -384,7 +385,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
             </div>
             
             <div className="flex items-center gap-3 flex-shrink-0">
-              <StatusBadge status={task.status} size="lg" className="shadow-md" />
+              <StatusBadge status={task.status as TaskStatus} size="lg" className="shadow-md" />
             </div>
           </div>
 
@@ -539,14 +540,30 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       <TaskPropertiesModal
         isOpen={isPropertiesModalOpen}
         onClose={() => setIsPropertiesModalOpen(false)}
-        task={task}
+        task={{
+          id: task.id,
+          name: task.name,
+          status: task.status as TaskStatus,
+          workspaceId: task.workspaceId,
+          assigneeId: task.assigneeId,
+          serviceId: task.serviceId,
+          position: task.position,
+          dueDate: task.dueDate ? String(task.dueDate) : null,
+          description: task.description,
+          attachmentId: task.attachmentId,
+          followedIds: JSON.stringify(task.followers?.map(f => f.id) || []),
+          creatorId: task.creatorId,
+          isConfidential: task.isConfidential,
+          createdAt: String(task.createdAt),
+          updatedAt: String(task.updatedAt),
+        }}
         editForm={editForm}
         setEditForm={setEditForm}
         onSave={handleSaveChanges}
         isLoading={isUpdating}
-        members={members}
-        services={services}
-        followers={followers}
+        members={members as { documents: Member[] } | undefined}
+        services={services as { documents: Service[] } | undefined}
+        followers={followers as Member[]}
         canEditStatus={canEditStatus}
         onManageFollowers={() => setIsFollowersModalOpen(true)}
       />

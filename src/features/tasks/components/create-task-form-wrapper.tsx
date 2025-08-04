@@ -45,7 +45,7 @@ export const CreateTaskFormWrapper = ({
     <CreateTaskForm
       onCancel={onCancel}
       workspaceOptions={workspaceOptions ?? []}
-      userOptions={userOptions ?? []}
+      userOptions={(userOptions ?? []).map(user => ({ ...user, name: user.name || 'Unknown User' }))}
       workspaceId={workspaceId}
     />
   );

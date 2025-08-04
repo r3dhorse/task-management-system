@@ -25,12 +25,6 @@ interface AddMemberModalProps {
   workspaceId: string;
 }
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  image?: string | null;
-}
 
 export const AddMemberModal = ({ isOpen, onClose, workspaceId }: AddMemberModalProps) => {
   const [search, setSearch] = useState("");
@@ -45,7 +39,7 @@ export const AddMemberModal = ({ isOpen, onClose, workspaceId }: AddMemberModalP
 
   const { mutate: addMember, isPending: isAddingMember } = useAddMember();
 
-  const handleAddUser = (user: User) => {
+  const handleAddUser = (user: { id: string; name: string | null; email: string }) => {
     setAddingUserId(user.id);
     addMember(
       {
@@ -158,7 +152,7 @@ export const AddMemberModal = ({ isOpen, onClose, workspaceId }: AddMemberModalP
                       Found {searchResults.length} user{searchResults.length !== 1 ? 's' : ''}
                     </div>
                     <div className="space-y-1">
-                      {searchResults.map((user: User) => (
+                      {searchResults.map((user) => (
                         <div
                           key={user.id}
                           className="flex items-center justify-between p-3 rounded-md bg-white border hover:border-blue-200 hover:bg-blue-50 transition-colors"
@@ -166,12 +160,12 @@ export const AddMemberModal = ({ isOpen, onClose, workspaceId }: AddMemberModalP
                           <div className="flex items-center gap-3 flex-1">
                             <Avatar className="h-8 w-8">
                               <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-semibold">
-                                {user.name.charAt(0).toUpperCase()}
+                                {(user.name || user.email).charAt(0).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 truncate">
-                                {user.name}
+                                {user.name || user.email}
                               </p>
                               <div className="flex items-center gap-1 text-xs text-gray-500">
                                 <MailIcon className="h-3 w-3" />

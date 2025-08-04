@@ -53,7 +53,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       const msg = doc as TaskMessage;
       return {
         ...msg,
-        id: msg.id || msg.$id,
+        id: msg.id,
         timestamp: new Date(msg.timestamp),
         isOwn: msg.senderId === currentUser?.id,
       };

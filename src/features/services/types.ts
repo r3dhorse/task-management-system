@@ -1,7 +1,7 @@
-import { Models } from "node-appwrite";
-
-export type Service = Models.Document & {
+export type Service = {
+  id: string;
   name: string;
   workspaceId: string;
-
+  createdAt: Date;
+  updatedAt: Date;
 };

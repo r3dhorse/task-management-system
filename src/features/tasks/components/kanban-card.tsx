@@ -94,7 +94,7 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
                   </div>
                 )}
               </div>
-              <TaskActions id={task.id} serviceId={task.serviceId} creatorId={task.creatorId}>
+              <TaskActions id={task.id} serviceId={task.serviceId} creatorId={task.creatorId || undefined}>
                 <div className="opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity duration-200 p-2 hover:bg-neutral-100 rounded touch-manipulation">
                   <MoreHorizontal className="size-4 text-neutral-500" />
                 </div>

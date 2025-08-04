@@ -34,7 +34,7 @@ export const useLogin = () => {
         throw new Error("Invalid credentials");
       }
 
-      return result;
+      return { ok: result.ok };
     },
 
     onSuccess: () => {

@@ -81,7 +81,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
   const { mutate: resetInviteCode, isPending: isResettingInviteCode } = useResetInviteCode();
 
   // Find current user's role
-  const currentMember = membersData?.documents?.find(member => (member as PopulatedMember).userId === currentUser?.id) as PopulatedMember | undefined;
+  const currentMember = membersData?.documents?.find(member => (member as unknown as PopulatedMember).userId === currentUser?.id) as unknown as PopulatedMember | undefined;
   const isAdmin = currentMember?.role === MemberRole.ADMIN;
 
   const [DeleteDialog, confirmDelete] = useConfirm(

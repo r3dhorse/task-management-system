@@ -26,30 +26,33 @@ export const useCreateTask = () => {
           console.log("Raw error response:", errorData);
           
           // Handle Zod validation errors (direct response)
-          if (errorData.issues && Array.isArray(errorData.issues)) {
+          if ('issues' in errorData && Array.isArray(errorData.issues)) {
             const errorMessage = errorData.issues[0]?.message || "Validation error";
             console.log("Using Zod validation error:", errorMessage);
             throw new Error(errorMessage);
           }
           
           // Handle standard error format: { error: "message" }
-          if (errorData.error) {
+          if ('error' in errorData && errorData.error) {
             if (typeof errorData.error === 'string') {
               console.log("Using error field (string):", errorData.error);
               throw new Error(errorData.error);
-            } else if (errorData.error.issues && Array.isArray(errorData.error.issues)) {
-              // Nested Zod error: { error: { issues: [...] } }
-              const errorMessage = errorData.error.issues[0]?.message || "Validation error";
-              console.log("Using nested Zod error:", errorMessage);
-              throw new Error(errorMessage);
-            } else {
-              console.log("Using error field (object):", errorData.error);
-              throw new Error(JSON.stringify(errorData.error));
+            } else if (typeof errorData.error === 'object' && errorData.error !== null) {
+              // Try to handle nested Zod error: { error: { issues: [...] } }
+              const errorObj = errorData.error as { issues?: { message?: string }[] };
+              if (errorObj.issues && Array.isArray(errorObj.issues)) {
+                const errorMessage = errorObj.issues[0]?.message || "Validation error";
+                console.log("Using nested Zod error:", errorMessage);
+                throw new Error(errorMessage);
+              } else {
+                console.log("Using error field (object):", errorData.error);
+                throw new Error(JSON.stringify(errorData.error));
+              }
             }
           }
           
           // Handle alternative format: { message: "message" }
-          if (errorData.message) {
+          if ('message' in errorData && errorData.message) {
             const errorMsg = typeof errorData.message === 'string' ? errorData.message : JSON.stringify(errorData.message);
             console.log("Using message field:", errorMsg);
             throw new Error(errorMsg);

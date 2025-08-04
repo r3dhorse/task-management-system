@@ -31,10 +31,10 @@ export const useUpdateTask = (options?: { showSuccessToast?: boolean }) => {
           // Handle different error formats
           if (typeof errorData === 'string') {
             errorMessage = errorData;
-          } else if (errorData.error) {
+          } else if ('error' in errorData && errorData.error) {
             errorMessage = typeof errorData.error === 'string' ? errorData.error : JSON.stringify(errorData.error);
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
+          } else if ('message' in errorData && errorData.message) {
+            errorMessage = typeof errorData.message === 'string' ? errorData.message : JSON.stringify(errorData.message);
           }
         } catch (parseError) {
           console.error("Failed to parse error response:", parseError);

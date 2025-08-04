@@ -21,13 +21,22 @@ const ServiceIdSettingsPage = async ({
   if (!user) redirect("/sign-in");
 
   try {
-    const service = await getService({
+    const serviceData = await getService({
       serviceId: params.serviceId,
     });
 
-    if (!service) {
+    if (!serviceData) {
       redirect(`/workspaces/${params.workspaceId}`);
     }
+
+    // Map Prisma result to Service type
+    const service = {
+      id: serviceData.id,
+      name: serviceData.name,
+      workspaceId: serviceData.workspaceId,
+      createdAt: serviceData.createdAt,
+      updatedAt: serviceData.updatedAt,
+    };
 
   return (
     <div className="flex flex-col gap-y-6">

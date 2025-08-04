@@ -51,7 +51,7 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
 
     deleteService(
       {
-        param: { serviceId: initialValues.$id },
+        param: { serviceId: initialValues.id },
       },
       {
         onSuccess: () => {
@@ -70,7 +70,7 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
 
     mutate({
       form: finalValues,
-      param: { serviceId: initialValues.$id }
+      param: { serviceId: initialValues.id }
     }, {
       onSuccess: () => {
         form.reset();
@@ -88,7 +88,7 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
           <Button
             size="sm"
             variant="secondary"
-            onClick={onCancel ? onCancel : () => router.push(`/workspaces/${initialValues.workspaceId}/services/${initialValues.$id}`)}
+            onClick={onCancel ? onCancel : () => router.push(`/workspaces/${initialValues.workspaceId}/services/${initialValues.id}`)}
             className="flex items-center gap-2"
           >
             <ArrowLeftIcon className="w-4 h-4" />

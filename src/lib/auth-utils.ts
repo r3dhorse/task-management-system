@@ -8,10 +8,10 @@ export async function getCurrentUser() {
   if (!session?.user) return null
   
   return {
-    id: (session.user as any).id,
+    id: session.user.id,
     email: session.user.email!,
     name: session.user.name,
-    isAdmin: (session.user as any).isAdmin || false,
+    isAdmin: session.user.isAdmin || false,
   }
 }
 
@@ -25,7 +25,7 @@ export async function requireAuth() {
 
 export async function requireAdmin() {
   const user = await requireAuth()
-  if (!(user as any).isAdmin) {
+  if (!user.isAdmin) {
     redirect("/")
   }
   return user

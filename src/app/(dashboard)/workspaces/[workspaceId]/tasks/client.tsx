@@ -197,20 +197,22 @@ export const MyTasksClient = () => {
 
   // Calculate overdue tasks
   const overdueTasks = filteredTasks.filter((task) => {
-    if (!(task as unknown as TaskDocument).dueDate) return false;
-    const dueDate = new Date((task as unknown as TaskDocument).dueDate);
+    const taskDoc = task as unknown as TaskDocument;
+    if (!taskDoc.dueDate) return false;
+    const dueDate = new Date(taskDoc.dueDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return dueDate < today && (task as unknown as TaskDocument).status !== TaskStatus.DONE;
+    return dueDate < today && taskDoc.status !== TaskStatus.DONE;
   }).length;
 
   // Calculate due this week
   const thisWeekStart = startOfWeek(new Date());
   const thisWeekEnd = endOfWeek(new Date());
   const dueThisWeek = filteredTasks.filter((task) => {
-    if (!(task as unknown as TaskDocument).dueDate) return false;
-    const dueDate = new Date((task as unknown as TaskDocument).dueDate);
-    return isAfter(dueDate, thisWeekStart) && isBefore(dueDate, thisWeekEnd) && (task as unknown as TaskDocument).status !== TaskStatus.DONE;
+    const taskDoc = task as unknown as TaskDocument;
+    if (!taskDoc.dueDate) return false;
+    const dueDate = new Date(taskDoc.dueDate);
+    return isAfter(dueDate, thisWeekStart) && isBefore(dueDate, thisWeekEnd) && taskDoc.status !== TaskStatus.DONE;
   }).length;
 
   // Calculate completion rate and productivity metrics
@@ -277,41 +279,42 @@ export const MyTasksClient = () => {
     
     switch (filterType) {
       case 'completed':
-        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.DONE);
+        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.DONE) as TaskDocument[];
         title = "Completed Tasks";
         break;
       case 'progress':
-        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.IN_PROGRESS);
+        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.IN_PROGRESS) as TaskDocument[];
         title = "In Progress Tasks";
         break;
       case 'overdue':
         filteredModalTasks = filteredTasks.filter((task) => {
-          if (!(task as unknown as TaskDocument).dueDate) return false;
-          const dueDate = new Date((task as unknown as TaskDocument).dueDate);
+          const taskDoc = task as unknown as TaskDocument;
+          if (!taskDoc.dueDate) return false;
+          const dueDate = new Date(taskDoc.dueDate);
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          return dueDate < today && (task as unknown as TaskDocument).status !== TaskStatus.DONE;
-        });
+          return dueDate < today && taskDoc.status !== TaskStatus.DONE;
+        }) as TaskDocument[];
         title = "Overdue Tasks";
         break;
       case 'total':
-        filteredModalTasks = filteredTasks;
+        filteredModalTasks = filteredTasks as TaskDocument[];
         title = "All Tasks";
         break;
       case 'todo':
-        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.TODO);
+        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.TODO) as TaskDocument[];
         title = "To Do Tasks";
         break;
       case 'backlog':
-        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.BACKLOG);
+        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.BACKLOG) as TaskDocument[];
         title = "Backlog Tasks";
         break;
       case 'review':
-        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.IN_REVIEW);
+        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.IN_REVIEW) as TaskDocument[];
         title = "In Review Tasks";
         break;
       default:
-        filteredModalTasks = filteredTasks;
+        filteredModalTasks = filteredTasks as TaskDocument[];
         title = "All Tasks";
         break;
     }
@@ -578,9 +581,10 @@ export const MyTasksClient = () => {
               className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm cursor-pointer"
               onClick={() => {
                 const thisWeekFilteredTasks = filteredTasks.filter((task) => {
-                  if (!(task as unknown as TaskDocument).dueDate) return false;
-                  const dueDate = new Date((task as unknown as TaskDocument).dueDate);
-                  return isAfter(dueDate, thisWeekStart) && isBefore(dueDate, thisWeekEnd) && (task as unknown as TaskDocument).status !== TaskStatus.DONE;
+                  const taskDoc = task as unknown as TaskDocument;
+                  if (!taskDoc.dueDate) return false;
+                  const dueDate = new Date(taskDoc.dueDate);
+                  return isAfter(dueDate, thisWeekStart) && isBefore(dueDate, thisWeekEnd) && taskDoc.status !== TaskStatus.DONE;
                 });
                 setModalTasks(thisWeekFilteredTasks as TaskDocument[]);
                 setModalTitle("Due This Week");
@@ -723,7 +727,8 @@ export const MyTasksClient = () => {
                   {filteredTasks.length > 0 ? (
                     filteredTasks.slice(0, 3).map((task, index) => {
                       const config = statusConfig[(task as unknown as TaskDocument).status as TaskStatus] || statusConfig[TaskStatus.TODO];
-                      const daysUntilDue = (task as unknown as TaskDocument).dueDate ? differenceInDays(new Date((task as unknown as TaskDocument).dueDate), new Date()) : null;
+                      const taskDoc = task as unknown as TaskDocument;
+                      const daysUntilDue = taskDoc.dueDate ? differenceInDays(new Date(taskDoc.dueDate), new Date()) : null;
                       
                       return (
                         <div 

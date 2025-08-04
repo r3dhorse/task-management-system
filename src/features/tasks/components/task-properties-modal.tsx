@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { toast } from "sonner";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +30,7 @@ import { Task } from "@/features/tasks/types";
 interface EditForm {
   name: string;
   description: string;
-  status: string;
+  status: TaskStatus;
   assigneeId: string;
   serviceId: string;
   dueDate: Date;
@@ -42,7 +43,7 @@ interface TaskPropertiesModalProps {
   onClose: () => void;
   task: Task;
   editForm: EditForm;
-  setEditForm: (form: EditForm) => void;
+  setEditForm: React.Dispatch<React.SetStateAction<EditForm>>;
   onSave: () => void;
   isLoading?: boolean;
   members?: { documents: Member[] };

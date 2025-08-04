@@ -5,7 +5,7 @@ import { createTaskSchema, updateTaskSchema } from "../schemas";
 import { getMember } from "@/features/members/utils";
 import { MemberRole } from "@/features/members/types";
 import { z } from "zod";
-import { TaskStatus } from "../types";
+import { TaskStatus, Task } from "../types";
 import { TaskHistoryAction } from "../types/history";
 import { detectTaskChanges } from "../utils/history";
 
@@ -108,7 +108,15 @@ const app = new Hono()
       }
 
       // Build the where clause for filtering
-      const where: any = {
+      const where: {
+        workspaceId: string;
+        serviceId?: string;
+        status?: TaskStatus | { not: TaskStatus };
+        assigneeId?: string | null;
+        isConfidential?: boolean;
+        dueDate?: Date;
+        name?: { contains: string; mode: 'insensitive' };
+      } = {
         workspaceId,
       };
 
@@ -302,9 +310,9 @@ const app = new Hono()
             const parsedIds = JSON.parse(followedIds);
             if (Array.isArray(parsedIds)) {
               // Filter out null, undefined, empty strings, and non-string values
-              const validIds = parsedIds.filter((id: any) => 
+              const validIds = parsedIds.filter((id: unknown) => 
                 id && typeof id === 'string' && id.trim().length > 0
-              );
+              ) as string[];
               followerIds.push(...validIds);
             }
           } catch {
@@ -446,7 +454,18 @@ const app = new Hono()
           return c.json({ error: "Visitors cannot update task status" }, 403);
         }
 
-        const updateData: any = {};
+        const updateData: {
+          name?: string;
+          serviceId?: string;
+          dueDate?: Date | null;
+          assigneeId?: string | null;
+          description?: string;
+          attachmentId?: string | null;
+          isConfidential?: boolean;
+          status?: TaskStatus;
+          position?: number;
+          followers?: { set: { id: string }[] };
+        } = {};
 
         if (name !== undefined) updateData.name = name;
         if (serviceId !== undefined) updateData.serviceId = serviceId;
@@ -467,9 +486,9 @@ const app = new Hono()
             const parsedIds = JSON.parse(followedIds);
             if (Array.isArray(parsedIds)) {
               // Filter out null, undefined, empty strings, and non-string values
-              const validIds = parsedIds.filter((id: any) => 
+              const validIds = parsedIds.filter((id: unknown) => 
                 id && typeof id === 'string' && id.trim().length > 0
-              );
+              ) as string[];
               
               // Verify that these member IDs exist in the workspace
               const existingMembers = await prisma.member.findMany({
@@ -493,18 +512,24 @@ const app = new Hono()
         // Detect what changed for history tracking
         const updatePayload = c.req.valid("json");
         // Convert Prisma task to match the expected format
-        const taskForComparison = {
-          ...existingTask,
-          $id: existingTask.id,
-          $collectionId: '',
-          $databaseId: '',
-          $createdAt: existingTask.createdAt.toISOString(),
-          $updatedAt: existingTask.updatedAt.toISOString(),
-          $permissions: [],
-          dueDate: existingTask.dueDate?.toISOString() || '',
-          followedIds: JSON.stringify(existingTask.followers.map(f => f.id))
+        const taskForComparison: Task = {
+          id: existingTask.id,
+          name: existingTask.name,
+          status: existingTask.status as TaskStatus,
+          workspaceId: existingTask.workspaceId,
+          assigneeId: existingTask.assigneeId,
+          serviceId: existingTask.serviceId,
+          position: existingTask.position,
+          dueDate: existingTask.dueDate?.toISOString() || null,
+          description: existingTask.description,
+          attachmentId: existingTask.attachmentId,
+          followedIds: JSON.stringify(existingTask.followers.map(f => f.id)),
+          creatorId: existingTask.creatorId,
+          isConfidential: existingTask.isConfidential,
+          createdAt: existingTask.createdAt.toISOString(),
+          updatedAt: existingTask.updatedAt.toISOString(),
         };
-        const changes = detectTaskChanges(taskForComparison as any, updatePayload);
+        const changes = detectTaskChanges(taskForComparison, updatePayload);
 
         const task = await prisma.task.update({
           where: { id: taskId },
