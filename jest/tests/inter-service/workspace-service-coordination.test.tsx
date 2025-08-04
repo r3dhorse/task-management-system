@@ -335,7 +335,7 @@ const WorkspaceServiceCoordination = () => {
                   View Details
                 </button>
                 <button onClick={() => console.log(`Editing task ${task.$id}`)}>
-                  Edit Task
+                  Update Task
                 </button>
               </div>
             </div>

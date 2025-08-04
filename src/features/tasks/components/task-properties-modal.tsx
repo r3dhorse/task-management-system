@@ -93,10 +93,10 @@ export const TaskPropertiesModal = ({
         <CardHeader className="pb-4">
           <CardTitle className="text-xl font-semibold flex items-center gap-2">
             <SettingsIcon className="w-5 h-5 text-blue-600" />
-            Edit Task Properties
+            Task Properties
           </CardTitle>
           <p className="text-sm text-gray-600">
-            Update task details, assignment, and settings
+            Update task information, confidentiality settings, and manage followers.
           </p>
         </CardHeader>
 

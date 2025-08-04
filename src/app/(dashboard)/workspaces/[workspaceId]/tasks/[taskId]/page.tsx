@@ -443,7 +443,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <EditIcon className="size-4 mr-2" />
-                    Edit Task
+                    Update Task
                   </Button>
                 )}
                 {canDelete && (

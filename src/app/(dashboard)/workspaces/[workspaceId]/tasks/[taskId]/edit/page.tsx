@@ -137,7 +137,7 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
             <ArrowLeftIcon className="size-4 mr-2" />
             Back
           </Button>
-          <h1 className="text-2xl font-semibold">Edit Task</h1>
+          <h1 className="text-2xl font-semibold">Update Task</h1>
         </div>
         
         <div className="flex items-center gap-x-2">

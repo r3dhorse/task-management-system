@@ -282,7 +282,7 @@ const ServicePermissionDashboard = ({ currentUserId, currentUserRole }: { curren
               
               {canEdit && (
                 <button data-testid={`edit-task-${task.$id}`}>
-                  Edit Task
+                  Update Task
                 </button>
               )}
             </div>

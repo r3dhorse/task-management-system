@@ -369,7 +369,7 @@ const MockTaskDetail = ({
             {task.description && <p>{task.description}</p>}
             {canEdit && (
               <button onClick={() => setEditMode(true)} data-testid="edit-task">
-                Edit Task
+                Update Task
               </button>
             )}
           </div>
