@@ -19,11 +19,12 @@ import { FileUpload } from "@/components/file-upload";
 import { MultiSelect } from "@/components/ui/multi-select-simple";
 import { useGetServices } from "@/features/services/api/use-get-services";
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { MemberRole } from "@/features/members/types";
+import { MemberRole, Member } from "@/features/members/types";
+import { Service } from "@/features/services/types";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
-import { EyeOffIcon } from "lucide-react";
+import { EyeOff as EyeOffIcon } from "lucide-react";
 
 interface CreateTaskFormProps {
   onCancel?: () => void;
@@ -102,12 +103,19 @@ export const CreateTaskForm = ({
   // Removed - we'll use workspace members for followers instead
 
   // Create options from the loaded data
-  const serviceOptions = services?.documents?.map((service) => ({
+  const serviceOptions = services?.documents?.map((service: Service) => ({
     id: service.id,
     name: service.name,
   })) || [];
 
-  const memberOptions = members?.documents?.map((member) => ({
+  type MemberOption = {
+    id: string;
+    name: string;
+    email: string;
+    role: MemberRole;
+  };
+
+  const memberOptions: MemberOption[] = members?.documents?.map((member: Member) => ({
     id: member.id,
     name: member.name,
     email: member.email,
@@ -115,14 +123,14 @@ export const CreateTaskForm = ({
   })) || [];
 
   // Create follower options from workspace members
-  const followerOptions = members?.documents?.map((member) => ({
+  const followerOptions = members?.documents?.map((member: Member) => ({
     value: member.id,
     label: member.name,
     email: member.email,
   })) || [];
 
   // Find current user's member record
-  const currentMember = members?.documents?.find(member => 
+  const currentMember = members?.documents?.find((member: Member) => 
     member.userId === currentUser?.id
   );
 
@@ -375,8 +383,8 @@ export const CreateTaskForm = ({
                           </div>
                         )}
                         {memberOptions
-                          .filter(member => member.role !== MemberRole.VISITOR)
-                          .map((member) => (
+                          .filter((member: MemberOption) => member.role !== MemberRole.VISITOR)
+                          .map((member: MemberOption) => (
                           <SelectItem key={member.id} value={String(member.id)}>
                             <div className="flex items-center gap-x-2 w-full">
                               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-sm font-medium text-white flex-shrink-0">
