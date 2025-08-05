@@ -42,6 +42,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           isAdmin: user.isAdmin,
+          isSuperAdmin: user.isSuperAdmin,
         }
       }
     })
@@ -55,6 +56,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.isAdmin = user.isAdmin
+        token.isSuperAdmin = user.isSuperAdmin
       }
       return token
     },
@@ -62,6 +64,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id || token.sub!
         session.user.isAdmin = token.isAdmin
+        session.user.isSuperAdmin = token.isSuperAdmin
       }
       return session
     },

@@ -1,6 +1,6 @@
 "use client";
 
-import { SettingsIcon, UsersIcon, ListTodo, Bell } from "lucide-react";
+import { SettingsIcon, UsersIcon, ListTodo, Shield } from "lucide-react";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -44,15 +44,7 @@ const routes = [
     restrictedForVisitors: true, // Visitors can't access Members
   },
   {
-    label: "Notifications",
-    href: "/notifications",
-    icon: Bell,
-    activeIcon: Bell,
-    serviceAware: false, // Always workspace-level
-    restrictedForVisitors: false, // Visitors can access Notifications
-  },
-   {
-    label: "Setting",
+  label: "Setting",
     href: "/settings",
     icon: SettingsIcon,
     activeIcon: SettingsIcon,
@@ -75,6 +67,7 @@ export const Navigation = () => {
   ) as Member;
   
   const isVisitor = currentMember?.role === MemberRole.VISITOR;
+  const isSuperAdmin = currentUser?.isSuperAdmin || false;
   
   // Check if we're currently in a service context
   const isInServiceContext = pathname.includes('/services/');
@@ -131,6 +124,24 @@ export const Navigation = () => {
           </Link>
         );
       })}
+      
+      {/* Super Admin Link */}
+      {isSuperAdmin && (
+        <>
+          <div className="my-2 h-px bg-gray-200" />
+          <Link href="/admin/users">
+            <div
+              className={cn(
+                "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation",
+                pathname === "/admin/users" && "bg-white shadow-sm hover:opacity-100 text-primary"
+              )}
+            >
+              <Shield className={cn("size-5 flex-shrink-0", pathname === "/admin/users" ? "text-primary" : "text-neutral-500")} />
+              <span className="text-sm sm:text-base truncate">User Management</span>
+            </div>
+          </Link>
+        </>
+      )}
     </ul>
   );
 };

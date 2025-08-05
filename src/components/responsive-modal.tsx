@@ -9,6 +9,7 @@ interface ResponsiveModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   disableOutsideClick?: boolean;
+  hideCloseButton?: boolean;
   title?: string;
   description?: string;
   hideTitle?: boolean;
@@ -20,6 +21,7 @@ export const ResponsiveModal = ({
   open,
   onOpenChange,
   disableOutsideClick = false,
+  hideCloseButton = false,
   title,
   description,
   hideTitle = false,
@@ -34,6 +36,7 @@ export const ResponsiveModal = ({
           className="w-full sm:max-w-lg border-none overflow-y-auto hide-scrollbar max-h-[85vh] mx-4"
           onInteractOutside={disableOutsideClick ? (e) => e.preventDefault() : undefined}
           onEscapeKeyDown={disableOutsideClick ? (e) => e.preventDefault() : undefined}
+          hideCloseButton={hideCloseButton}
         >
           {title && (
             hideTitle ? (

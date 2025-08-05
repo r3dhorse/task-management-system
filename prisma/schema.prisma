@@ -55,6 +55,7 @@ model User {
   image         String?
   password      String?   // For credentials auth
   isAdmin       Boolean   @default(false) // Replaces Appwrite "admin" label
+  isSuperAdmin  Boolean   @default(false) // System-wide super admin with user management capabilities
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

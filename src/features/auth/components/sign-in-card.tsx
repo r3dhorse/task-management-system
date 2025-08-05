@@ -20,6 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Eye, EyeOff } from "lucide-react";
 import { loginSchema } from "../schemas";
 import { useLogin } from "../api/use-login";
 import { ForgotPasswordModal } from "./forgot-password-modal";
@@ -29,6 +30,7 @@ import styles from "./sign-in-card.module.css";
 export const SignInCard = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { mutate, isPending } = useLogin();
 
   useEffect(() => {
@@ -89,13 +91,28 @@ export const SignInCard = () => {
                 <FormItem>
                   <FormLabel className="text-white/90 font-medium">Password</FormLabel>
                   <FormControl>
-                    <Input
-                      {...field}
-                      type="password"
-                      placeholder="Password"
-                      autoComplete="current-password"
-                      className="h-12 px-4 text-base bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white/50 focus:ring-white/25 backdrop-blur-sm transition-all duration-200 hover:bg-white/25 focus:bg-white/25"
-                    />
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        autoComplete="current-password"
+                        className="h-12 px-4 pr-12 text-base bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white/50 focus:ring-white/25 backdrop-blur-sm transition-all duration-200 hover:bg-white/25 focus:bg-white/25"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-0 top-0 h-12 px-3 py-0 hover:bg-transparent text-white/70 hover:text-white transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -12,6 +12,7 @@ export async function getCurrentUser() {
     email: session.user.email!,
     name: session.user.name,
     isAdmin: session.user.isAdmin || false,
+    isSuperAdmin: session.user.isSuperAdmin || false,
   }
 }
 
@@ -26,6 +27,14 @@ export async function requireAuth() {
 export async function requireAdmin() {
   const user = await requireAuth()
   if (!user.isAdmin) {
+    redirect("/")
+  }
+  return user
+}
+
+export async function requireSuperAdmin() {
+  const user = await requireAuth()
+  if (!user.isSuperAdmin) {
     redirect("/")
   }
   return user

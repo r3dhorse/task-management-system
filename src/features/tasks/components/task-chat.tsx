@@ -16,7 +16,7 @@ import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { TaskMessage } from "../types/messages";
 import { toast } from "sonner";
-import { extractMentions, renderMessageWithMentions } from "@/features/notifications/utils/mention-utils";
+import { extractMentions, renderMessageWithMentions, MemberForMention } from "@/features/notifications/utils/mention-utils";
 import { createMentionNotification } from "@/features/notifications/utils/create-mention-notification";
 import { useGetTask } from "../api/use-get-task";
 import { useMarkNotificationsRead } from "@/features/notifications/api/use-mark-notifications-read";
@@ -68,7 +68,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       )
       .map(follower => ({
         id: follower.id,
-        name: follower.user.name,
+        name: follower.user.name!, // We've already filtered for non-null names
         email: follower.user.email,
         userId: follower.user.id,
         role: follower.role || 'MEMBER', // Default role
@@ -343,7 +343,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
     }
   };
 
-  const selectMention = (member: any) => {
+  const selectMention = (member: MemberForMention) => {
     if (!messageInputRef.current) return;
     
     const input = messageInputRef.current;

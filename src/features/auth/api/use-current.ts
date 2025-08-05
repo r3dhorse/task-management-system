@@ -15,6 +15,7 @@ export const useCurrent = () => {
         name: session.user.name,
         email: session.user.email,  
         isAdmin: (session.user as { isAdmin?: boolean }).isAdmin || false,
+        isSuperAdmin: (session.user as { isSuperAdmin?: boolean }).isSuperAdmin || false,
       };
     },
     enabled: status !== "loading",

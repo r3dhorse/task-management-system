@@ -1,25 +1,27 @@
 import React from "react";
 
+export interface MemberForMention {
+  id: string;
+  name: string;
+  email: string;
+  userId: string;
+  role: string;
+  workspaceId: string;
+  joinedAt: string;
+}
+
 export interface MentionMatch {
   username: string;
   startIndex: number;
   endIndex: number;
-  member?: {
-    id: string;
-    name: string;
-    email: string;
-    userId: string;
-    role: string;
-    workspaceId: string;
-    joinedAt: string;
-  };
+  member?: MemberForMention;
 }
 
 /**
  * Extract @mentions from message content
  * Returns array of mention matches with their positions
  */
-export function extractMentions(content: string, members: any[] = []): MentionMatch[] {
+export function extractMentions(content: string, members: MemberForMention[] = []): MentionMatch[] {
   const mentionRegex = /@(\w+)/g;
   const mentions: MentionMatch[] = [];
   let match;
@@ -87,7 +89,7 @@ export function renderMessageWithMentions(content: string, mentions: MentionMatc
 /**
  * Create mention suggestions dropdown data
  */
-export function createMentionSuggestions(members: any[]): Array<{
+export function createMentionSuggestions(members: MemberForMention[]): Array<{
   id: string;
   name: string;
   username: string;

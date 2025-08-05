@@ -46,7 +46,13 @@ export const useLogin = () => {
     },
 
     onError: (error: Error) => {
-      toast.error(error.message || "Login failed");
+      const friendlyMessage = error.message === "Invalid credentials" 
+        ? "Incorrect email or password. Please check your credentials and try again."
+        : error.message === "CredentialsSignin"
+        ? "Incorrect email or password. Please check your credentials and try again."
+        : error.message || "Unable to sign in. Please try again.";
+      
+      toast.error(friendlyMessage);
     },
   });
 
