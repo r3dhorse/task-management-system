@@ -198,28 +198,28 @@ const WorkspaceIdPage = () => {
           </div>
           
           {/* Date Range Filter */}
-          <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full sm:w-auto max-w-[800px]">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 ">
+          <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full max-w-[900px]">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
               <div className="flex items-center gap-2">
                 <CalendarIcon className="size-4 text-blue-600" />
                 <span className="text-sm font-medium text-blue-900">Date Range:</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <DatePicker
                   value={dateFrom}
                   onChange={setDateFrom}
                   placeholder="From date"
-                  className="w-40"
+                  className="w-44 min-w-[11rem]"
                 />
-                <span className="text-muted-foreground text-sm">to</span>
+                <span className="text-muted-foreground text-sm shrink-0">to</span>
                 <DatePicker
                   value={dateTo}
                   onChange={setDateTo}
                   placeholder="To date"
-                  className="w-40"
+                  className="w-44 min-w-[11rem]"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   variant="outline"
                   size="sm"
@@ -228,7 +228,7 @@ const WorkspaceIdPage = () => {
                     setDateTo(today);
                     setDateFrom(subDays(today, 7));
                   }}
-                  className="bg-white hover:bg-blue-50"
+                  className="bg-white hover:bg-blue-50 text-xs px-3"
                 >
                   7 days
                 </Button>
@@ -240,7 +240,7 @@ const WorkspaceIdPage = () => {
                     setDateTo(today);
                     setDateFrom(subDays(today, 15));
                   }}
-                  className="bg-white hover:bg-blue-50"
+                  className="bg-white hover:bg-blue-50 text-xs px-3"
                 >
                   15 days
                 </Button>
@@ -252,7 +252,7 @@ const WorkspaceIdPage = () => {
                     setDateTo(today);
                     setDateFrom(subDays(today, 30));
                   }}
-                  className="bg-white hover:bg-blue-50"
+                  className="bg-white hover:bg-blue-50 text-xs px-3"
                 >
                   30 days
                 </Button>
