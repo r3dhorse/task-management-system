@@ -29,7 +29,7 @@ services:
       args:
         BUILDKIT_INLINE_CACHE: 1
     ports:
-      - "3000:3000"
+      - "3001:3001"
     volumes:
       # Mount source code for hot-reloading
       - ./src:/app/src
@@ -47,13 +47,13 @@ services:
       # Development environment
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3001}
       
       # Database Configuration
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-task_management}?schema=public
       
       # NextAuth.js Configuration
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3001}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-development-secret-change-in-production}
       
       # File Upload Configuration
@@ -66,7 +66,7 @@ services:
     networks:
       - projectxs-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
