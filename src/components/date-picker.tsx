@@ -25,7 +25,7 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
     const handleDateSelect = (date: Date | undefined) => {
       if (date) {
         onChange(date);
-        setIsOpen(false); // Close popover after date selection
+        setIsOpen(false);
       }
     };
 
