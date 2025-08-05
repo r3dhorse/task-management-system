@@ -33,8 +33,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Edit, Trash2, Loader2 } from "lucide-react";
+import { Search, Edit, Trash2, Loader2, Key, Shield, ShieldCheck, Copy, Plus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { Switch } from "@/components/ui/switch";
 
 interface User {
   id: string;
@@ -65,8 +66,25 @@ export function UserManagementClient() {
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ name: "", email: "" });
+  const [tempPasswordDialogOpen, setTempPasswordDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ 
+    name: "", 
+    email: "", 
+    isAdmin: false, 
+    isSuperAdmin: false 
+  });
+  const [createForm, setCreateForm] = useState({
+    name: "",
+    email: "",
+    temporaryPassword: "",
+    isAdmin: false,
+    isSuperAdmin: false,
+  });
+  const [tempPassword, setTempPassword] = useState("");
+  const [generatedPassword, setGeneratedPassword] = useState("");
+  const [createdUserPassword, setCreatedUserPassword] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -85,9 +103,49 @@ export function UserManagementClient() {
     },
   });
 
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (data: {
+      name: string;
+      email: string;
+      temporaryPassword: string;
+      isAdmin: boolean;
+      isSuperAdmin: boolean;
+    }) => {
+      const response = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create user");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      toast.success("User created successfully");
+      setCreatedUserPassword(data.temporaryPassword);
+      setCreateForm({
+        name: "",
+        email: "",
+        temporaryPassword: "",
+        isAdmin: false,
+        isSuperAdmin: false,
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
   // Update user mutation
   const updateUserMutation = useMutation({
-    mutationFn: async ({ userId, data }: { userId: string; data: { name?: string; email?: string } }) => {
+    mutationFn: async ({ userId, data }: { 
+      userId: string; 
+      data: { name?: string; email?: string; isAdmin?: boolean; isSuperAdmin?: boolean } 
+    }) => {
       const response = await fetch(`/api/users/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -131,13 +189,68 @@ export function UserManagementClient() {
     },
   });
 
+  // Set temporary password mutation
+  const setTempPasswordMutation = useMutation({
+    mutationFn: async ({ userId, temporaryPassword }: { userId: string; temporaryPassword: string }) => {
+      const response = await fetch(`/api/users/${userId}/set-temp-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ temporaryPassword }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to set temporary password");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast.success("Temporary password set successfully");
+      setGeneratedPassword(data.temporaryPassword);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
   const handleEdit = (user: User) => {
     setSelectedUser(user);
     setEditForm({
       name: user.name || "",
       email: user.email,
+      isAdmin: user.isAdmin,
+      isSuperAdmin: user.isSuperAdmin,
     });
     setEditDialogOpen(true);
+  };
+
+  const handleTempPassword = (user: User) => {
+    setSelectedUser(user);
+    setTempPassword("");
+    setGeneratedPassword("");
+    setTempPasswordDialogOpen(true);
+  };
+
+  const generateRandomPassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setTempPassword(password);
+  };
+
+  const generateCreatePassword = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCreateForm({ ...createForm, temporaryPassword: password });
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Password copied to clipboard");
   };
 
   const handleDelete = (user: User) => {
@@ -145,12 +258,35 @@ export function UserManagementClient() {
     setDeleteDialogOpen(true);
   };
 
+  const handleCreateUser = () => {
+    setCreateForm({
+      name: "",
+      email: "",
+      temporaryPassword: "",
+      isAdmin: false,
+      isSuperAdmin: false,
+    });
+    setCreatedUserPassword("");
+    setCreateDialogOpen(true);
+  };
+
+  const handleCreateSubmit = () => {
+    if (!createForm.name.trim() || !createForm.email.trim() || !createForm.temporaryPassword.trim()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    createUserMutation.mutate(createForm);
+  };
+
   const handleUpdateSubmit = () => {
     if (!selectedUser) return;
     
-    const updates: { name?: string; email?: string } = {};
+    const updates: { name?: string; email?: string; isAdmin?: boolean; isSuperAdmin?: boolean } = {};
     if (editForm.name !== selectedUser.name) updates.name = editForm.name;
     if (editForm.email !== selectedUser.email) updates.email = editForm.email;
+    if (editForm.isAdmin !== selectedUser.isAdmin) updates.isAdmin = editForm.isAdmin;
+    if (editForm.isSuperAdmin !== selectedUser.isSuperAdmin) updates.isSuperAdmin = editForm.isSuperAdmin;
     
     if (Object.keys(updates).length === 0) {
       toast.info("No changes to save");
@@ -158,6 +294,18 @@ export function UserManagementClient() {
     }
 
     updateUserMutation.mutate({ userId: selectedUser.id, data: updates });
+  };
+
+  const handleSetTempPassword = () => {
+    if (!selectedUser || !tempPassword.trim()) {
+      toast.error("Please enter a temporary password");
+      return;
+    }
+    
+    setTempPasswordMutation.mutate({ 
+      userId: selectedUser.id, 
+      temporaryPassword: tempPassword 
+    });
   };
 
   const handleDeleteConfirm = () => {
@@ -181,7 +329,13 @@ export function UserManagementClient() {
     <div className="container mx-auto p-6">
       <Card>
         <CardHeader>
-          <CardTitle>User Management</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>User Management</CardTitle>
+            <Button onClick={handleCreateUser} className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Create User
+            </Button>
+          </div>
           <div className="mt-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -254,15 +408,24 @@ export function UserManagementClient() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleEdit(user)}
-                            disabled={user.isSuperAdmin}
+                            title="Edit user"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
+                            onClick={() => handleTempPassword(user)}
+                            title="Set temporary password"
+                          >
+                            <Key className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             onClick={() => handleDelete(user)}
                             disabled={user.isSuperAdmin}
+                            title="Delete user"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -358,6 +521,48 @@ export function UserManagementClient() {
                 placeholder="Enter email"
               />
             </div>
+            
+            <div className="space-y-4 border-t pt-4">
+              <h4 className="font-medium text-sm text-gray-900">User Roles</h4>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4 text-blue-600" />
+                  <Label htmlFor="isAdmin" className="text-sm">
+                    Admin
+                  </Label>
+                  <span className="text-xs text-gray-500">
+                    Can create workspaces
+                  </span>
+                </div>
+                <Switch
+                  id="isAdmin"
+                  checked={editForm.isAdmin}
+                  onCheckedChange={(checked) =>
+                    setEditForm({ ...editForm, isAdmin: checked })
+                  }
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheck className="h-4 w-4 text-purple-600" />
+                  <Label htmlFor="isSuperAdmin" className="text-sm">
+                    Super Admin
+                  </Label>
+                  <span className="text-xs text-gray-500">
+                    Full system access
+                  </span>
+                </div>
+                <Switch
+                  id="isSuperAdmin"
+                  checked={editForm.isSuperAdmin}
+                  onCheckedChange={(checked) =>
+                    setEditForm({ ...editForm, isSuperAdmin: checked })
+                  }
+                />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -380,6 +585,158 @@ export function UserManagementClient() {
                 "Save changes"
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+            <DialogDescription>
+              Create a new user account with a temporary password. The user should change their password after first login.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="createName">Name *</Label>
+              <Input
+                id="createName"
+                value={createForm.name}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, name: e.target.value })
+                }
+                placeholder="Enter full name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="createEmail">Email *</Label>
+              <Input
+                id="createEmail"
+                type="email"
+                value={createForm.email}
+                onChange={(e) =>
+                  setCreateForm({ ...createForm, email: e.target.value })
+                }
+                placeholder="Enter email address"
+              />
+            </div>
+            <div>
+              <Label htmlFor="createPassword">Temporary Password *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="createPassword"
+                  type="text"
+                  value={createForm.temporaryPassword}
+                  onChange={(e) =>
+                    setCreateForm({ ...createForm, temporaryPassword: e.target.value })
+                  }
+                  placeholder="Enter temporary password"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generateCreatePassword}
+                  disabled={createUserMutation.isPending}
+                >
+                  Generate
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Password must be at least 6 characters long
+              </p>
+            </div>
+            
+            <div className="space-y-4 border-t pt-4">
+              <h4 className="font-medium text-sm text-gray-900">User Roles</h4>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4 text-blue-600" />
+                  <Label htmlFor="createIsAdmin" className="text-sm">
+                    Admin
+                  </Label>
+                  <span className="text-xs text-gray-500">
+                    Can create workspaces
+                  </span>
+                </div>
+                <Switch
+                  id="createIsAdmin"
+                  checked={createForm.isAdmin}
+                  onCheckedChange={(checked) =>
+                    setCreateForm({ ...createForm, isAdmin: checked })
+                  }
+                />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheck className="h-4 w-4 text-purple-600" />
+                  <Label htmlFor="createIsSuperAdmin" className="text-sm">
+                    Super Admin
+                  </Label>
+                  <span className="text-xs text-gray-500">
+                    Full system access
+                  </span>
+                </div>
+                <Switch
+                  id="createIsSuperAdmin"
+                  checked={createForm.isSuperAdmin}
+                  onCheckedChange={(checked) =>
+                    setCreateForm({ ...createForm, isSuperAdmin: checked })
+                  }
+                />
+              </div>
+            </div>
+
+            {createdUserPassword && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      User created successfully!
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      Temporary password: <strong>{createdUserPassword}</strong>
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(createdUserPassword)}
+                    className="ml-2"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCreateDialogOpen(false)}
+              disabled={createUserMutation.isPending}
+            >
+              {createdUserPassword ? "Close" : "Cancel"}
+            </Button>
+            {!createdUserPassword && (
+              <Button
+                onClick={handleCreateSubmit}
+                disabled={createUserMutation.isPending || !createForm.name.trim() || !createForm.email.trim() || !createForm.temporaryPassword.trim()}
+              >
+                {createUserMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create User"
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -416,6 +773,92 @@ export function UserManagementClient() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Temporary Password Dialog */}
+      <Dialog open={tempPasswordDialogOpen} onOpenChange={setTempPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Temporary Password</DialogTitle>
+            <DialogDescription>
+              Set a temporary password for <strong>{selectedUser?.email}</strong>. 
+              The user can use this to log in and should change it immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="tempPassword">Temporary Password</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="tempPassword"
+                  type="text"
+                  value={tempPassword}
+                  onChange={(e) => setTempPassword(e.target.value)}
+                  placeholder="Enter temporary password"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generateRandomPassword}
+                  disabled={setTempPasswordMutation.isPending}
+                >
+                  Generate
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Password must be at least 6 characters long
+              </p>
+            </div>
+            
+            {generatedPassword && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-800">
+                      Temporary password has been set!
+                    </p>
+                    <p className="text-xs text-green-600 mt-1">
+                      Share this password with the user: <strong>{generatedPassword}</strong>
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(generatedPassword)}
+                    className="ml-2"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setTempPasswordDialogOpen(false)}
+              disabled={setTempPasswordMutation.isPending}
+            >
+              {generatedPassword ? "Close" : "Cancel"}
+            </Button>
+            {!generatedPassword && (
+              <Button
+                onClick={handleSetTempPassword}
+                disabled={setTempPasswordMutation.isPending || !tempPassword.trim()}
+              >
+                {setTempPasswordMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Setting...
+                  </>
+                ) : (
+                  "Set Password"
+                )}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

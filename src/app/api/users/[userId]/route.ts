@@ -10,7 +10,10 @@ export const dynamic = 'force-dynamic';
 const updateUserSchema = z.object({
   name: z.string().min(1).optional(),
   email: z.string().email().optional(),
+  isAdmin: z.boolean().optional(),
+  isSuperAdmin: z.boolean().optional(),
 });
+
 
 // GET /api/users/[userId] - Get user details (SUPERADMIN only)
 export async function GET(
@@ -107,9 +110,29 @@ export async function PATCH(
       }
     }
 
+    // Prepare update data
+    const updateData: {
+      name?: string;
+      email?: string;
+      isAdmin?: boolean;
+      isSuperAdmin?: boolean;
+    } = {};
+    if (validatedData.name !== undefined) updateData.name = validatedData.name;
+    if (validatedData.email !== undefined) updateData.email = validatedData.email;
+    if (validatedData.isAdmin !== undefined) updateData.isAdmin = validatedData.isAdmin;
+    if (validatedData.isSuperAdmin !== undefined) updateData.isSuperAdmin = validatedData.isSuperAdmin;
+
+    // Prevent user from removing their own superadmin status
+    if (params.userId === session.user.id && validatedData.isSuperAdmin === false) {
+      return NextResponse.json(
+        { error: "Cannot remove your own superadmin privileges" },
+        { status: 400 }
+      );
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: params.userId },
-      data: validatedData,
+      data: updateData,
       select: {
         id: true,
         name: true,
