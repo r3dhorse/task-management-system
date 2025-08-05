@@ -82,7 +82,7 @@ const WorkspaceIdPage = () => {
   const isLoading = isLoadingWorkspace || isLoadingMembers || isLoadingTasks || isLoadingServices;
 
   // Find current user's member record to check role
-  const currentMember = members?.documents.find((member) => 
+  const currentMember = members?.documents.find(member => 
     (member as Member).userId === currentUser?.id
   ) as Member | undefined;
 
