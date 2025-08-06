@@ -12,7 +12,7 @@ import { TaskHistoryAction } from "@/features/tasks/types/history";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, EditIcon, FileTextIcon, ArchiveIcon, EyeOffIcon } from "lucide-react";
+import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, EditIcon, FileTextIcon, ArchiveIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDeleteTask } from "@/features/tasks/api/use-delete-task";
 import { useConfirm } from "@/hooks/use-confirm";
