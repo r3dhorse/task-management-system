@@ -435,15 +435,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
           <div className="space-y-4">
             <div className="flex items-start gap-4">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold text-gray-900 break-words">{task.name}</h1>
-                  {task.isConfidential && (
-                    <div className="flex items-center gap-2 bg-orange-50 px-3 py-1.5 rounded-full border border-orange-200">
-                      <EyeOffIcon className="size-4 text-orange-600" />
-                      <span className="text-sm font-medium text-orange-700">Confidential</span>
-                    </div>
-                  )}
-                </div>
+                <h1 className="text-3xl font-bold text-gray-900 break-words">{task.name}</h1>
               </div>
             </div>
 
