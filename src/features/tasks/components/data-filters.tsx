@@ -4,7 +4,7 @@ import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { DatePicker } from "@/components/date-picker";
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { FolderIcon, ListChecksIcon, UserIcon, FilterX } from "lucide-react";
+import { Package, ListChecksIcon, UserIcon, FilterX } from "lucide-react";
 import { TaskStatus } from "../types";
 import { useTaskFilters } from "../hooks/use-task-filters";
 import { Member, MemberRole } from "@/features/members/types";
@@ -139,7 +139,7 @@ export const DataFilters = () => {
       >
         <SelectTrigger className="w-full lg:w-auto h-8">
           <div className="flex items-center pr-2">
-            <FolderIcon className="size-4 mr-2" />
+            <Package className="size-4 mr-2" />
             <SelectValue placeholder="All services" />
           </div>
         </SelectTrigger>

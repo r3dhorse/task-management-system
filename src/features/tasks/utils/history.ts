@@ -38,12 +38,17 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
 
   // Status change
   if (newTask.status !== undefined && newTask.status !== oldTask.status) {
-    changes.push({
-      field: "status",
-      oldValue: oldTask.status,
-      newValue: newTask.status,
-      displayName: "Status"
-    });
+    // Don't create history entries for null/undefined status changes
+    const oldStatus = oldTask.status || null;
+    const newStatus = newTask.status || null;
+    if (oldStatus !== null || newStatus !== null) {
+      changes.push({
+        field: "status",
+        oldValue: oldTask.status,
+        newValue: newTask.status,
+        displayName: "Status"
+      });
+    }
   }
 
   // Assignee change - handle empty strings vs null/undefined consistently

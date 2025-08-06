@@ -4,7 +4,7 @@ import { getService } from "@/features/services/queries";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, SettingsIcon, FolderIcon } from "lucide-react";
+import { ArrowLeftIcon, SettingsIcon, Package } from "lucide-react";
 import Link from "next/link";
 
 interface ServiceIdSettingsPageProps {
@@ -71,7 +71,7 @@ const ServiceIdSettingsPage = async ({
             <div className="flex-1">
               <h2 className="text-2xl font-bold text-gray-900">{service.name}</h2>
               <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-                <FolderIcon className="h-4 w-4" />
+                <Package className="h-4 w-4" />
                 <span>Service Configuration</span>
               </div>
             </div>
@@ -83,7 +83,7 @@ const ServiceIdSettingsPage = async ({
       <Card className="border-0 shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FolderIcon className="h-5 w-5 text-blue-600" />
+            <Package className="h-5 w-5 text-blue-600" />
             Service Information
           </CardTitle>
           <p className="text-sm text-muted-foreground">

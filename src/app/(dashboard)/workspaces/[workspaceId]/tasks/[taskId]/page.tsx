@@ -12,13 +12,12 @@ import { TaskHistoryAction } from "@/features/tasks/types/history";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, CalendarIcon, FolderIcon, UserIcon, EditIcon, FileTextIcon, ArchiveIcon, EyeOffIcon } from "lucide-react";
+import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, EditIcon, FileTextIcon, ArchiveIcon, EyeOffIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useDeleteTask } from "@/features/tasks/api/use-delete-task";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { toast } from "sonner";
-import { StatusBadge } from "@/features/tasks/components/status-badge";
 import { TaskDate } from "@/features/tasks/components/task-date";
 import { TaskHistory } from "@/features/tasks/components/task-history";
 import { TaskChat } from "@/features/tasks/components/task-chat";
@@ -28,6 +27,7 @@ import { Service } from "@/features/services/types";
 import { TaskStatus } from "@/features/tasks/types";
 import { ManageFollowersModal } from "@/features/tasks/components/manage-followers-modal";
 import { TaskPropertiesModal } from "@/features/tasks/components/task-properties-modal";
+import { EnhancedStageIndicator } from "@/features/tasks/components/enhanced-stage-indicator";
 
 interface TaskDetailsPageProps {
   params: {
@@ -371,6 +371,38 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     );
   };
 
+  const handleStatusChange = (newStatus: TaskStatus) => {
+    if (!task || !canEditStatus) return;
+
+    const updatePayload = {
+      name: task.name,
+      description: task.description || "",
+      status: newStatus,
+      assigneeId: task.assigneeId || "",
+      serviceId: task.serviceId,
+      dueDate: task.dueDate || new Date().toISOString(),
+      attachmentId: task.attachmentId || "",
+      followedIds: task.followedIds || "[]",
+      isConfidential: task.isConfidential || false,
+    };
+
+    updateTask(
+      {
+        param: { taskId: task.id },
+        json: updatePayload,
+      },
+      {
+        onSuccess: () => {
+          toast.success(`Task moved to ${newStatus.replace('_', ' ').toLowerCase()}`);
+        },
+        onError: (error) => {
+          console.error("Failed to update task status:", error);
+          toast.error("Failed to update task status");
+        },
+      }
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
       <ConfirmDialog />
@@ -385,28 +417,17 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         {/* Header Section */}
         <div className="mb-8">
-          {/* Breadcrumb & Status Bar */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-x-3">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => router.back()}
-                className="hover:bg-gray-100 transition-colors"
-              >
-                <ArrowLeftIcon className="size-4 mr-2" />
-                Back
-              </Button>
-              <div className="h-4 w-px bg-gray-300" />
-              <div className="flex items-center gap-x-2 text-sm text-gray-600">
-                <FolderIcon className="size-4" />
-                <span>{service?.name || "No service"}</span>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <StatusBadge status={task.status as TaskStatus} size="lg" className="shadow-md" />
-            </div>
+          {/* Breadcrumb Bar */}
+          <div className="flex items-center gap-x-3 mb-4">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => router.back()}
+              className="hover:bg-gray-100 transition-colors"
+            >
+              <ArrowLeftIcon className="size-4 mr-2" />
+              Back
+            </Button>
           </div>
 
 
@@ -426,23 +447,8 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
               </div>
             </div>
 
-            {/* Task Meta Info & Actions */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6 text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <UserIcon className="size-4" />
-                  <span>{assignee?.name || "Unassigned"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="size-4" />
-                  <TaskDate value={task.dueDate} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <FolderIcon className="size-4" />
-                  <span>{service?.name || "No service"}</span>
-                </div>
-              </div>
-              
+            {/* Action Buttons */}
+            <div className="flex justify-end mb-4">
               <div className="flex items-center gap-x-2">
                 {task.attachmentId && (
                   <Button 
@@ -488,6 +494,33 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   </Button>
                 )}
               </div>
+            </div>
+
+            {/* Task Meta Info & Stage Indicator */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-6 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <UserIcon className="size-4" />
+                  <span>{assignee?.name || "Unassigned"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="size-4" />
+                  <TaskDate value={task.dueDate} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Package className="size-4" />
+                  <span>{service?.name || "No service"}</span>
+                </div>
+              </div>
+              
+              {/* Enhanced Stage Indicator */}
+              {canEditStatus && (
+                <EnhancedStageIndicator
+                  currentStatus={task.status as TaskStatus}
+                  onStatusChange={handleStatusChange}
+                  taskName={task.name}
+                />
+              )}
             </div>
           </div>
         </div>
