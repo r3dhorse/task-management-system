@@ -511,6 +511,13 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   <Package className="size-4" />
                   <span>{service?.name || "No service"}</span>
                 </div>
+                {task.isConfidential && (
+                  <div className="flex items-center">
+                    <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
+                      Confidential
+                    </span>
+                  </div>
+                )}
               </div>
               
               {/* Enhanced Stage Indicator */}
