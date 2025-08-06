@@ -21,6 +21,22 @@ async function main() {
 
   console.log('✅ Admin user created:', adminUser.email)
 
+  // Create superadmin user
+  const superAdminPassword = await bcrypt.hash('super123', 12)
+  const superAdminUser = await prisma.user.upsert({
+    where: { email: 'superadmin@example.com' },
+    update: {},
+    create: {
+      email: 'superadmin@example.com',
+      name: 'Super Admin',
+      password: superAdminPassword,
+      isAdmin: true,
+      isSuperAdmin: true,
+    },
+  })
+
+  console.log('✅ Super admin user created:', superAdminUser.email)
+
   // Create regular user
   const userPassword = await bcrypt.hash('user123', 12)
   const regularUser = await prisma.user.upsert({
@@ -139,6 +155,7 @@ async function main() {
 
   console.log('\n🎉 Database seeded successfully!')
   console.log('\n📝 Test users created:')
+  console.log('   SuperAdmin: superadmin@example.com / super123')
   console.log('   Admin: admin@example.com / admin123')
   console.log('   User:  user@example.com / user123')
   console.log('\n🏢 Sample workspace: "Sample Workspace" (invite code: SAMPLE123)')

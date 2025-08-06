@@ -9,14 +9,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ChangePasswordModal } from "./change-password-modal";
 
 import { useLogout } from "../api/use-logout";
 import { useCurrent } from "../api/use-current";
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
+import { useState } from "react";
 
 export const UserButton = () => {
   const { data: user, isLoading } = useCurrent();
-  const { mutate: logout } = useLogout()
+  const { mutate: logout } = useLogout();
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -39,7 +42,7 @@ export const UserButton = () => {
   return (
 
     <DropdownMenu modal={false}>
-      <DropdownMenuTrigger className="outline-none relative">
+      <DropdownMenuTrigger className="outline-none relative" data-testid="user-menu">
         <Avatar className="size-10 hover:opacity-75 transition border border-neutral-400">
           <AvatarFallback className="bg-neutral-200 font-medium text-neutral-500 flex items-center justify-center">
             {avatarFallback}
@@ -62,13 +65,27 @@ export const UserButton = () => {
         </div>
         <DottedSeparator className="mb-1" />
         <DropdownMenuItem
+          onClick={() => setIsChangePasswordOpen(true)}
+          className="h-10 flex items-center justify-center text-blue-700 font-medium cursor-pointer"
+          data-testid="profile-settings"
+        >
+          <Settings className="size-4 mr-2" />
+          Profile Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem
           onClick={() => logout()}
           className="h-10 flex items-center justify-center text-amber-700 font-medium cursor-pointer"
+          data-testid="signout-button"
         >
           <LogOut className="size-4 mr-2" />
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
     </DropdownMenu>
   );
 };

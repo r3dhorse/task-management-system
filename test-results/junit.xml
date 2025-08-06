@@ -1,0 +1,3146 @@
+<testsuites id="" name="" tests="685" failures="6" skipped="669" errors="0" time="54.344392">
+<testsuite name="auth/auth.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="chromium" tests="15" failures="6" skipped="1" time="223.37" errors="0">
+<testcase name="Authentication › Sign In › should successfully sign in with valid credentials" classname="auth/auth.spec.ts" time="18.793">
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+Login response status: [33m200[39m
+Navigated to: http://localhost:3001/no-workspace
+User name visible: true, Logout button visible: true
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Sign In › should show error with invalid email" classname="auth/auth.spec.ts" time="8.776">
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Sign In › should show error with invalid password" classname="auth/auth.spec.ts" time="11.092">
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Sign In › should show validation errors for empty fields" classname="auth/auth.spec.ts" time="8.801">
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Sign In › should show validation error for invalid email format" classname="auth/auth.spec.ts" time="10.65">
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Sign Out › should successfully sign out" classname="auth/auth.spec.ts" time="21.41">
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+Login response status: [33m200[39m
+Navigated to: http://localhost:3001/no-workspace
+User name visible: true, Logout button visible: true
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Password Change › should successfully change password" classname="auth/auth.spec.ts" time="23.731">
+<failure message="auth.spec.ts:100:9 should successfully change password" type="FAILURE">
+<![CDATA[  [chromium] › auth/auth.spec.ts:100:9 › Authentication › Password Change › should successfully change password 
+
+    Error: Timed out 5000ms waiting for expect(locator).toBeVisible()
+
+    Locator: locator('text=Password changed successfully')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('text=Password changed successfully')
+
+
+      112 |       
+      113 |       // Should show success message
+    > 114 |       await expect(page.locator('text=Password changed successfully')).toBeVisible();
+          |                                                                        ^
+      115 |       
+      116 |       // Sign out and try to sign in with new password
+      117 |       await authHelper.signOut();
+        at /root/task-management-postgres/task-management/e2e/auth/auth.spec.ts:114:72
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-P-00fcd-uccessfully-change-password-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-P-00fcd-uccessfully-change-password-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/auth-auth-Authentication-P-00fcd-uccessfully-change-password-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+Login response status: [33m200[39m
+Navigated to: http://localhost:3001/no-workspace
+User name visible: true, Logout button visible: true
+
+[[ATTACHMENT|auth-auth-Authentication-P-00fcd-uccessfully-change-password-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|auth-auth-Authentication-P-00fcd-uccessfully-change-password-chromium/video.webm]]
+
+[[ATTACHMENT|auth-auth-Authentication-P-00fcd-uccessfully-change-password-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Password Change › should show error with incorrect current password" classname="auth/auth.spec.ts" time="23.81">
+<failure message="auth.spec.ts:128:9 should show error with incorrect current password" type="FAILURE">
+<![CDATA[  [chromium] › auth/auth.spec.ts:128:9 › Authentication › Password Change › should show error with incorrect current password 
+
+    Error: Timed out 5000ms waiting for expect(locator).toBeVisible()
+
+    Locator: locator('text=Current password is incorrect')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('text=Current password is incorrect')
+
+
+      137 |       await page.click('[data-testid="change-password-button"]');
+      138 |       
+    > 139 |       await expect(page.locator('text=Current password is incorrect')).toBeVisible();
+          |                                                                        ^
+      140 |     });
+      141 |
+      142 |     test('should show error when new passwords do not match', async ({ page }) => {
+        at /root/task-management-postgres/task-management/e2e/auth/auth.spec.ts:139:72
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-P-8ffd6--incorrect-current-password-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-P-8ffd6--incorrect-current-password-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/auth-auth-Authentication-P-8ffd6--incorrect-current-password-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+Login response status: [33m200[39m
+Navigated to: http://localhost:3001/no-workspace
+User name visible: true, Logout button visible: true
+
+[[ATTACHMENT|auth-auth-Authentication-P-8ffd6--incorrect-current-password-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|auth-auth-Authentication-P-8ffd6--incorrect-current-password-chromium/video.webm]]
+
+[[ATTACHMENT|auth-auth-Authentication-P-8ffd6--incorrect-current-password-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Password Change › should show error when new passwords do not match" classname="auth/auth.spec.ts" time="19.842">
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+Login response status: [33m200[39m
+Navigated to: http://localhost:3001/no-workspace
+User name visible: true, Logout button visible: true
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Session Management › should handle unauthenticated access appropriately" classname="auth/auth.spec.ts" time="8.434">
+<failure message="auth.spec.ts:158:9 should handle unauthenticated access appropriately" type="FAILURE">
+<![CDATA[  [chromium] › auth/auth.spec.ts:158:9 › Authentication › Session Management › should handle unauthenticated access appropriately 
+
+    Error: expect(received).toBeTruthy()
+
+    Received: false
+
+      174 |       
+      175 |       // At least one authentication check should be true
+    > 176 |       expect(isRedirectedToSignIn || hasSignInForm || hasAuthenticationError).toBeTruthy();
+          |                                                                               ^
+      177 |       
+      178 |       await freshContext.close();
+      179 |     });
+        at /root/task-management-postgres/task-management/e2e/auth/auth.spec.ts:176:79
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-S-62017-icated-access-appropriately-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-S-62017-icated-access-appropriately-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-S-62017-icated-access-appropriately-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/auth-auth-Authentication-S-62017-icated-access-appropriately-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+Current URL after navigation: http://localhost:3001/dashboard
+
+[[ATTACHMENT|auth-auth-Authentication-S-62017-icated-access-appropriately-chromium/test-failed-2.png]]
+
+[[ATTACHMENT|auth-auth-Authentication-S-62017-icated-access-appropriately-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|auth-auth-Authentication-S-62017-icated-access-appropriately-chromium/video.webm]]
+
+[[ATTACHMENT|auth-auth-Authentication-S-62017-icated-access-appropriately-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Session Management › should maintain session across page refreshes" classname="auth/auth.spec.ts" time="15.453">
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+Login response status: [33m200[39m
+Navigated to: http://localhost:3001/no-workspace
+User name visible: true, Logout button visible: true
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Session Management › should handle session expiry gracefully" classname="auth/auth.spec.ts" time="9.003">
+<failure message="auth.spec.ts:192:9 should handle session expiry gracefully" type="FAILURE">
+<![CDATA[  [chromium] › auth/auth.spec.ts:192:9 › Authentication › Session Management › should handle session expiry gracefully 
+
+    Error: Login failed with status: 401
+
+       at utils/test-helpers.ts:56
+
+      54 |     // Check if login was successful
+      55 |     if (response.status() !== 200) {
+    > 56 |       throw new Error(`Login failed with status: ${response.status()}`);
+         |             ^
+      57 |     }
+      58 |     
+      59 |     // Wait for redirect and verify sign-in success with longer timeout
+        at AuthHelper.signIn (/root/task-management-postgres/task-management/e2e/utils/test-helpers.ts:56:13)
+        at /root/task-management-postgres/task-management/e2e/auth/auth.spec.ts:193:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-S-2f47d-e-session-expiry-gracefully-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-S-2f47d-e-session-expiry-gracefully-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/auth-auth-Authentication-S-2f47d-e-session-expiry-gracefully-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+Login response status: [33m401[39m
+
+[[ATTACHMENT|auth-auth-Authentication-S-2f47d-e-session-expiry-gracefully-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|auth-auth-Authentication-S-2f47d-e-session-expiry-gracefully-chromium/video.webm]]
+
+[[ATTACHMENT|auth-auth-Authentication-S-2f47d-e-session-expiry-gracefully-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Role-based Access › should allow superadmin access to user management" classname="auth/auth.spec.ts" time="19.482">
+<failure message="auth.spec.ts:207:9 should allow superadmin access to user management" type="FAILURE">
+<![CDATA[  [chromium] › auth/auth.spec.ts:207:9 › Authentication › Role-based Access › should allow superadmin access to user management 
+
+    Error: Timed out 5000ms waiting for expect(locator).toBeVisible()
+
+    Locator: locator('[data-testid="user-management-page"]')
+    Expected: visible
+    Received: <element(s) not found>
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for locator('[data-testid="user-management-page"]')
+
+
+      211 |       
+      212 |       // Should have access to user management page
+    > 213 |       await expect(page.locator('[data-testid="user-management-page"]')).toBeVisible();
+          |                                                                          ^
+      214 |       await expect(page.locator('[data-testid="create-user-button"]')).toBeVisible();
+      215 |     });
+      216 |
+        at /root/task-management-postgres/task-management/e2e/auth/auth.spec.ts:213:74
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-R-c6c14-n-access-to-user-management-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-R-c6c14-n-access-to-user-management-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/auth-auth-Authentication-R-c6c14-n-access-to-user-management-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+Login response status: [33m200[39m
+Navigated to: http://localhost:3001/no-workspace
+User name visible: true, Logout button visible: true
+
+[[ATTACHMENT|auth-auth-Authentication-R-c6c14-n-access-to-user-management-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|auth-auth-Authentication-R-c6c14-n-access-to-user-management-chromium/video.webm]]
+
+[[ATTACHMENT|auth-auth-Authentication-R-c6c14-n-access-to-user-management-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Role-based Access › should deny regular user access to user management" classname="auth/auth.spec.ts" time="5.076">
+<failure message="auth.spec.ts:217:9 should deny regular user access to user management" type="FAILURE">
+<![CDATA[  [chromium] › auth/auth.spec.ts:217:9 › Authentication › Role-based Access › should deny regular user access to user management 
+
+    Error: Login failed with status: 401
+
+       at utils/test-helpers.ts:56
+
+      54 |     // Check if login was successful
+      55 |     if (response.status() !== 200) {
+    > 56 |       throw new Error(`Login failed with status: ${response.status()}`);
+         |             ^
+      57 |     }
+      58 |     
+      59 |     // Wait for redirect and verify sign-in success with longer timeout
+        at AuthHelper.signIn (/root/task-management-postgres/task-management/e2e/utils/test-helpers.ts:56:13)
+        at /root/task-management-postgres/task-management/e2e/auth/auth.spec.ts:218:7
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-R-3423c-r-access-to-user-management-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    ../test-results/auth-auth-Authentication-R-3423c-r-access-to-user-management-chromium/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../test-results/auth-auth-Authentication-R-3423c-r-access-to-user-management-chromium/error-context.md
+]]>
+</failure>
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+Login response status: [33m401[39m
+
+[[ATTACHMENT|auth-auth-Authentication-R-3423c-r-access-to-user-management-chromium/test-failed-1.png]]
+
+[[ATTACHMENT|auth-auth-Authentication-R-3423c-r-access-to-user-management-chromium/video.webm]]
+
+[[ATTACHMENT|auth-auth-Authentication-R-3423c-r-access-to-user-management-chromium/error-context.md]]
+]]>
+</system-out>
+</testcase>
+<testcase name="Authentication › Role-based Access › should show different navigation options based on role" classname="auth/auth.spec.ts" time="19.017">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="cross-platform/responsive.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="chromium" tests="21" failures="0" skipped="19" time="78.887" errors="0">
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="5.41">
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+]]>
+</system-out>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="18.75">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="18.56">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="13.993">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="6.234">
+<system-out>
+<![CDATA[✅ Database reset complete
+✅ Test data seeded successfully
+  - Admin: admin@test.com
+  - User1: user1@test.com
+  - User2: user2@test.com
+]]>
+</system-out>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="9.157">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="6.783">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should support touch interactions on kanban" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should handle mobile task details modal" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should handle mobile menu navigation" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet Layout › should optimize for tablet layout" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet Layout › should handle tablet form layouts" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Browser Compatibility › should work with different browsers" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Browser Compatibility › should handle different input methods" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Performance › should load quickly on mobile devices" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Performance › should handle large datasets efficiently" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="files/files.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="chromium" tests="24" failures="0" skipped="24" time="0" errors="0">
+<testcase name="File Management › Task File Attachments › should upload PDF file to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should upload image file to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should upload multiple files to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should show file upload progress" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should reject files exceeding size limit" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should reject invalid file types" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should download task attachment" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should delete task attachment" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should show attachment count on task card" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should upload file to task message" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should respect message file size limit" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should allow both images and PDFs in messages" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should only allow workspace members to access files" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should allow file access to workspace members only" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should deny file access to non-workspace members" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should handle confidential task file access" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should show file storage usage in workspace settings" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should list all workspace files in file manager" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should filter files by type in file manager" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should search files by name" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should show file details and metadata" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should delete files when task is deleted" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should delete files when workspace is deleted" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should handle orphaned file cleanup" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="tasks/tasks.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="chromium" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="Task Management › Task Creation › should create task with all fields" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create task with minimal data" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should show validation error for empty title" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should show validation error when no service selected" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create task with assignee" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create confidential task" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should display tasks in correct kanban columns" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should move task between columns via drag and drop" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should show task count in column headers" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should filter tasks by service" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should filter tasks by assignee" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should edit task details" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should reassign task to different user" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should update task due date" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should prevent editing tasks in different workspace" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should delete task successfully" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should show confirmation dialog before deletion" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should cancel task deletion" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should prevent non-authorized users from deleting tasks" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should add comment to task" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should show comment count on task card" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should edit own comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should delete own comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should prevent editing other users comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should track task status changes" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should track task field changes" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should show who made changes and when" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="users/users.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="chromium" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="User Management › SuperAdmin User Management › should create new user with temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should create user with different roles" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation error for duplicate email" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation errors for empty fields" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation error for invalid email format" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should edit user details" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should set temporary password for existing user" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should delete user successfully" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show confirmation dialog before deleting user" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should cancel user deletion" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should prevent deleting other superadmins" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should prevent deleting self" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should change user role" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should filter users by role" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should search users by name or email" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show user creation date and last login" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Regular User Access Control › should deny access to user management for regular users" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Regular User Access Control › should not show admin navigation for regular users" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should allow users to edit their own profile" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should show validation errors for invalid profile data" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should prevent email duplication in profile update" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should force password change on first login with temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should successfully change temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should show validation errors for invalid new password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should show error when new passwords do not match" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Activity and Audit › should track user login activity" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Activity and Audit › should show user workspace memberships" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="workspace/workspace.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="chromium" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="Workspace Management › Workspace Creation › should create a new workspace successfully" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should create workspace with minimal data" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should show validation error for empty workspace name" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should prevent non-admin users from creating workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should generate unique invite codes for new workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should list all user workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should navigate between workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should show empty state when user has no workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should prevent access to workspace user is not a member of" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should join workspace with valid invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show error with invalid invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show error when trying to join workspace already a member of" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show validation error for empty invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should update workspace details" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should regenerate invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should prevent non-admin members from accessing settings" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should display workspace members" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should change member roles" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should remove members from workspace" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should prevent members from managing other members" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should delete workspace successfully" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should prevent deletion with incorrect workspace name" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should prevent non-admin from deleting workspace" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth/auth.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="firefox" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Authentication › Sign In › should successfully sign in with valid credentials" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show error with invalid email" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show error with invalid password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show validation errors for empty fields" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show validation error for invalid email format" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign Out › should successfully sign out" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should successfully change password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should show error with incorrect current password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should show error when new passwords do not match" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should handle unauthenticated access appropriately" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should maintain session across page refreshes" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should handle session expiry gracefully" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should allow superadmin access to user management" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should deny regular user access to user management" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should show different navigation options based on role" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="cross-platform/responsive.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="firefox" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should support touch interactions on kanban" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should handle mobile task details modal" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should handle mobile menu navigation" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet Layout › should optimize for tablet layout" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet Layout › should handle tablet form layouts" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Browser Compatibility › should work with different browsers" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Browser Compatibility › should handle different input methods" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Performance › should load quickly on mobile devices" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Performance › should handle large datasets efficiently" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="files/files.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="firefox" tests="24" failures="0" skipped="24" time="0" errors="0">
+<testcase name="File Management › Task File Attachments › should upload PDF file to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should upload image file to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should upload multiple files to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should show file upload progress" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should reject files exceeding size limit" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should reject invalid file types" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should download task attachment" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should delete task attachment" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should show attachment count on task card" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should upload file to task message" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should respect message file size limit" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should allow both images and PDFs in messages" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should only allow workspace members to access files" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should allow file access to workspace members only" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should deny file access to non-workspace members" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should handle confidential task file access" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should show file storage usage in workspace settings" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should list all workspace files in file manager" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should filter files by type in file manager" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should search files by name" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should show file details and metadata" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should delete files when task is deleted" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should delete files when workspace is deleted" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should handle orphaned file cleanup" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="tasks/tasks.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="firefox" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="Task Management › Task Creation › should create task with all fields" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create task with minimal data" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should show validation error for empty title" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should show validation error when no service selected" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create task with assignee" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create confidential task" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should display tasks in correct kanban columns" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should move task between columns via drag and drop" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should show task count in column headers" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should filter tasks by service" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should filter tasks by assignee" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should edit task details" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should reassign task to different user" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should update task due date" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should prevent editing tasks in different workspace" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should delete task successfully" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should show confirmation dialog before deletion" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should cancel task deletion" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should prevent non-authorized users from deleting tasks" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should add comment to task" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should show comment count on task card" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should edit own comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should delete own comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should prevent editing other users comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should track task status changes" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should track task field changes" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should show who made changes and when" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="users/users.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="firefox" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="User Management › SuperAdmin User Management › should create new user with temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should create user with different roles" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation error for duplicate email" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation errors for empty fields" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation error for invalid email format" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should edit user details" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should set temporary password for existing user" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should delete user successfully" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show confirmation dialog before deleting user" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should cancel user deletion" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should prevent deleting other superadmins" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should prevent deleting self" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should change user role" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should filter users by role" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should search users by name or email" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show user creation date and last login" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Regular User Access Control › should deny access to user management for regular users" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Regular User Access Control › should not show admin navigation for regular users" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should allow users to edit their own profile" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should show validation errors for invalid profile data" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should prevent email duplication in profile update" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should force password change on first login with temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should successfully change temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should show validation errors for invalid new password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should show error when new passwords do not match" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Activity and Audit › should track user login activity" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Activity and Audit › should show user workspace memberships" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="workspace/workspace.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="firefox" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="Workspace Management › Workspace Creation › should create a new workspace successfully" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should create workspace with minimal data" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should show validation error for empty workspace name" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should prevent non-admin users from creating workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should generate unique invite codes for new workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should list all user workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should navigate between workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should show empty state when user has no workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should prevent access to workspace user is not a member of" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should join workspace with valid invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show error with invalid invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show error when trying to join workspace already a member of" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show validation error for empty invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should update workspace details" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should regenerate invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should prevent non-admin members from accessing settings" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should display workspace members" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should change member roles" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should remove members from workspace" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should prevent members from managing other members" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should delete workspace successfully" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should prevent deletion with incorrect workspace name" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should prevent non-admin from deleting workspace" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth/auth.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="webkit" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Authentication › Sign In › should successfully sign in with valid credentials" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show error with invalid email" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show error with invalid password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show validation errors for empty fields" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show validation error for invalid email format" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign Out › should successfully sign out" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should successfully change password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should show error with incorrect current password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should show error when new passwords do not match" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should handle unauthenticated access appropriately" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should maintain session across page refreshes" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should handle session expiry gracefully" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should allow superadmin access to user management" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should deny regular user access to user management" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should show different navigation options based on role" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="cross-platform/responsive.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="webkit" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should support touch interactions on kanban" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should handle mobile task details modal" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should handle mobile menu navigation" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet Layout › should optimize for tablet layout" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet Layout › should handle tablet form layouts" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Browser Compatibility › should work with different browsers" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Browser Compatibility › should handle different input methods" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Performance › should load quickly on mobile devices" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Performance › should handle large datasets efficiently" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="files/files.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="webkit" tests="24" failures="0" skipped="24" time="0" errors="0">
+<testcase name="File Management › Task File Attachments › should upload PDF file to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should upload image file to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should upload multiple files to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should show file upload progress" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should reject files exceeding size limit" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should reject invalid file types" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should download task attachment" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should delete task attachment" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should show attachment count on task card" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should upload file to task message" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should respect message file size limit" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should allow both images and PDFs in messages" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should only allow workspace members to access files" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should allow file access to workspace members only" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should deny file access to non-workspace members" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should handle confidential task file access" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should show file storage usage in workspace settings" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should list all workspace files in file manager" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should filter files by type in file manager" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should search files by name" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should show file details and metadata" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should delete files when task is deleted" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should delete files when workspace is deleted" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should handle orphaned file cleanup" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="tasks/tasks.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="webkit" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="Task Management › Task Creation › should create task with all fields" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create task with minimal data" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should show validation error for empty title" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should show validation error when no service selected" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create task with assignee" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create confidential task" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should display tasks in correct kanban columns" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should move task between columns via drag and drop" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should show task count in column headers" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should filter tasks by service" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should filter tasks by assignee" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should edit task details" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should reassign task to different user" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should update task due date" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should prevent editing tasks in different workspace" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should delete task successfully" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should show confirmation dialog before deletion" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should cancel task deletion" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should prevent non-authorized users from deleting tasks" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should add comment to task" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should show comment count on task card" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should edit own comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should delete own comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should prevent editing other users comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should track task status changes" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should track task field changes" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should show who made changes and when" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="users/users.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="webkit" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="User Management › SuperAdmin User Management › should create new user with temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should create user with different roles" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation error for duplicate email" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation errors for empty fields" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation error for invalid email format" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should edit user details" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should set temporary password for existing user" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should delete user successfully" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show confirmation dialog before deleting user" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should cancel user deletion" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should prevent deleting other superadmins" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should prevent deleting self" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should change user role" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should filter users by role" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should search users by name or email" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show user creation date and last login" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Regular User Access Control › should deny access to user management for regular users" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Regular User Access Control › should not show admin navigation for regular users" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should allow users to edit their own profile" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should show validation errors for invalid profile data" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should prevent email duplication in profile update" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should force password change on first login with temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should successfully change temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should show validation errors for invalid new password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should show error when new passwords do not match" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Activity and Audit › should track user login activity" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Activity and Audit › should show user workspace memberships" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="workspace/workspace.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="webkit" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="Workspace Management › Workspace Creation › should create a new workspace successfully" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should create workspace with minimal data" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should show validation error for empty workspace name" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should prevent non-admin users from creating workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should generate unique invite codes for new workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should list all user workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should navigate between workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should show empty state when user has no workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should prevent access to workspace user is not a member of" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should join workspace with valid invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show error with invalid invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show error when trying to join workspace already a member of" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show validation error for empty invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should update workspace details" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should regenerate invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should prevent non-admin members from accessing settings" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should display workspace members" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should change member roles" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should remove members from workspace" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should prevent members from managing other members" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should delete workspace successfully" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should prevent deletion with incorrect workspace name" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should prevent non-admin from deleting workspace" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth/auth.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Chrome" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Authentication › Sign In › should successfully sign in with valid credentials" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show error with invalid email" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show error with invalid password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show validation errors for empty fields" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show validation error for invalid email format" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign Out › should successfully sign out" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should successfully change password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should show error with incorrect current password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should show error when new passwords do not match" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should handle unauthenticated access appropriately" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should maintain session across page refreshes" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should handle session expiry gracefully" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should allow superadmin access to user management" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should deny regular user access to user management" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should show different navigation options based on role" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="cross-platform/responsive.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Chrome" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should support touch interactions on kanban" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should handle mobile task details modal" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should handle mobile menu navigation" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet Layout › should optimize for tablet layout" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet Layout › should handle tablet form layouts" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Browser Compatibility › should work with different browsers" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Browser Compatibility › should handle different input methods" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Performance › should load quickly on mobile devices" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Performance › should handle large datasets efficiently" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="files/files.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Chrome" tests="24" failures="0" skipped="24" time="0" errors="0">
+<testcase name="File Management › Task File Attachments › should upload PDF file to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should upload image file to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should upload multiple files to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should show file upload progress" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should reject files exceeding size limit" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should reject invalid file types" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should download task attachment" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should delete task attachment" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should show attachment count on task card" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should upload file to task message" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should respect message file size limit" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should allow both images and PDFs in messages" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should only allow workspace members to access files" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should allow file access to workspace members only" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should deny file access to non-workspace members" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should handle confidential task file access" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should show file storage usage in workspace settings" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should list all workspace files in file manager" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should filter files by type in file manager" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should search files by name" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should show file details and metadata" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should delete files when task is deleted" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should delete files when workspace is deleted" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should handle orphaned file cleanup" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="tasks/tasks.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Chrome" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="Task Management › Task Creation › should create task with all fields" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create task with minimal data" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should show validation error for empty title" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should show validation error when no service selected" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create task with assignee" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create confidential task" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should display tasks in correct kanban columns" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should move task between columns via drag and drop" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should show task count in column headers" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should filter tasks by service" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should filter tasks by assignee" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should edit task details" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should reassign task to different user" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should update task due date" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should prevent editing tasks in different workspace" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should delete task successfully" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should show confirmation dialog before deletion" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should cancel task deletion" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should prevent non-authorized users from deleting tasks" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should add comment to task" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should show comment count on task card" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should edit own comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should delete own comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should prevent editing other users comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should track task status changes" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should track task field changes" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should show who made changes and when" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="users/users.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Chrome" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="User Management › SuperAdmin User Management › should create new user with temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should create user with different roles" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation error for duplicate email" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation errors for empty fields" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation error for invalid email format" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should edit user details" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should set temporary password for existing user" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should delete user successfully" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show confirmation dialog before deleting user" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should cancel user deletion" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should prevent deleting other superadmins" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should prevent deleting self" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should change user role" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should filter users by role" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should search users by name or email" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show user creation date and last login" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Regular User Access Control › should deny access to user management for regular users" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Regular User Access Control › should not show admin navigation for regular users" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should allow users to edit their own profile" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should show validation errors for invalid profile data" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should prevent email duplication in profile update" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should force password change on first login with temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should successfully change temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should show validation errors for invalid new password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should show error when new passwords do not match" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Activity and Audit › should track user login activity" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Activity and Audit › should show user workspace memberships" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="workspace/workspace.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Chrome" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="Workspace Management › Workspace Creation › should create a new workspace successfully" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should create workspace with minimal data" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should show validation error for empty workspace name" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should prevent non-admin users from creating workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should generate unique invite codes for new workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should list all user workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should navigate between workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should show empty state when user has no workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should prevent access to workspace user is not a member of" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should join workspace with valid invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show error with invalid invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show error when trying to join workspace already a member of" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show validation error for empty invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should update workspace details" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should regenerate invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should prevent non-admin members from accessing settings" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should display workspace members" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should change member roles" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should remove members from workspace" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should prevent members from managing other members" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should delete workspace successfully" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should prevent deletion with incorrect workspace name" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should prevent non-admin from deleting workspace" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="auth/auth.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Safari" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Authentication › Sign In › should successfully sign in with valid credentials" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show error with invalid email" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show error with invalid password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show validation errors for empty fields" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign In › should show validation error for invalid email format" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Sign Out › should successfully sign out" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should successfully change password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should show error with incorrect current password" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Password Change › should show error when new passwords do not match" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should handle unauthenticated access appropriately" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should maintain session across page refreshes" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Session Management › should handle session expiry gracefully" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should allow superadmin access to user management" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should deny regular user access to user management" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Authentication › Role-based Access › should show different navigation options based on role" classname="auth/auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="cross-platform/responsive.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Safari" tests="21" failures="0" skipped="21" time="0" errors="0">
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile (375x667) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet (768x1024) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should render signin page responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should handle navigation responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should display kanban board responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Desktop (1920x1080) › should handle forms responsively" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should support touch interactions on kanban" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should handle mobile task details modal" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Mobile Interactions › should handle mobile menu navigation" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet Layout › should optimize for tablet layout" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Tablet Layout › should handle tablet form layouts" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Browser Compatibility › should work with different browsers" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Browser Compatibility › should handle different input methods" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Performance › should load quickly on mobile devices" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Cross-Platform Compatibility › Performance › should handle large datasets efficiently" classname="cross-platform/responsive.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="files/files.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Safari" tests="24" failures="0" skipped="24" time="0" errors="0">
+<testcase name="File Management › Task File Attachments › should upload PDF file to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should upload image file to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should upload multiple files to task" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should show file upload progress" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should reject files exceeding size limit" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should reject invalid file types" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should download task attachment" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should delete task attachment" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Task File Attachments › should show attachment count on task card" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should upload file to task message" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should respect message file size limit" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › Message File Attachments › should allow both images and PDFs in messages" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should only allow workspace members to access files" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should allow file access to workspace members only" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should deny file access to non-workspace members" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Access Control › should handle confidential task file access" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should show file storage usage in workspace settings" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should list all workspace files in file manager" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should filter files by type in file manager" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should search files by name" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Storage and Management › should show file details and metadata" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should delete files when task is deleted" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should delete files when workspace is deleted" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="File Management › File Cleanup and Deletion › should handle orphaned file cleanup" classname="files/files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="tasks/tasks.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Safari" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="Task Management › Task Creation › should create task with all fields" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create task with minimal data" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should show validation error for empty title" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should show validation error when no service selected" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create task with assignee" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Creation › should create confidential task" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should display tasks in correct kanban columns" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should move task between columns via drag and drop" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should show task count in column headers" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should filter tasks by service" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Display and Kanban › should filter tasks by assignee" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should edit task details" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should reassign task to different user" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should update task due date" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Editing › should prevent editing tasks in different workspace" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should delete task successfully" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should show confirmation dialog before deletion" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should cancel task deletion" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Deletion › should prevent non-authorized users from deleting tasks" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should add comment to task" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should show comment count on task card" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should edit own comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should delete own comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task Comments and Messages › should prevent editing other users comments" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should track task status changes" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should track task field changes" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Task Management › Task History and Audit Trail › should show who made changes and when" classname="tasks/tasks.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="users/users.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Safari" tests="27" failures="0" skipped="27" time="0" errors="0">
+<testcase name="User Management › SuperAdmin User Management › should create new user with temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should create user with different roles" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation error for duplicate email" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation errors for empty fields" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show validation error for invalid email format" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should edit user details" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should set temporary password for existing user" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should delete user successfully" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show confirmation dialog before deleting user" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should cancel user deletion" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should prevent deleting other superadmins" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should prevent deleting self" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should change user role" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should filter users by role" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should search users by name or email" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › SuperAdmin User Management › should show user creation date and last login" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Regular User Access Control › should deny access to user management for regular users" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Regular User Access Control › should not show admin navigation for regular users" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should allow users to edit their own profile" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should show validation errors for invalid profile data" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Profile Management › should prevent email duplication in profile update" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should force password change on first login with temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should successfully change temporary password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should show validation errors for invalid new password" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › Temporary Password Flow › should show error when new passwords do not match" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Activity and Audit › should track user login activity" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="User Management › User Activity and Audit › should show user workspace memberships" classname="users/users.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="workspace/workspace.spec.ts" timestamp="2025-08-06T04:43:59.769Z" hostname="Mobile Safari" tests="23" failures="0" skipped="23" time="0" errors="0">
+<testcase name="Workspace Management › Workspace Creation › should create a new workspace successfully" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should create workspace with minimal data" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should show validation error for empty workspace name" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should prevent non-admin users from creating workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Creation › should generate unique invite codes for new workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should list all user workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should navigate between workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should show empty state when user has no workspaces" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Navigation › should prevent access to workspace user is not a member of" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should join workspace with valid invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show error with invalid invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show error when trying to join workspace already a member of" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Joining › should show validation error for empty invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should update workspace details" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should regenerate invite code" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Settings › should prevent non-admin members from accessing settings" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should display workspace members" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should change member roles" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should remove members from workspace" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Members › should prevent members from managing other members" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should delete workspace successfully" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should prevent deletion with incorrect workspace name" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Workspace Management › Workspace Deletion › should prevent non-admin from deleting workspace" classname="workspace/workspace.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

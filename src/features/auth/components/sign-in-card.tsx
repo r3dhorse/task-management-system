@@ -63,7 +63,7 @@ export const SignInCard = () => {
 
         <CardContent className="px-8 pb-12">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" data-testid="signin-form">
             <FormField
               name="email"
               control={form.control}
@@ -76,6 +76,7 @@ export const SignInCard = () => {
                       type="email"
                       placeholder="Email address"
                       autoComplete="email"
+                      data-testid="email-input"
                       className="h-12 px-4 text-base bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white/50 focus:ring-white/25 backdrop-blur-sm transition-all duration-200 hover:bg-white/25 focus:bg-white/25"
                     />
                   </FormControl>
@@ -97,6 +98,7 @@ export const SignInCard = () => {
                         type={showPassword ? "text" : "password"}
                         placeholder="Password"
                         autoComplete="current-password"
+                        data-testid="password-input"
                         className="h-12 px-4 pr-12 text-base bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white/50 focus:ring-white/25 backdrop-blur-sm transition-all duration-200 hover:bg-white/25 focus:bg-white/25"
                       />
                       <Button
@@ -123,6 +125,7 @@ export const SignInCard = () => {
               disabled={isPending}
               type="submit"
               size="lg"
+              data-testid="signin-button"
               className="w-full h-12 text-base font-semibold bg-white/20 hover:bg-white/30 active:bg-white/40 text-white border border-white/30 focus:ring-2 focus:ring-white/25 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-200 backdrop-blur-sm disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
             >
               {isPending ? (

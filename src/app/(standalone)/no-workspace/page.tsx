@@ -5,6 +5,7 @@ import { DottedSeparator } from "@/components/dotted-separator";
 import { LogoutButton } from "./logout-button";
 import { RefreshButton } from "./refresh-button";
 import { WorkspaceActions } from "./workspace-actions";
+import { UserButton } from "@/features/auth/components/user-button";
 import { CheckCircle, Users, Mail, Shield } from "lucide-react";
 import { isAdminUser } from "@/features/auth/utils";
 
@@ -135,7 +136,10 @@ const NoWorkspacePage = async () => {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <WorkspaceActions user={user} />
               <RefreshButton />
-              <LogoutButton />
+              <div className="flex items-center gap-3">
+                <LogoutButton />
+                <UserButton />
+              </div>
             </div>
 
             {/* Help Text */}

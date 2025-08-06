@@ -88,6 +88,7 @@ export const ChangePasswordForm = ({ onCancel }: ChangePasswordFormProps) => {
                           type={showPasswords.old ? "text" : "password"}
                           placeholder="Enter your current password"
                           disabled={isPending}
+                          data-testid="current-password-input"
                         />
                         <Button
                           type="button"
@@ -125,6 +126,7 @@ export const ChangePasswordForm = ({ onCancel }: ChangePasswordFormProps) => {
                           type={showPasswords.new ? "text" : "password"}
                           placeholder="Enter your new password"
                           disabled={isPending}
+                          data-testid="new-password-input"
                         />
                         <Button
                           type="button"
@@ -162,6 +164,7 @@ export const ChangePasswordForm = ({ onCancel }: ChangePasswordFormProps) => {
                           type={showPasswords.confirm ? "text" : "password"}
                           placeholder="Confirm your new password"
                           disabled={isPending}
+                          data-testid="confirm-new-password-input"
                         />
                         <Button
                           type="button"
@@ -203,6 +206,7 @@ export const ChangePasswordForm = ({ onCancel }: ChangePasswordFormProps) => {
                   size="lg"
                   disabled={isPending}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  data-testid="change-password-button"
                 >
                   {isPending ? "Changing..." : "Change Password"}
                 </Button>
