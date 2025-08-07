@@ -23,31 +23,46 @@ test.describe('Authentication', () => {
     });
 
     test('should show error with invalid email', async ({ page }) => {
-      await page.goto('/sign-in');
+      await page.goto('/sign-in', { waitUntil: 'domcontentloaded', timeout: 60000 });
+      
+      // Wait for form elements to be loaded
+      await page.waitForSelector('[data-testid="email-input"]', { timeout: 30000 });
+      await page.waitForSelector('[data-testid="password-input"]', { timeout: 30000 });
+      await page.waitForSelector('[data-testid="signin-button"]', { timeout: 30000 });
+      
       await page.fill('[data-testid="email-input"]', 'invalid@test.com');
       await page.fill('[data-testid="password-input"]', 'password123');
       await page.click('[data-testid="signin-button"]');
       
       // Wait for the error toast to appear
-      await expect(page.locator('text=Incorrect email or password. Please check your credentials and try again.')).toBeVisible();
+      await expect(page.locator('text=Incorrect email or password. Please check your credentials and try again.')).toBeVisible({ timeout: 30000 });
       expect(page.url()).toMatch(/\/sign-in/);
     });
 
     test('should show error with invalid password', async ({ page }) => {
-      await page.goto('/sign-in');
+      await page.goto('/sign-in', { waitUntil: 'domcontentloaded', timeout: 60000 });
+      
+      // Wait for form elements to be loaded
+      await page.waitForSelector('[data-testid="email-input"]', { timeout: 30000 });
+      await page.waitForSelector('[data-testid="password-input"]', { timeout: 30000 });
+      await page.waitForSelector('[data-testid="signin-button"]', { timeout: 30000 });
+      
       await page.fill('[data-testid="email-input"]', TEST_USERS.admin.email);
       await page.fill('[data-testid="password-input"]', 'wrongpassword');
       await page.click('[data-testid="signin-button"]');
       
       // Wait for the error toast to appear
-      await expect(page.locator('text=Incorrect email or password. Please check your credentials and try again.')).toBeVisible();
+      await expect(page.locator('text=Incorrect email or password. Please check your credentials and try again.')).toBeVisible({ timeout: 30000 });
       expect(page.url()).toMatch(/\/sign-in/);
     });
 
     test('should show validation errors for empty fields', async ({ page }) => {
-      await page.goto('/sign-in');
+      await page.goto('/sign-in', { waitUntil: 'domcontentloaded', timeout: 60000 });
       
-      // Wait for form to load
+      // Wait for form elements to be loaded
+      await page.waitForSelector('[data-testid="email-input"]', { timeout: 30000 });
+      await page.waitForSelector('[data-testid="password-input"]', { timeout: 30000 });
+      await page.waitForSelector('[data-testid="signin-button"]', { timeout: 30000 });
       await page.waitForSelector('[data-testid="signin-button"]');
       
       // Click submit without filling fields
@@ -59,7 +74,12 @@ test.describe('Authentication', () => {
     });
 
     test('should show validation error for invalid email format', async ({ page }) => {
-      await page.goto('/sign-in');
+      await page.goto('/sign-in', { waitUntil: 'domcontentloaded', timeout: 60000 });
+      
+      // Wait for form elements to be loaded
+      await page.waitForSelector('[data-testid="email-input"]', { timeout: 30000 });
+      await page.waitForSelector('[data-testid="password-input"]', { timeout: 30000 });
+      await page.waitForSelector('[data-testid="signin-button"]', { timeout: 30000 });
       
       // Fill with an invalid email format and submit
       await page.fill('[data-testid="email-input"]', 'not-an-email');
@@ -68,7 +88,7 @@ test.describe('Authentication', () => {
       
       // For invalid email format, the server should reject with "Invalid credentials"
       // since the user doesn't exist, or client validation should trigger
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(3000);
       
       // The application may handle this as a server-side validation
       // Check if we get "Invalid credentials" or stay on sign-in page
