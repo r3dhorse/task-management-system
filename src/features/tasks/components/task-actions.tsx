@@ -2,11 +2,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ExternalLinkIcon, ArchiveIcon } from "lucide-react";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useDeleteTask } from "../api/use-delete-task";
+import { useCreateTaskHistory } from "../api/use-create-task-history";
+import { TaskHistoryAction } from "../types/history";
 import { useRouter } from "next/navigation";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { Member, MemberRole } from "@/features/members/types";
+import { Member } from "@/features/members/types";
 
 interface TaskActionsProps {
   id: string;
@@ -14,9 +16,11 @@ interface TaskActionsProps {
   children: React.ReactNode;
   deleteOnly?: boolean;
   creatorId?: string; // Task creator's user ID
+  assigneeId?: string; // Task assignee's member ID
+  status?: string; // Task status to determine if already archived
 };
 
-export const TaskActions = ({ id, serviceId, children, deleteOnly = false, creatorId }: TaskActionsProps) => {
+export const TaskActions = ({ id, serviceId, children, deleteOnly = false, creatorId, assigneeId, status }: TaskActionsProps) => {
   const workspaceId = useWorkspaceId();
   const router = useRouter();
   
@@ -30,8 +34,10 @@ export const TaskActions = ({ id, serviceId, children, deleteOnly = false, creat
   ) as Member;
   
   const isCreator = currentUser && creatorId ? currentUser.id === creatorId : false;
-  const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
-  const canDelete = isCreator || isWorkspaceAdmin;
+  const isAssignee = currentMember && assigneeId ? currentMember.id === assigneeId : false;
+  const isSuperAdmin = currentUser?.isSuperAdmin || false;
+  const canDelete = isCreator || isAssignee || isSuperAdmin;
+  const isAlreadyArchived = status === "ARCHIVED";
 
   const [ConfirmDialog, confirm] = useConfirm(
     "Archive Task",
@@ -40,12 +46,27 @@ export const TaskActions = ({ id, serviceId, children, deleteOnly = false, creat
   )
 
   const { mutate, isPending } = useDeleteTask();
+  const { mutate: createHistory } = useCreateTaskHistory();
 
   const onArchive = async () => {
     const ok = await confirm();
     if (!ok) return;
 
-    mutate({ param: { taskId: id } });
+    mutate(
+      { param: { taskId: id } },
+      {
+        onSuccess: () => {
+          // Log archive action to task history
+          createHistory({
+            json: {
+              taskId: id,
+              action: TaskHistoryAction.ARCHIVED,
+              details: "Task archived by user"
+            }
+          });
+        }
+      }
+    );
   }
 
   const onOpenTask = () => {
@@ -85,7 +106,7 @@ export const TaskActions = ({ id, serviceId, children, deleteOnly = false, creat
             </>
           )}
 
-          {canDelete && (
+          {canDelete && !isAlreadyArchived && (
             <DropdownMenuItem
               onClick={onArchive}
               disabled={isPending}

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { TaskStatus } from '../types';
+import { useCurrent } from '@/features/auth/api/use-current';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +59,13 @@ const stages: StageData[] = [
     emoji: '✅', 
     color: 'text-emerald-700', 
     bgColor: 'bg-emerald-50',
+  },
+  { 
+    status: TaskStatus.ARCHIVED, 
+    label: 'Archived', 
+    emoji: '🗄️', 
+    color: 'text-red-700', 
+    bgColor: 'bg-red-50',
   }
 ];
 
@@ -67,6 +75,7 @@ interface EnhancedStageIndicatorProps {
   taskName?: string;
   className?: string;
   showTime?: boolean;
+  isClickable?: boolean;
 }
 
 // Add shimmer animation keyframes and scrollbar hiding
@@ -92,35 +101,63 @@ export const EnhancedStageIndicator = ({
   onStatusChange, 
   taskName = "this task",
   className = "",
-  showTime = true
+  showTime = true,
+  isClickable = true
 }: EnhancedStageIndicatorProps) => {
   const [pendingStatus, setPendingStatus] = useState<TaskStatus | null>(null);
+  const { data: currentUser } = useCurrent();
+  const isSuperAdmin = currentUser?.isSuperAdmin || false;
   
-  // Filter out BACKLOG stage if current task is not in BACKLOG
-  const visibleStages = currentStatus === TaskStatus.BACKLOG 
-    ? stages 
-    : stages.filter(stage => stage.status !== TaskStatus.BACKLOG);
+  // Determine visible stages based on current status and user permissions
+  let visibleStages = stages;
+  
+  if (currentStatus === TaskStatus.ARCHIVED) {
+    // For archived tasks, only show BACKLOG and ARCHIVED stages for superadmins
+    visibleStages = isSuperAdmin 
+      ? [
+          stages.find(s => s.status === TaskStatus.BACKLOG)!,
+          stages.find(s => s.status === TaskStatus.ARCHIVED)!
+        ]
+      : [stages.find(s => s.status === TaskStatus.ARCHIVED)!];
+  } else if (currentStatus === TaskStatus.BACKLOG) {
+    // Show all stages except ARCHIVED for BACKLOG tasks
+    visibleStages = stages.filter(stage => stage.status !== TaskStatus.ARCHIVED);
+  } else {
+    // For other statuses, filter out BACKLOG and ARCHIVED
+    visibleStages = stages.filter(stage => 
+      stage.status !== TaskStatus.BACKLOG && stage.status !== TaskStatus.ARCHIVED
+    );
+  }
   
   const currentStageIndex = visibleStages.findIndex(stage => stage.status === currentStatus);
 
   const getStageClasses = (stage: StageData, index: number) => {
-    const baseClasses = "relative px-3 py-2 text-xs font-medium transition-all duration-500 ease-out cursor-pointer group rounded-md border backdrop-blur-sm transform-gpu hover:-translate-y-0.5";
+    const baseCursor = isClickable ? "cursor-pointer" : "cursor-default";
+    const baseClasses = `relative px-3 py-2 text-xs font-medium transition-all duration-500 ease-out ${baseCursor} group rounded-md border backdrop-blur-sm transform-gpu`;
+    const hoverClasses = isClickable ? "hover:-translate-y-0.5" : "";
     
     if (stage.status === currentStatus) {
-      return `${baseClasses} ${stage.bgColor} ${stage.color} border-current/20 shadow-md ring-1 ring-current/10 z-10 hover:shadow-xl hover:ring-2`;
+      const currentHover = isClickable ? "hover:shadow-xl hover:ring-2" : "";
+      return `${baseClasses} ${hoverClasses} ${stage.bgColor} ${stage.color} border-current/20 shadow-md ring-1 ring-current/10 z-10 ${currentHover}`;
     }
     
     // Completed stages (before current)
     if (index < currentStageIndex) {
-      return `${baseClasses} bg-slate-50/80 text-slate-600 border-slate-200/60 hover:bg-gradient-to-br hover:from-slate-100 hover:to-slate-50 hover:border-slate-400/80 hover:shadow-lg hover:text-slate-800 hover:scale-105`;
+      const completedHover = isClickable ? "hover:bg-gradient-to-br hover:from-slate-100 hover:to-slate-50 hover:border-slate-400/80 hover:shadow-lg hover:text-slate-800 hover:scale-105" : "";
+      return `${baseClasses} ${hoverClasses} bg-slate-50/80 text-slate-600 border-slate-200/60 ${completedHover}`;
     }
     
     // Future stages (after current)
-    return `${baseClasses} bg-white/90 text-slate-500 border-slate-200/40 hover:bg-gradient-to-br hover:from-white hover:to-slate-50/70 hover:text-slate-800 hover:border-slate-400/60 hover:shadow-lg hover:scale-105`;
+    const futureHover = isClickable ? "hover:bg-gradient-to-br hover:from-white hover:to-slate-50/70 hover:text-slate-800 hover:border-slate-400/60 hover:shadow-lg hover:scale-105" : "";
+    return `${baseClasses} ${hoverClasses} bg-white/90 text-slate-500 border-slate-200/40 ${futureHover}`;
   };
 
   const handleStageClick = (status: TaskStatus) => {
-    if (status === currentStatus) return;
+    if (!isClickable || status === currentStatus) return;
+    
+    // Only allow superadmins to move archived tasks back to backlog
+    if (currentStatus === TaskStatus.ARCHIVED && !isSuperAdmin) return;
+    
     setPendingStatus(status);
   };
 
@@ -251,17 +288,40 @@ export const CompactStageIndicator = ({
   currentStatus, 
   onStatusChange, 
   taskName = "this task",
-  className = ""
+  className = "",
+  isClickable = true
 }: EnhancedStageIndicatorProps) => {
   const [pendingStatus, setPendingStatus] = useState<TaskStatus | null>(null);
+  const { data: currentUser } = useCurrent();
+  const isSuperAdmin = currentUser?.isSuperAdmin || false;
 
-  // Filter out BACKLOG stage if current task is not in BACKLOG
-  const visibleStages = currentStatus === TaskStatus.BACKLOG 
-    ? stages 
-    : stages.filter(stage => stage.status !== TaskStatus.BACKLOG);
+  // Determine visible stages based on current status and user permissions
+  let visibleStages = stages;
+  
+  if (currentStatus === TaskStatus.ARCHIVED) {
+    // For archived tasks, only show BACKLOG and ARCHIVED stages for superadmins
+    visibleStages = isSuperAdmin 
+      ? [
+          stages.find(s => s.status === TaskStatus.BACKLOG)!,
+          stages.find(s => s.status === TaskStatus.ARCHIVED)!
+        ]
+      : [stages.find(s => s.status === TaskStatus.ARCHIVED)!];
+  } else if (currentStatus === TaskStatus.BACKLOG) {
+    // Show all stages except ARCHIVED for BACKLOG tasks
+    visibleStages = stages.filter(stage => stage.status !== TaskStatus.ARCHIVED);
+  } else {
+    // For other statuses, filter out BACKLOG and ARCHIVED
+    visibleStages = stages.filter(stage => 
+      stage.status !== TaskStatus.BACKLOG && stage.status !== TaskStatus.ARCHIVED
+    );
+  }
 
   const handleStageClick = (status: TaskStatus) => {
-    if (status === currentStatus) return;
+    if (!isClickable || status === currentStatus) return;
+    
+    // Only allow superadmins to move archived tasks back to backlog
+    if (currentStatus === TaskStatus.ARCHIVED && !isSuperAdmin) return;
+    
     setPendingStatus(status);
   };
 
@@ -294,10 +354,12 @@ export const CompactStageIndicator = ({
           {visibleStages.map((stage) => (
             <div
               key={stage.status}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-500 ease-out cursor-pointer whitespace-nowrap border backdrop-blur-sm transform-gpu hover:-translate-y-0.5 hover:scale-105 group ${
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-500 ease-out whitespace-nowrap border backdrop-blur-sm transform-gpu group ${
+                isClickable ? 'cursor-pointer hover:-translate-y-0.5 hover:scale-105' : 'cursor-default'
+              } ${
                 stage.status === currentStatus
-                  ? `${stage.bgColor} ${stage.color} border-current/20 shadow-sm ring-1 ring-current/10 hover:shadow-lg hover:ring-2`
-                  : 'bg-white/90 text-slate-500 border-slate-200/40 hover:bg-gradient-to-br hover:from-white hover:to-slate-50/70 hover:text-slate-800 hover:border-slate-400/60 hover:shadow-md'
+                  ? `${stage.bgColor} ${stage.color} border-current/20 shadow-sm ring-1 ring-current/10 ${isClickable ? 'hover:shadow-lg hover:ring-2' : ''}`
+                  : `bg-white/90 text-slate-500 border-slate-200/40 ${isClickable ? 'hover:bg-gradient-to-br hover:from-white hover:to-slate-50/70 hover:text-slate-800 hover:border-slate-400/60 hover:shadow-md' : ''}`
               }`}
               onClick={() => handleStageClick(stage.status)}
             >

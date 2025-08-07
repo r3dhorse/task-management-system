@@ -231,8 +231,10 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   ) as Member;
   
   const isCreator = currentUser && task?.creatorId ? currentUser.id === task.creatorId : false;
-  const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
-  const canDelete = isCreator || isWorkspaceAdmin;
+  const isAssignee = currentMember && task?.assigneeId ? currentMember.id === task.assigneeId : false;
+  const isSuperAdmin = currentUser?.isSuperAdmin || false;
+  const canDelete = isCreator || isAssignee || isSuperAdmin;
+  const isAlreadyArchived = task?.status === "ARCHIVED";
   
   // Visitors can edit tasks but cannot change status
   const canEdit = currentMember?.role !== undefined; // All members (including visitors) can edit
@@ -341,6 +343,14 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       { param: { taskId: task!.id } },
       {
         onSuccess: () => {
+          // Log archive action to task history
+          createHistory({
+            json: {
+              taskId: task!.id,
+              action: TaskHistoryAction.ARCHIVED,
+              details: "Task archived by user"
+            }
+          });
           router.back(); // Navigate back after successful archiving
         },
       }
@@ -464,7 +474,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                     Update Task
                   </Button>
                 )}
-                {canDelete && (
+                {canDelete && !isAlreadyArchived && (
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -513,13 +523,12 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
               </div>
               
               {/* Enhanced Stage Indicator */}
-              {canEditStatus && (
-                <EnhancedStageIndicator
-                  currentStatus={task.status as TaskStatus}
-                  onStatusChange={handleStatusChange}
-                  taskName={task.name}
-                />
-              )}
+              <EnhancedStageIndicator
+                currentStatus={task.status as TaskStatus}
+                onStatusChange={handleStatusChange}
+                taskName={task.name}
+                isClickable={isAssignee && canEditStatus}
+              />
             </div>
           </div>
         </div>

@@ -153,9 +153,16 @@ export const columns: ColumnDef<PopulatedTask>[] = [
       const id = row.original.id;
       const serviceId = row.original.serviceId;
       const creatorId = row.original.creatorId;
+      const assigneeId = row.original.assigneeId;
+      const status = row.original.status;
+
+      // Hide trash icon if task is already archived
+      if (status === "ARCHIVED") {
+        return null;
+      }
 
       return (
-        <TaskActions id={id} serviceId={serviceId} deleteOnly={true} creatorId={creatorId || undefined} >
+        <TaskActions id={id} serviceId={serviceId} deleteOnly={true} creatorId={creatorId || undefined} assigneeId={assigneeId || undefined} status={status} >
           <Button variant="ghost" className="size-8 p-0">
             <Trash2 className="size-4" />
           </Button>

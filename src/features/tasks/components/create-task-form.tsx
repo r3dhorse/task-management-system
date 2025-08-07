@@ -15,7 +15,6 @@ import { useCreateTask } from "../api/use-create-task";
 import { DatePicker } from "@/components/date-picker";
 import { TaskStatus } from "../types";
 import { Textarea } from "@/components/ui/textarea";
-import { FileUpload } from "@/components/file-upload";
 import { MultiSelect } from "@/components/ui/multi-select-simple";
 import { useGetServices } from "@/features/services/api/use-get-services";
 import { useGetMembers } from "@/features/members/api/use-get-members";
@@ -46,7 +45,6 @@ export const CreateTaskForm = ({
   workspaceId,
 }: CreateTaskFormProps) => {
   const { mutate, isPending } = useCreateTask();
-  const [attachmentId, setAttachmentId] = useState<string>("");
   const [selectedFollowers, setSelectedFollowers] = useState<string[]>([]);
   const { data: currentUser } = useCurrent();
 
@@ -160,7 +158,7 @@ export const CreateTaskForm = ({
       ...values,
       serviceId: values.serviceId || "", // Convert undefined to empty string
       dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : "", // Convert date to ISO string
-      attachmentId: attachmentId || "", // Send empty string instead of undefined
+      attachmentId: "", // No attachment support in creation
       assigneeId: values.assigneeId === "unassigned" ? "" : values.assigneeId || "", // Send empty string if unassigned
       followedIds: JSON.stringify(selectedFollowers), // JSON string array of follower IDs
       isConfidential: values.isConfidential || false, // Ensure boolean value
@@ -176,7 +174,6 @@ export const CreateTaskForm = ({
           status: TaskStatus.TODO,
           isConfidential: false,
         });
-        setAttachmentId("");
         setSelectedFollowers([]);
         onCancel?.();
       },
@@ -414,43 +411,8 @@ export const CreateTaskForm = ({
                 )}
               />
 
-              {/* 6. Status (default value TODO) */}
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <FormMessage />
-                      <SelectContent>
-                        <SelectItem value={TaskStatus.BACKLOG}>
-                          Backlog
-                        </SelectItem>
-                        <SelectItem value={TaskStatus.TODO}>
-                          Todo
-                        </SelectItem>
-                        <SelectItem value={TaskStatus.IN_PROGRESS}>
-                          In Progress
-                        </SelectItem>
-                        <SelectItem value={TaskStatus.IN_REVIEW}>
-                          In Review
-                        </SelectItem>
-                        <SelectItem value={TaskStatus.DONE}>
-                          Done
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
 
-              {/* 7. Due Date (optional) */}
+              {/* 6. Due Date (optional) */}
               <FormField
                 control={form.control}
                 name="dueDate"
@@ -469,7 +431,7 @@ export const CreateTaskForm = ({
                 )}
               />
 
-              {/* 8. Followers (Workspace Members) */}
+              {/* 7. Followers (Workspace Members) */}
               <FormItem>
                 <FormLabel>Followers</FormLabel>
                 <FormControl>
@@ -495,18 +457,6 @@ export const CreateTaskForm = ({
                 </div>
               </FormItem>
 
-              {/* 9. Attachment */}
-              <div>
-                <FileUpload
-                  onFileUploaded={(fileId) => {
-                    setAttachmentId(fileId);
-                  }}
-                  onFileRemoved={() => {
-                    setAttachmentId("");
-                  }}
-                  disabled={isPending}
-                />
-              </div>
 
               <DottedSeparator />
               <div className="flex flex-col sm:flex-row items-center gap-3 sm:justify-between">

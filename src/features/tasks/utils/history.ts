@@ -166,6 +166,9 @@ export function formatHistoryMessage(
     case TaskHistoryAction.FOLLOWERS_CHANGED:
       return formatFollowersChangeMessage(userName, oldValue, newValue);
     
+    case TaskHistoryAction.ARCHIVED:
+      return `${userName} archived this task`;
+    
     default:
       return `${userName} updated the task`;
   }
@@ -199,6 +202,8 @@ function formatStatus(status?: string): string {
       return "In Review";
     case TaskStatus.DONE:
       return "Done";
+    case TaskStatus.ARCHIVED:
+      return "Archived";
     default:
       return status;
   }
@@ -259,6 +264,8 @@ export function getActionColor(action: TaskHistoryAction, field?: string): strin
       return "bg-gray-500";
     case TaskHistoryAction.FOLLOWERS_CHANGED:
       return "bg-teal-500";
+    case TaskHistoryAction.ARCHIVED:
+      return "bg-red-500";
     default:
       return "bg-gray-400";
   }

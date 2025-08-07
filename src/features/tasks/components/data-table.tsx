@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import {
   ColumnDef,
@@ -59,9 +60,23 @@ export function DataTable<TData, TValue>({
     },
   });
 
-  const handleRowDoubleClick = (row: { original: unknown }) => {
-    const original = row.original as { $id?: string };
-    const taskId = original.$id;
+  const handleRowClick = (row: { original: unknown }, e: React.MouseEvent) => {
+    // Check if the click was on the actions column (avoid navigating when clicking actions)
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-testid="task-actions"]')) {
+      return;
+    }
+
+    const original = row.original as { id?: string };
+    const taskId = original.id;
+    
+    // Validate task ID format before navigation (same validation as kanban card)
+    if (!taskId || taskId.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(taskId)) {
+      console.error("Invalid task ID format:", taskId);
+      toast.error("Invalid task ID format");
+      return;
+    }
+    
     if (taskId && workspaceId) {
       router.push(`/workspaces/${workspaceId}/tasks/${taskId}`);
     }
@@ -111,9 +126,8 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-blue-50/50 transition-colors duration-200 border-b border-neutral-200/60 cursor-pointer touch-manipulation"
-                  onDoubleClick={() => handleRowDoubleClick(row)}
-                  onClick={() => handleRowDoubleClick(row)}
+                  className="hover:bg-blue-50/50 hover:shadow-sm transition-all duration-200 border-b border-neutral-200/60 cursor-pointer touch-manipulation group hover:scale-[1.01] hover:border-blue-300/60"
+                  onClick={(e) => handleRowClick(row, e)}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="px-2 sm:px-4 py-3 sm:py-2 whitespace-nowrap">

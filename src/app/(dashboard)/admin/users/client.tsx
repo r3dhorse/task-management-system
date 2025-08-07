@@ -629,10 +629,8 @@ export function UserManagementClient() {
                   id="createPassword"
                   type="text"
                   value={createForm.temporaryPassword}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, temporaryPassword: e.target.value })
-                  }
-                  placeholder="Enter temporary password"
+                  readOnly
+                  placeholder="Click Generate to create password"
                   className="flex-1"
                 />
                 <Button
@@ -645,7 +643,7 @@ export function UserManagementClient() {
                 </Button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Password must be at least 6 characters long
+                Password must be at least 8 characters long
               </p>
             </div>
             
@@ -792,8 +790,8 @@ export function UserManagementClient() {
                   id="tempPassword"
                   type="text"
                   value={tempPassword}
-                  onChange={(e) => setTempPassword(e.target.value)}
-                  placeholder="Enter temporary password"
+                  readOnly
+                  placeholder="Click Generate to create password"
                   className="flex-1"
                 />
                 <Button
@@ -806,7 +804,7 @@ export function UserManagementClient() {
                 </Button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Password must be at least 6 characters long
+                Password must be at least 8 characters long
               </p>
             </div>
             
