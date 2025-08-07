@@ -112,6 +112,16 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
     });
   }
 
+  // Confidential change
+  if (newTask.isConfidential !== undefined && newTask.isConfidential !== oldTask.isConfidential) {
+    changes.push({
+      field: "isConfidential",
+      oldValue: oldTask.isConfidential ? "true" : "false",
+      newValue: newTask.isConfidential ? "true" : "false",
+      displayName: "Confidential"
+    });
+  }
+
   return changes;
 }
 
@@ -130,6 +140,16 @@ export function formatHistoryMessage(
   // Handle service changes even when action is UPDATED
   if (field === "serviceId") {
     return `${userName} moved task to service ${formatValue(newValue)}`;
+  }
+
+  // Handle confidential changes even when action is UPDATED
+  if (field === "isConfidential") {
+    const isConfidential = newValue === "true";
+    if (isConfidential) {
+      return `${userName} marked this task as confidential`;
+    } else {
+      return `${userName} removed confidential status from this task`;
+    }
   }
 
   switch (action) {
@@ -165,6 +185,14 @@ export function formatHistoryMessage(
     
     case TaskHistoryAction.FOLLOWERS_CHANGED:
       return formatFollowersChangeMessage(userName, oldValue, newValue);
+    
+    case TaskHistoryAction.CONFIDENTIAL_CHANGED:
+      const isConfidentialStatus = newValue === "true";
+      if (isConfidentialStatus) {
+        return `${userName} marked this task as confidential`;
+      } else {
+        return `${userName} removed confidential status from this task`;
+      }
     
     case TaskHistoryAction.ARCHIVED:
       return `${userName} archived this task`;
@@ -242,6 +270,10 @@ export function getActionColor(action: TaskHistoryAction, field?: string): strin
     return "bg-indigo-500";
   }
 
+  // Handle confidential changes even when action is UPDATED
+  if (field === "isConfidential") {
+    return "bg-amber-500";
+  }
 
   switch (action) {
     case TaskHistoryAction.CREATED:
@@ -264,6 +296,8 @@ export function getActionColor(action: TaskHistoryAction, field?: string): strin
       return "bg-gray-500";
     case TaskHistoryAction.FOLLOWERS_CHANGED:
       return "bg-teal-500";
+    case TaskHistoryAction.CONFIDENTIAL_CHANGED:
+      return "bg-amber-500";
     case TaskHistoryAction.ARCHIVED:
       return "bg-red-500";
     default:

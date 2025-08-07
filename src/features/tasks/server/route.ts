@@ -760,6 +760,9 @@ const app = new Hono()
                 case "followedIds":
                   action = TaskHistoryAction.FOLLOWERS_CHANGED;
                   break;
+                case "isConfidential":
+                  action = TaskHistoryAction.CONFIDENTIAL_CHANGED;
+                  break;
                 default:
                   action = TaskHistoryAction.UPDATED;
               }
