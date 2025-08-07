@@ -11,7 +11,7 @@ import { DataTable } from "@/features/tasks/components/data-table";
 import { columns } from "@/features/tasks/components/columns";
 import { KanbanBoard } from "@/features/tasks/components/kanban-board";
 import { PopulatedTask } from "@/features/tasks/types";
-import { ListTodo } from "lucide-react";
+import { ListTodo } from "@/lib/lucide-icons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryState } from "nuqs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";

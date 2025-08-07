@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, CheckCheck, MessageSquare, UserPlus, FileEdit, MessageCircle } from "lucide-react";
+import { Bell, CheckCheck, MessageSquare, UserPlus, FileEdit, MessageCircle } from "@/lib/lucide-icons";
 import { 
   DropdownMenu,
   DropdownMenuContent,

@@ -3,7 +3,7 @@
 import React from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { PopulatedTask } from "../types";
-import { MoreHorizontal, EyeOffIcon } from "lucide-react";
+import { EyeOffIcon, MoreHorizontal } from "@/lib/lucide-icons";
 import { TaskDate } from "./task-date";
 import { TaskActions } from "./task-actions";
 import { useGetMembers } from "@/features/members/api/use-get-members";

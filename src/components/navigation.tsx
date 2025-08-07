@@ -1,6 +1,6 @@
 "use client";
 
-import { SettingsIcon, UsersIcon, ListTodo, Shield } from "lucide-react";
+import { SettingsIcon, UsersIcon, ListTodo, Shield } from "@/lib/lucide-icons";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";

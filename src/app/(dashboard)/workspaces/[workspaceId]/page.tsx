@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/date-picker";
-import { CalendarIcon, UsersIcon, CheckCircle2Icon, Clock3Icon, ListTodoIcon, BarChart3Icon, TrendingUpIcon, StarIcon, ZapIcon, Target, Activity, Award, Briefcase, Rocket, Trophy } from "lucide-react";
+import { CalendarIcon, UsersIcon, CheckCircle2Icon, Clock3Icon, ListTodoIcon, BarChart3Icon, TrendingUpIcon, StarIcon, ZapIcon, Target, Activity, Award, Briefcase, Rocket, Trophy } from "@/lib/lucide-icons";
 import { TaskStatus } from "@/features/tasks/types";
 import { Models } from "node-appwrite";
 import { subDays, isAfter, isBefore } from "date-fns";

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CreateWorkspaceModal } from "@/features/workspaces/components/create-workspace-modal";
 import { useCreateWorkspaceModal } from "@/features/workspaces/hooks/use-create-workspace-modal";
 import { canCreateWorkspace } from "@/features/auth/utils";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon } from "@/lib/lucide-icons";
 
 interface WorkspaceActionsProps {
   user: {

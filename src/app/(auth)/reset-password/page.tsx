@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { resetPasswordSchema } from "@/features/auth/schemas";
 import { useResetPassword } from "@/features/auth/api/use-reset-password";
-import { AlertCircle } from "lucide-react";
+import { AlertTriangle } from "@/lib/lucide-icons";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const ResetPasswordPage = () => {
@@ -74,7 +74,7 @@ const ResetPasswordPage = () => {
         </CardHeader>
         <CardContent className="px-8 pb-12">
           <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
+            <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               Password reset links are only valid for a limited time. Please request a new password reset link.
             </AlertDescription>

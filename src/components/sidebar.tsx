@@ -9,7 +9,7 @@ import { ServiceSwitcher } from "./service-switcher";
 import { useLogout } from "@/features/auth/api/use-logout";
 import { useCreateTaskModal } from "@/features/tasks/hooks/use-create-task-modal";
 import { Button } from "./ui/button";
-import { LogOutIcon, Plus } from "lucide-react";
+import { LogOutIcon, Plus } from "@/lib/lucide-icons";
 import { useConfirm } from "@/hooks/use-confirm";
 import { NotificationDropdown } from "@/features/notifications/components/notification-dropdown";
 

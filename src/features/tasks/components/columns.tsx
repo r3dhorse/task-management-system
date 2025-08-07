@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowUpDown, EyeOffIcon, Trash2 } from "lucide-react"
+import { ArrowUpDown, EyeOffIcon, Trash2 } from "@/lib/lucide-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { PopulatedTask } from "../types"
 import { Button } from "@/components/ui/button"

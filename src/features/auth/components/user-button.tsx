@@ -13,7 +13,7 @@ import { ChangePasswordModal } from "./change-password-modal";
 
 import { useLogout } from "../api/use-logout";
 import { useCurrent } from "../api/use-current";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings } from "@/lib/lucide-icons";
 import { useState } from "react";
 
 export const UserButton = () => {

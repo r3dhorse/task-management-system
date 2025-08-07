@@ -1,5 +1,5 @@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ExternalLinkIcon, ArchiveIcon } from "lucide-react";
+import { ArchiveIcon, ExternalLinkIcon } from "@/lib/lucide-icons";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useDeleteTask } from "../api/use-delete-task";
 import { useCreateTaskHistory } from "../api/use-create-task-history";

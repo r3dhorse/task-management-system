@@ -3,7 +3,7 @@
 import { useGetServices } from "@/features/services/api/use-get-services";
 import { useDeleteService } from "@/features/services/api/use-delete-service";
 import { RiAddCircleFill } from "react-icons/ri";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical } from "@/lib/lucide-icons";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import {

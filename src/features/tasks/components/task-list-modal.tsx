@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { TaskStatus } from "../types";
 import { format, differenceInDays } from "date-fns";
-import { Calendar, Clock, FolderOpen, User } from "lucide-react";
+import { Calendar, Clock, FolderOpen, User } from "@/lib/lucide-icons";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 

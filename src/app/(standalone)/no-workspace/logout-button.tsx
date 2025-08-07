@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useLogout } from "@/features/auth/api/use-logout";
-import { LogOut } from "lucide-react";
+import { LogOut } from "@/lib/lucide-icons";
 
 export const LogoutButton = () => {
   const { mutate: logout, isPending } = useLogout();

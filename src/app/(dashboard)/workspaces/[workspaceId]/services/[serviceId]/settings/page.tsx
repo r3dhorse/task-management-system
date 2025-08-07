@@ -4,7 +4,7 @@ import { getService } from "@/features/services/queries";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, SettingsIcon, Package } from "lucide-react";
+import { ArrowLeftIcon, SettingsIcon, Package } from "@/lib/lucide-icons";
 import Link from "next/link";
 
 interface ServiceIdSettingsPageProps {

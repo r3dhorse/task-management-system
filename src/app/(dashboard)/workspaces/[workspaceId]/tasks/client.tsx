@@ -57,12 +57,11 @@ import {
   ArrowLeft,
   Sparkles,
   Activity,
-  CalendarDays,
   Timer,
   FolderOpen,
   ArrowUp,
   ArrowDown
-} from "lucide-react";
+} from "@/lib/lucide-icons";
 import { subDays, isAfter, isBefore, startOfWeek, endOfWeek, format, differenceInDays } from "date-fns";
 import { useRouter } from "next/navigation";
 
@@ -183,7 +182,7 @@ export const MyTasksClient = () => {
   const tasks = allTasks.documents || [];
 
   // Filter tasks by date range
-  const filteredTasks = tasks.filter((task) => {
+  const filteredTasks = tasks.filter((task: typeof tasks[0]) => {
     if (!dateFrom || !dateTo) return true;
     const taskDate = new Date(task.createdAt);
     return isAfter(taskDate, dateFrom) && isBefore(taskDate, dateTo);
@@ -354,15 +353,14 @@ export const MyTasksClient = () => {
           
           {/* Enhanced Date Range Filter */}
           <div className="hidden lg:flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-1.5 shadow-sm border border-slate-200">
-              <CalendarDays className="h-4 w-4 text-slate-400" />
+            <div className="flex items-center gap-2 bg-white rounded-lg px-6 py-1.5 shadow-sm border border-slate-200">
               <DatePicker
                 value={dateFrom}
                 onChange={setDateFrom}
                 placeholder="From date"
                 className="w-36 text-sm border-0 shadow-none"
               />
-              <span className="text-slate-400 text-sm">→</span>
+              <span className="text-slate-400 text-sm px-3">→</span>
               <DatePicker
                 value={dateTo}
                 onChange={setDateTo}
@@ -414,8 +412,7 @@ export const MyTasksClient = () => {
         {/* Mobile Date Range Filter */}
         <div className="lg:hidden mt-4 space-y-2">
           <div className="flex flex-col sm:flex-row gap-2">
-            <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-sm border border-slate-200 flex-1">
-              <CalendarDays className="h-4 w-4 text-slate-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 bg-white rounded-lg px-5 py-2 shadow-sm border border-slate-200 flex-1">
               <DatePicker
                 value={dateFrom}
                 onChange={setDateFrom}
@@ -423,8 +420,8 @@ export const MyTasksClient = () => {
                 className="w-full text-sm border-0 shadow-none"
               />
             </div>
-            <div className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 shadow-sm border border-slate-200 flex-1">
-              <span className="text-slate-400 text-sm">→</span>
+            <div className="flex items-center gap-2 bg-white rounded-lg px-5 py-2 shadow-sm border border-slate-200 flex-1">
+              <span className="text-slate-400 text-sm px-3">→</span>
               <DatePicker
                 value={dateTo}
                 onChange={setDateTo}
@@ -580,8 +577,8 @@ export const MyTasksClient = () => {
             <Card 
               className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm cursor-pointer"
               onClick={() => {
-                const thisWeekFilteredTasks = filteredTasks.filter((task) => {
-                  const taskDoc = task as unknown as TaskDocument;
+                const thisWeekFilteredTasks = filteredTasks.filter((task: typeof filteredTasks[0]) => {
+                  const taskDoc = task;
                   if (!taskDoc.dueDate) return false;
                   const dueDate = new Date(taskDoc.dueDate);
                   return isAfter(dueDate, thisWeekStart) && isBefore(dueDate, thisWeekEnd) && taskDoc.status !== TaskStatus.DONE;
@@ -607,9 +604,9 @@ export const MyTasksClient = () => {
             <Card 
               className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm cursor-pointer"
               onClick={() => {
-                const weeklyCompletedTasks = filteredTasks.filter((task) => {
-                  if ((task as unknown as TaskDocument).status !== TaskStatus.DONE) return false;
-                  const completedDate = new Date((task as unknown as TaskDocument).updatedAt);
+                const weeklyCompletedTasks = filteredTasks.filter((task: typeof filteredTasks[0]) => {
+                  if (task.status !== TaskStatus.DONE) return false;
+                  const completedDate = new Date(task.updatedAt);
                   return isAfter(completedDate, thisWeekStart) && isBefore(completedDate, thisWeekEnd);
                 });
                 setModalTasks(weeklyCompletedTasks as TaskDocument[]);
@@ -725,9 +722,9 @@ export const MyTasksClient = () => {
               <CardContent>
                 <div className="space-y-3">
                   {filteredTasks.length > 0 ? (
-                    filteredTasks.slice(0, 3).map((task, index) => {
-                      const config = statusConfig[(task as unknown as TaskDocument).status as TaskStatus] || statusConfig[TaskStatus.TODO];
-                      const taskDoc = task as unknown as TaskDocument;
+                    filteredTasks.slice(0, 3).map((task: typeof filteredTasks[0], index: number) => {
+                      const config = statusConfig[task.status as TaskStatus] || statusConfig[TaskStatus.TODO];
+                      const taskDoc = task;
                       const daysUntilDue = taskDoc.dueDate ? differenceInDays(new Date(taskDoc.dueDate), new Date()) : null;
                       
                       return (

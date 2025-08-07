@@ -6,7 +6,7 @@ import { Task, TaskStatus, PopulatedTask } from "../types";
 import { KanbanCard } from "./kanban-card";
 import { useUpdateTask } from "../api/use-update-task";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "@/lib/lucide-icons";
 import './drag-animations.css';
 
 interface KanbanBoardProps {

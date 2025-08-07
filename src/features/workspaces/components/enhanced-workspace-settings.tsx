@@ -31,7 +31,7 @@ import {
   BrushIcon,
   InfoIcon,
   ExternalLinkIcon
-} from "lucide-react";
+} from "@/lib/lucide-icons";
 import { useUpdateWorkspace } from "../api/use-update-workspace";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useDeleteWorkspace } from "../api/use-delete-workspace";

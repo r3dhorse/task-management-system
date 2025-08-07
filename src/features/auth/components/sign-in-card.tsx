@@ -20,7 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "@/lib/lucide-icons";
 import { loginSchema } from "../schemas";
 import { useLogin } from "../api/use-login";
 import { ForgotPasswordModal } from "./forgot-password-modal";

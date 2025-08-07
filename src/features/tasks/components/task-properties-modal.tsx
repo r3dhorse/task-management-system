@@ -21,7 +21,7 @@ import {
   UsersIcon,
   PlusIcon,
   SettingsIcon
-} from "lucide-react";
+} from "@/lib/lucide-icons";
 import { TaskStatus } from "../types";
 import { Member, MemberRole } from "@/features/members/types";
 import { Service } from "@/features/services/types";

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useChangePassword } from "../api/use-change-password";
 import { cn } from "@/lib/utils";
-import { Lock, Eye, EyeOff } from "lucide-react";
+import { Lock, Eye, EyeOff } from "@/lib/lucide-icons";
 import { useState } from "react";
 
 interface ChangePasswordFormProps {

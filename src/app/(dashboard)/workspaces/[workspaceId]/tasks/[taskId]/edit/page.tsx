@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeftIcon, SaveIcon, XIcon } from "lucide-react";
+import { ArrowLeftIcon, SaveIcon, XIcon } from "@/lib/lucide-icons";
 import { useRouter } from "next/navigation";
 import { TaskStatus } from "@/features/tasks/types";
 import { FileUpload } from "@/components/file-upload";

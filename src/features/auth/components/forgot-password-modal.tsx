@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { forgotPasswordSchema } from "../schemas";
 import { useForgotPassword } from "../api/use-forgot-password";
-import { Mail, AlertCircle } from "lucide-react";
+import { Mail, AlertCircle } from "@/lib/lucide-icons";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ForgotPasswordModalProps {

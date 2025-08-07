@@ -3,7 +3,7 @@
 import { useCurrent } from "@/features/auth/api/use-current";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Mail, Key } from "lucide-react";
+import { User, Mail, Key } from "@/lib/lucide-icons";
 import { ChangePasswordModal } from "@/features/auth/components/change-password-modal";
 import { useState } from "react";
 

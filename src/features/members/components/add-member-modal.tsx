@@ -13,7 +13,7 @@ import {
   UserIcon,
   CheckIcon,
   AlertCircleIcon 
-} from "lucide-react";
+} from "@/lib/lucide-icons";
 import { useSearchUsers } from "../api/use-search-users";
 import { useAddMember } from "../api/use-add-member";
 import { MemberRole } from "../types";

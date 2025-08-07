@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MultiSelect } from "@/components/ui/multi-select-simple";
 import { DottedSeparator } from "@/components/dotted-separator";
-import { UsersIcon, XIcon, CheckIcon } from "lucide-react";
+import { UsersIcon, XIcon, CheckIcon } from "@/lib/lucide-icons";
 import { Member } from "@/features/members/types";
 
 interface ManageFollowersModalProps {

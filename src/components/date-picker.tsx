@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon } from "@/lib/lucide-icons";
 
 import { cn } from "@/lib/utils"
 import { Button } from "./ui/button";
@@ -93,7 +93,7 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
                 ref.current = el;
               }
             }
-            buttonRef.current = el;
+            (buttonRef as React.MutableRefObject<HTMLButtonElement | null>).current = el;
           }}
           variant="outline"
           size="lg"

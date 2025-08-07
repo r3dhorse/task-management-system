@@ -37,7 +37,7 @@ import { MultiSelect } from "@/components/ui/multi-select-simple";
 import { useState, useEffect } from "react";
 import { MemberRole } from "@/features/members/types";
 import { Switch } from "@/components/ui/switch";
-import { EyeOffIcon } from "lucide-react";
+import { EyeOffIcon } from "@/lib/lucide-icons";
 
 interface EditTaskFormProps {
   onCancel?: () => void;

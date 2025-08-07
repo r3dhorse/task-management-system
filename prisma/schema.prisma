@@ -185,6 +185,7 @@ enum TaskHistoryAction {
   DESCRIPTION_UPDATED
   NAME_CHANGED
   FOLLOWERS_CHANGED
+  ARCHIVED
 }
 
 model TaskHistory {

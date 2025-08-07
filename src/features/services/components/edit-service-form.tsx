@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Service } from "../types";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon } from "@/lib/lucide-icons";
 import { useUpdateService } from "../api/use-update-service";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useDeleteService } from "../api/use-delete-service";

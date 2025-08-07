@@ -6,7 +6,7 @@ import { LogoutButton } from "./logout-button";
 import { RefreshButton } from "./refresh-button";
 import { WorkspaceActions } from "./workspace-actions";
 import { UserButton } from "@/features/auth/components/user-button";
-import { CheckCircle, Users, Mail, Shield } from "lucide-react";
+import { CheckCircle, Users, Mail, Shield } from "@/lib/lucide-icons";
 import { isAdminUser } from "@/features/auth/utils";
 
 export const dynamic = 'force-dynamic';

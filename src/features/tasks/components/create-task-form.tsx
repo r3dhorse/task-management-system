@@ -18,12 +18,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { MultiSelect } from "@/components/ui/multi-select-simple";
 import { useGetServices } from "@/features/services/api/use-get-services";
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { MemberRole, Member } from "@/features/members/types";
-import { Service } from "@/features/services/types";
+import { MemberRole } from "@/features/members/types";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
-import { EyeOff as EyeOffIcon } from "lucide-react";
+import { EyeOff as EyeOffIcon } from "@/lib/lucide-icons";
+
+// Type definitions for API response data
+type ServiceDocument = {
+  id: string;
+  name: string;
+  workspaceId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type MemberDocument = {
+  id: string;
+  userId: string;
+  workspaceId: string;
+  role: string;
+  joinedAt: string;
+  name: string;
+  email: string;
+};
 
 interface CreateTaskFormProps {
   onCancel?: () => void;
@@ -101,7 +119,7 @@ export const CreateTaskForm = ({
   // Removed - we'll use workspace members for followers instead
 
   // Create options from the loaded data
-  const serviceOptions = services?.documents?.map((service: Service) => ({
+  const serviceOptions = services?.documents?.map((service: ServiceDocument) => ({
     id: service.id,
     name: service.name,
   })) || [];
@@ -113,7 +131,7 @@ export const CreateTaskForm = ({
     role: MemberRole;
   };
 
-  const memberOptions: MemberOption[] = members?.documents?.map((member: Member) => ({
+  const memberOptions: MemberOption[] = members?.documents?.map((member: MemberDocument) => ({
     id: member.id,
     name: member.name,
     email: member.email,
@@ -121,14 +139,14 @@ export const CreateTaskForm = ({
   })) || [];
 
   // Create follower options from workspace members
-  const followerOptions = members?.documents?.map((member: Member) => ({
+  const followerOptions = members?.documents?.map((member: MemberDocument) => ({
     value: member.id,
     label: member.name,
     email: member.email,
   })) || [];
 
   // Find current user's member record
-  const currentMember = members?.documents?.find((member: Member) => 
+  const currentMember = members?.documents?.find((member: MemberDocument) => 
     member.userId === currentUser?.id
   );
 

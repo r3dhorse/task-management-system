@@ -3,16 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { 
-  MessageCircle, 
-  CheckCheck, 
-  UserPlus, 
-  FileEdit, 
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  ArrowLeft
-} from "lucide-react";
+import { MessageCircle, CheckCheck, UserPlus, FileEdit, Bell, ChevronLeft, ChevronRight, ArrowLeft } from "@/lib/lucide-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";

@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Edit, Trash2, Loader2, Key, Shield, ShieldCheck, Copy, Plus } from "lucide-react";
+import { Search, Edit, Trash2, Loader2, Key, Shield, ShieldCheck, Copy, Plus } from "@/lib/lucide-icons";
 import { formatDistanceToNow } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 

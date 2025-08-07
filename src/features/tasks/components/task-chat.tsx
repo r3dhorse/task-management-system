@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { SendIcon, SmileIcon, Paperclip, FileIcon, ImageIcon, X, Download, AtSign } from "lucide-react";
+import { SendIcon, SmileIcon, Paperclip, FileIcon, ImageIcon, X, Download, AtSign } from "@/lib/lucide-icons";
 import { EmojiPicker } from "@/components/ui/emoji-picker";
 import { cn } from "@/lib/utils";
 import { useCurrent } from "@/features/auth/api/use-current";

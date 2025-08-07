@@ -80,7 +80,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       : `attachment; filename="${fileInfo.fileName}"`;
 
     // Return the file as a response with proper headers
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         "Content-Type": fileInfo.mimeType,
         "Content-Disposition": disposition,

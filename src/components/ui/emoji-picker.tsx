@@ -6,7 +6,7 @@ import { Input } from "./input";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { ScrollArea } from "./scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
-import { Search, Smile, Heart, Star, Clock, Flag, Activity, MapPin } from "lucide-react";
+import { Search, Smile, Heart, Star, Clock, Flag, Activity, MapPin } from "@/lib/lucide-icons";
 
 interface EmojiData {
   emoji: string;

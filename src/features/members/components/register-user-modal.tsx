@@ -17,7 +17,7 @@ import {
   CheckCircleIcon,
   EyeIcon,
   EyeOffIcon
-} from "lucide-react";
+} from "@/lib/lucide-icons";
 import { useRegisterUser } from "../api/use-register-user";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MemberRole } from "../types";
