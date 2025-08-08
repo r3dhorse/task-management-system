@@ -1,6 +1,6 @@
 import { getCurrent } from "@/features/auth/queries";
 import { redirect } from "next/navigation";
-import { getWorkspaces } from "@/features/workspaces/queries";
+import { getUserLatestWorkspace } from "@/features/workspaces/queries";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,21 +11,18 @@ export default async function Home() {
     redirect("/sign-in"); 
   }
 
-  let workspaces;
+  // Get user's latest workspace (most recently joined)
+  let latestWorkspace;
   try {
-    workspaces = await getWorkspaces();
+    latestWorkspace = await getUserLatestWorkspace();
   } catch (error) {
-    console.error("Error loading workspaces:", error);
+    console.error("Error loading latest workspace:", error);
     redirect("/no-workspace");
   }
   
-  // Check if user has any workspaces (as member or owner)
-  if (workspaces && workspaces.total > 0 && workspaces.documents && workspaces.documents.length > 0) {
-    // Redirect to the most recently created workspace (which the user has access to)
-    const latestWorkspace = workspaces.documents[0];
-    if (latestWorkspace && latestWorkspace.id) {
-      redirect(`/workspaces/${latestWorkspace.id}`);
-    }
+  // If user has a latest workspace, redirect there
+  if (latestWorkspace && latestWorkspace.id) {
+    redirect(`/workspaces/${latestWorkspace.id}`);
   }
   
   // Only redirect to no-workspace if user truly has no workspaces

@@ -22,11 +22,16 @@ const app = new Hono()
         include: {
           workspace: true,
         },
-        orderBy: {
-          workspace: {
-            createdAt: 'desc',
+        orderBy: [
+          {
+            // First, prioritize by role (ADMIN first, then MEMBER, then VISITOR)
+            role: 'asc', // Since ADMIN comes first in enum, this puts ADMIN first
           },
-        },
+          {
+            // Then order by most recent join date within each role
+            joinedAt: 'desc',
+          },
+        ],
       });
 
       const workspaces = workspaceMembers.map(member => member.workspace);
