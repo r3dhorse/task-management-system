@@ -16,7 +16,7 @@ import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { TaskMessage } from "../types/messages";
 import { toast } from "sonner";
-import { extractMentions, renderMessageWithMentions, MemberForMention } from "@/features/notifications/utils/mention-utils";
+import { extractMentions, renderMessageWithMentions, MemberForMention, getMentionedUserIds } from "@/features/notifications/utils/mention-utils";
 import { createMentionNotification } from "@/features/notifications/utils/create-mention-notification";
 import { useGetTask } from "../api/use-get-task";
 import { useMarkNotificationsRead } from "@/features/notifications/api/use-mark-notifications-read";
@@ -60,7 +60,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
   const filteredMembers = useMemo(() => {
     if (!task?.followers || !showMentionDropdown) return [];
     
-    return task.followers
+    const members = task.followers
       .filter(follower => 
         follower.user?.name && 
         follower.user.id !== currentUser?.id && // Don't include current user
@@ -75,7 +75,26 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
         workspaceId: task.workspaceId,
         joinedAt: new Date().toISOString(), // Default joinedAt for followers
       }))
-      .slice(0, 8); // Limit to 8 results
+      .slice(0, 7); // Limit to 7 results to make room for @all
+    
+    // Add @all option if query matches and there are followers
+    const shouldShowAll = 'all'.includes(mentionQuery.toLowerCase()) && 
+                         task.followers.length > 1; // Only show @all if there are multiple followers
+    
+    if (shouldShowAll) {
+      const allOption: MemberForMention = {
+        id: 'all',
+        name: 'All followers',
+        email: '',
+        userId: 'all',
+        role: 'ALL',
+        workspaceId: task.workspaceId,
+        joinedAt: new Date().toISOString(),
+      };
+      return [allOption, ...members];
+    }
+    
+    return members;
   }, [task?.followers, task?.workspaceId, currentUser?.id, showMentionDropdown, mentionQuery]);
 
   // Transform API messages to include isOwn property
@@ -254,7 +273,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       workspaceId: task.workspaceId,
       joinedAt: new Date().toISOString(), // Default joinedAt for followers
     })) || [];
-    const mentions = extractMentions(messageContent, taskFollowers);
+    const mentions = extractMentions(messageContent, taskFollowers, currentUser.id);
     
     createMessage(
       { json: messageData },
@@ -262,14 +281,17 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
         onSuccess: async (response) => {
           // Create mention notifications after message is successfully sent
           if (mentions.length > 0 && task && currentUser && 'data' in response) {
-            for (const mention of mentions) {
-              if (mention.member && mention.member.userId !== currentUser.id) {
+            // Get all unique user IDs that should be notified (handles @all and individual mentions)
+            const mentionedUserIds = getMentionedUserIds(mentions);
+            
+            for (const userId of mentionedUserIds) {
+              if (userId !== currentUser.id) {
                 try {
                   await createMentionNotification({
                     taskId,
                     messageId: response.data.id,
                     workspaceId,
-                    mentionedUserId: mention.member.userId,
+                    mentionedUserId: userId,
                     mentionerUserId: currentUser.id,
                     mentionerName: currentUser.name || 'Unknown User',
                     taskName: task.name,
@@ -349,7 +371,9 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
     const input = messageInputRef.current;
     const beforeMention = newMessage.slice(0, mentionStartPos);
     const afterMention = newMessage.slice(input.selectionStart || 0);
-    const username = member.name.toLowerCase().replace(/\s+/g, '');
+    
+    // Use 'all' for @all mentions, otherwise use formatted name
+    const username = member.userId === 'all' ? 'all' : member.name.toLowerCase().replace(/\s+/g, '');
     
     const newValue = beforeMention + `@${username} ` + afterMention;
     setNewMessage(newValue);
@@ -590,7 +614,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                                 workspaceId: task.workspaceId,
                                 joinedAt: new Date().toISOString(), // Default joinedAt for followers
                               })) || [];
-                              const mentions = extractMentions(message.content, taskFollowers);
+                              const mentions = extractMentions(message.content, taskFollowers, currentUser?.id);
                               return mentions.length > 0 
                                 ? renderMessageWithMentions(message.content, mentions)
                                 : message.content;
@@ -782,12 +806,17 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                           {member.name}
                         </div>
                         <div className="text-xs text-gray-500 truncate">
-                          @{(member.name || '').toLowerCase().replace(/\s+/g, '')}
+                          @{member.userId === 'all' ? 'all' : (member.name || '').toLowerCase().replace(/\s+/g, '')}
                         </div>
                       </div>
                       {member.role === 'ADMIN' && (
                         <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                           Admin
+                        </div>
+                      )}
+                      {member.userId === 'all' && (
+                        <div className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
+                          All
                         </div>
                       )}
                     </button>

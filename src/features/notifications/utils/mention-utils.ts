@@ -15,13 +15,15 @@ export interface MentionMatch {
   startIndex: number;
   endIndex: number;
   member?: MemberForMention;
+  isAllMention?: boolean;
+  allMembers?: MemberForMention[];
 }
 
 /**
  * Extract @mentions from message content
  * Returns array of mention matches with their positions
  */
-export function extractMentions(content: string, members: MemberForMention[] = []): MentionMatch[] {
+export function extractMentions(content: string, members: MemberForMention[] = [], currentUserId?: string): MentionMatch[] {
   const mentionRegex = /@(\w+)/g;
   const mentions: MentionMatch[] = [];
   let match;
@@ -31,18 +33,34 @@ export function extractMentions(content: string, members: MemberForMention[] = [
     const startIndex = match.index;
     const endIndex = match.index + match[0].length;
 
-    // Find matching member by name (case insensitive)
-    const member = members.find(m => 
-      m.name?.toLowerCase().includes(username) ||
-      m.name?.toLowerCase().replace(/\s+/g, '').includes(username)
-    );
+    // Check for @all mention
+    if (username === 'all') {
+      // Filter out current user from members for @all mention
+      const allMembers = currentUserId 
+        ? members.filter(m => m.userId !== currentUserId)
+        : members;
+      
+      mentions.push({
+        username: match[1],
+        startIndex,
+        endIndex,
+        isAllMention: true,
+        allMembers,
+      });
+    } else {
+      // Find matching member by name (case insensitive)
+      const member = members.find(m => 
+        m.name?.toLowerCase().includes(username) ||
+        m.name?.toLowerCase().replace(/\s+/g, '').includes(username)
+      );
 
-    mentions.push({
-      username: match[1],
-      startIndex,
-      endIndex,
-      member,
-    });
+      mentions.push({
+        username: match[1],
+        startIndex,
+        endIndex,
+        member,
+      });
+    }
   }
 
   return mentions;
@@ -64,12 +82,16 @@ export function renderMessageWithMentions(content: string, mentions: MentionMatc
     }
 
     // Add highlighted mention using React.createElement
+    const mentionClassName = mention.isAllMention 
+      ? "bg-orange-100 text-orange-800 px-1 rounded font-medium"
+      : "bg-blue-100 text-blue-800 px-1 rounded font-medium";
+    
     parts.push(
       React.createElement(
         'span',
         {
           key: `mention-${index}`,
-          className: "bg-blue-100 text-blue-800 px-1 rounded font-medium"
+          className: mentionClassName
         },
         `@${mention.username}`
       )
@@ -101,4 +123,28 @@ export function createMentionSuggestions(members: MemberForMention[]): Array<{
       name: member.name,
       username: member.name.toLowerCase().replace(/\s+/g, ''),
     }));
+}
+
+/**
+ * Get all unique user IDs that should be notified from mentions
+ * Handles both individual mentions and @all mentions
+ */
+export function getMentionedUserIds(mentions: MentionMatch[]): string[] {
+  const userIds = new Set<string>();
+  
+  mentions.forEach(mention => {
+    if (mention.isAllMention && mention.allMembers) {
+      // Add all member user IDs for @all mention
+      mention.allMembers.forEach(member => {
+        if (member.userId) {
+          userIds.add(member.userId);
+        }
+      });
+    } else if (mention.member?.userId) {
+      // Add individual mention user ID
+      userIds.add(mention.member.userId);
+    }
+  });
+  
+  return Array.from(userIds);
 }
