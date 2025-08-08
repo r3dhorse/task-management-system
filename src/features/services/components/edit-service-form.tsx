@@ -1,14 +1,12 @@
 "use client"
 
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { updateServiceSchema } from "../schemas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
 import { DottedSeparator } from "@/components/dotted-separator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Service } from "../types";
@@ -38,10 +36,15 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
     "secondary",
   );
 
-  const form = useForm<z.infer<typeof updateServiceSchema>>({
-    resolver: zodResolver(updateServiceSchema),
+  type FormData = {
+    name: string;
+    isPublic: boolean;
+  };
+
+  const form = useForm<FormData>({
     defaultValues: {
-      ...initialValues,
+      name: initialValues.name,
+      isPublic: initialValues.isPublic,
     },
   });
 
@@ -63,17 +66,24 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
 
 
 
-  const onSubmit = (values: z.infer<typeof updateServiceSchema>) => {
+  const onSubmit = (values: FormData) => {
     const finalValues = {
-      ...values,
+      name: values.name,
+      isPublic: values.isPublic ? "true" : "false",
     };
 
     mutate({
       form: finalValues,
       param: { serviceId: initialValues.id }
     }, {
-      onSuccess: () => {
-        form.reset();
+      onSuccess: (data) => {
+        // Update the form with the response data to ensure it reflects the saved state
+        if (data?.data) {
+          form.reset({
+            name: data.data.name,
+            isPublic: data.data.isPublic,
+          });
+        }
       }
     });
 
@@ -116,6 +126,26 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
                           {...field}
                           placeholder="Enter service name"
                           className="focus-visible:ring-2 focus-visible:ring-primary"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="isPublic"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-sm font-medium text-muted-foreground">Public Service</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Allow workspace visitors to see this service when creating tasks
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
                         />
                       </FormControl>
                     </FormItem>

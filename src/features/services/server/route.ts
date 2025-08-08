@@ -15,7 +15,7 @@ const app = new Hono()
       try {
         const prisma = c.get("prisma");
         const user = c.get("user");
-        const { name, workspaceId } = c.req.valid("form");
+        const { name, workspaceId, isPublic } = c.req.valid("form");
 
         // Check if user is admin of the workspace
         const member = await prisma.member.findUnique({
@@ -51,6 +51,7 @@ const app = new Hono()
           data: {
             name,
             workspaceId,
+            isPublic: isPublic || false,
           },
         });
 
@@ -89,8 +90,15 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
+      // Filter services based on user role
+      // Visitors can only see public services
+      const whereCondition: { workspaceId: string; isPublic?: boolean } = { workspaceId };
+      if (member.role === MemberRole.VISITOR) {
+        whereCondition.isPublic = true;
+      }
+
       const services = await prisma.service.findMany({
-        where: { workspaceId },
+        where: whereCondition,
         orderBy: { createdAt: 'desc' },
       });
 
@@ -111,7 +119,7 @@ const app = new Hono()
       const prisma = c.get("prisma");
       const user = c.get("user");
       const { serviceId } = c.req.param();
-      const { name } = c.req.valid("form");
+      const { name, isPublic } = c.req.valid("form");
 
       const existingService = await prisma.service.findUnique({
         where: { id: serviceId },
@@ -154,7 +162,10 @@ const app = new Hono()
 
       const service = await prisma.service.update({
         where: { id: serviceId },
-        data: { name },
+        data: { 
+          name,
+          isPublic: isPublic || false,
+        },
       });
 
       return c.json({ data: service });

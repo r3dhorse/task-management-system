@@ -16,7 +16,13 @@ export const getService = async ({ serviceId }: GetServiceProps) => {
     where: {
       id: serviceId,
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      workspaceId: true,
+      isPublic: true,
+      createdAt: true,
+      updatedAt: true,
       workspace: true,
     },
   });

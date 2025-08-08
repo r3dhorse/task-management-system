@@ -31,9 +31,8 @@ export const useUpdateService = () => {
 
     onSuccess: () => {
       toast.success("Service updated");
-      router.refresh()
-      queryClient.invalidateQueries();
-
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      router.refresh();
     },
 
     onError: () => {

@@ -34,6 +34,7 @@ const ServiceIdSettingsPage = async ({
       id: serviceData.id,
       name: serviceData.name,
       workspaceId: serviceData.workspaceId,
+      isPublic: serviceData.isPublic,
       createdAt: serviceData.createdAt,
       updatedAt: serviceData.updatedAt,
     };

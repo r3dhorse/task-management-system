@@ -137,6 +137,7 @@ async function main() {
     data: {
       name: 'Test Service',
       workspaceId: testWorkspace.id,
+      isPublic: false,
     },
   })
 

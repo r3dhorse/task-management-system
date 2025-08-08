@@ -1,14 +1,12 @@
 "use client";
 
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { createServiceSchema } from "../schemas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { useCreateService } from "../api/use-create-service";
 import { cn } from "@/lib/utils";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -22,19 +20,23 @@ export const CreateServiceForm = ({ onCancel }: CreateServiceFormProps) => {
   const { mutate, isPending } = useCreateService();
 
 
-  const clientSchema = createServiceSchema.omit({ workspaceId: true });
+  type FormData = {
+    name: string;
+    isPublic: boolean;
+  };
 
-  const form = useForm<z.infer<typeof clientSchema>>({
-    resolver: zodResolver(clientSchema),
+  const form = useForm<FormData>({
     defaultValues: {
       name: "",
+      isPublic: false,
     },
   });
 
-  const onSubmit = (values: z.infer<typeof clientSchema>) => {
+  const onSubmit = (values: FormData) => {
     const finalValues = {
-      ...values,
+      name: values.name,
       workspaceId,
+      isPublic: values.isPublic ? "true" : "false",
     };
 
     mutate(
@@ -69,6 +71,26 @@ export const CreateServiceForm = ({ onCancel }: CreateServiceFormProps) => {
                     <FormLabel>Service Name</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Enter service name" />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="isPublic"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Public Service</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Allow workspace visitors to see this service when creating tasks
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
