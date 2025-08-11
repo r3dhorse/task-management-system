@@ -136,16 +136,7 @@ export const SignInCard = () => {
               ) : "Sign in"}
             </Button>
 
-            <div className="text-center">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setShowForgotPassword(true)}
-                className="text-sm text-white/80 hover:text-white transition-all duration-200 hover:underline underline-offset-2"
-              >
-                Forgot your password?
-              </Button>
-            </div>
+            
           </form>
         </Form>
         </CardContent>
