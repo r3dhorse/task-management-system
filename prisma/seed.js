@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+const { PrismaClient } = require('@prisma/client')
+const bcrypt = require('bcryptjs')
 
 const prisma = new PrismaClient()
 
@@ -61,6 +61,7 @@ async function main() {
   console.log('   - SuperAdmin: superadmin@example.com / super123')
   console.log('   - Admin: admin@example.com / admin123')
   console.log('   - Member: member@example.com / member123')
+  console.log('   - No Workspace: noworkspace@example.com / test123')
   console.log('\n📍 All users have no workspace memberships and will be redirected to /no-workspace')
 }
 
@@ -73,3 +74,4 @@ main()
     await prisma.$disconnect()
     process.exit(1)
   })
+  

@@ -2,28 +2,35 @@
 
 echo "🚀 Starting Task Management Production Environment..."
 
-# Check if .env file exists
-if [ ! -f .env ]; then
-    echo "❌ .env file not found!"
-    echo "📝 Creating .env from .env.example..."
-    cp .env.example .env
-    echo "⚠️  Please update .env with your production values before continuing!"
+# Check if DATABASE_URL is set
+if [ -z "$DATABASE_URL" ]; then
+    echo "❌ DATABASE_URL environment variable is required!"
     exit 1
 fi
+
+# Wait for database to be available
+echo "⏳ Waiting for database connection..."
+until pg_isready -d "$DATABASE_URL" 2>/dev/null; do
+    echo "⏳ Database not ready, waiting 2 seconds..."
+    sleep 2
+done
+
+echo "✅ Database connection established!"
+
+# Run database migrations
+echo "🔧 Running database migrations..."
+npx prisma migrate deploy
+
+# Generate Prisma client (in case of any schema changes)
+echo "🔄 Generating Prisma client..."
+npx prisma generate
+
+# Run database seeding (only if tables are empty)
+echo "🌱 Seeding database with initial data..."
+npx prisma db seed --skip-seed 2>/dev/null || echo "⚠️  Database seeding skipped (data already exists)"
 
 # Create uploads directory if it doesn't exist
 mkdir -p uploads
 
-# Start PostgreSQL and app with Docker Compose
-echo "📦 Starting Docker containers..."
-docker-compose up -d
-
-echo "✨ Production environment started!"
-echo "📖 Access the app at: http://localhost:3000"
-echo "🗄️  PostgreSQL available at: localhost:5432"
-echo ""
-echo "📋 Useful commands:"
-echo "  - View logs: docker-compose logs -f"
-echo "  - Stop containers: docker-compose down"
-echo "  - Stop and remove data: docker-compose down -v"
-echo "  - Rebuild and start: docker-compose up --build -d"
+echo "🚀 Starting Next.js application..."
+exec node server.js

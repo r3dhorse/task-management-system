@@ -22,10 +22,14 @@ export const useCreateWorkspace = () => {
 
       if (!response.ok) {
         const errorData = await response.json() as { error?: string };
+        
+        if (response.status === 401) {
+          throw new Error("Not authenticated. Please log in again.");
+        }
         if (response.status === 403) {
           throw new Error(errorData.error || "Unauthorized to create workspace");
         }
-        throw new Error("Failed to create workspace");
+        throw new Error(errorData.error || "Failed to create workspace");
       }
 
       return await response.json();

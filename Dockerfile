@@ -1,62 +1,77 @@
-# Multi-stage Dockerfile for production
-FROM node:20-alpine AS base
+# Production Dockerfile for ProjectXS Task Management
+# Multi-stage build for optimized production image
 
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
+# Stage 1: Dependencies
+FROM node:18-alpine AS deps
+WORKDIR /app
+
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+# Install production dependencies + tsx for seeding
+RUN npm ci --omit=dev --legacy-peer-deps && npm install tsx --legacy-peer-deps
+
+# Stage 2: Builder
+FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
 
-# Install production dependencies
-RUN npm ci --only=production --legacy-peer-deps
+# Install all dependencies (including devDependencies)
+RUN npm ci --legacy-peer-deps
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy source code
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma client
 RUN npx prisma generate
 
-# Build Next.js application
-ENV NEXT_TELEMETRY_DISABLED=1
+# Build the application
 RUN npm run build
 
-# Production image, copy all the files and run next
-FROM base AS runner
+# Stage 3: Runner
+FROM node:18-alpine AS runner
 WORKDIR /app
 
+# Set environment to production
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install PostgreSQL client for database operations
+RUN apk add --no-cache postgresql-client
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy necessary files from builder
+# Copy built application
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+# Copy Prisma files for migrations
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Create uploads directory
-RUN mkdir -p uploads && chown -R nextjs:nodejs uploads
+# Copy production dependencies (includes tsx for seeding)
+COPY --from=deps /app/node_modules ./node_modules
 
-# Switch to non-root user
+# Copy package.json for scripts
+COPY --from=builder /app/package.json ./package.json
+
+# Create necessary directories and fix permissions
+RUN mkdir -p ./uploads ./test-results ./playwright-report
+RUN chown -R nextjs:nodejs ./uploads ./test-results ./playwright-report ./node_modules
+
+# Set user
 USER nextjs
 
-# Expose port 3000
+# Expose port
 EXPOSE 3000
 
-# Set hostname to localhost
-ENV HOSTNAME="0.0.0.0"
-ENV PORT=3000
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
-# Run the production server
-CMD ["node", "server.js"]
+# Start the application with proper database initialization
+CMD ["sh", "-c", "echo 'Starting app...' && npx prisma migrate deploy && npx prisma generate && npx prisma db seed || echo 'Seeding skipped' && echo 'Starting server...' && node server.js"]
