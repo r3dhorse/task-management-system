@@ -59,9 +59,13 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy package.json for scripts
 COPY --from=builder /app/package.json ./package.json
 
+# Copy startup script
+COPY --from=builder /app/docker-start.sh ./docker-start.sh
+RUN chmod +x ./docker-start.sh
+
 # Create necessary directories and fix permissions
 RUN mkdir -p ./uploads ./test-results ./playwright-report
-RUN chown -R nextjs:nodejs ./uploads ./test-results ./playwright-report ./node_modules
+RUN chown -R nextjs:nodejs ./uploads ./test-results ./playwright-report ./node_modules ./prisma ./docker-start.sh
 
 # Set user
 USER nextjs
@@ -74,4 +78,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
 # Start the application with proper database initialization
-CMD ["sh", "-c", "echo 'Starting app...' && npx prisma migrate deploy && npx prisma generate && npx prisma db seed || echo 'Seeding skipped' && echo 'Starting server...' && node server.js"]
+CMD ["./docker-start.sh"]
