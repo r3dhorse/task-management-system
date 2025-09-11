@@ -1,16 +1,27 @@
+import { cache } from './cache';
+
 interface RateLimitEntry {
   count: number;
   resetAt: number;
+}
+
+interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetTime: number;
+  totalHits: number;
 }
 
 class RateLimiter {
   private store: Map<string, RateLimitEntry> = new Map();
   private readonly windowMs: number;
   private readonly maxRequests: number;
+  private readonly useCache: boolean;
 
-  constructor(windowMs: number, maxRequests: number) {
+  constructor(windowMs: number, maxRequests: number, useCache = false) {
     this.windowMs = windowMs;
     this.maxRequests = maxRequests;
+    this.useCache = useCache;
   }
 
   private cleanupExpiredEntries() {

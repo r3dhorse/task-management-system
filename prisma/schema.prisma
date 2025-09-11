@@ -73,6 +73,8 @@ model User {
   notifications   Notification[]
   mentionNotifications Notification[] @relation("MentionNotifications")
 
+  @@index([email])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -93,6 +95,9 @@ model Workspace {
   messages      TaskMessage[]
   notifications Notification[]
 
+  @@index([inviteCode])
+  @@index([userId])
+  @@index([createdAt])
   @@map("workspaces")
 }
 
@@ -116,6 +121,9 @@ model Member {
   followedTasks Task[] @relation("TaskFollowers")
 
   @@unique([userId, workspaceId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([role])
   @@map("members")
 }
 
@@ -131,6 +139,8 @@ model Service {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   tasks     Task[]
 
+  @@index([workspaceId])
+  @@index([isPublic])
   @@map("services")
 }
 
@@ -170,6 +180,14 @@ model Task {
   attachments   TaskAttachment[]
   notifications Notification[]
 
+  @@index([workspaceId])
+  @@index([serviceId])
+  @@index([assigneeId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([dueDate])
+  @@index([isConfidential])
+  @@index([workspaceId, status, createdAt])
   @@map("tasks")
 }
 
@@ -205,6 +223,10 @@ model TaskHistory {
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([taskId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
   @@map("task_history")
 }
 
@@ -226,6 +248,10 @@ model TaskMessage {
   workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   notifications Notification[]
 
+  @@index([taskId])
+  @@index([workspaceId])
+  @@index([senderId])
+  @@index([createdAt])
   @@map("task_messages")
 }
 
@@ -242,6 +268,8 @@ model TaskAttachment {
   // Relations
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
+  @@index([taskId])
+  @@index([uploadedAt])
   @@map("task_attachments")
 }
 
@@ -274,5 +302,10 @@ model Notification {
   taskMessage TaskMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
   mentioner   User?        @relation("MentionNotifications", fields: [mentionedBy], references: [id], onDelete: SetNull)
 
+  @@index([userId])
+  @@index([isRead])
+  @@index([workspaceId])
+  @@index([createdAt])
+  @@index([userId, isRead, createdAt])
   @@map("notifications")
 }
