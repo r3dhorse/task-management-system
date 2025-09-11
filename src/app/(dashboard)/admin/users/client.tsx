@@ -87,6 +87,7 @@ export function UserManagementClient() {
   const [tempPassword, setTempPassword] = useState("");
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [createdUserPassword, setCreatedUserPassword] = useState("");
+  const [emailErrors, setEmailErrors] = useState({ edit: false, create: false });
 
   const queryClient = useQueryClient();
 
@@ -569,12 +570,16 @@ export function UserManagementClient() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
-                type="email"
+                type="text"
                 value={editForm.email}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, email: e.target.value })
-                }
+                onChange={(e) => {
+                  const email = e.target.value;
+                  setEditForm({ ...editForm, email });
+                  const isValid = email === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                  setEmailErrors(prev => ({ ...prev, edit: !isValid }));
+                }}
                 placeholder="Enter email"
+                className={emailErrors.edit ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}
               />
             </div>
             
@@ -670,12 +675,16 @@ export function UserManagementClient() {
               <Label htmlFor="createEmail">Email *</Label>
               <Input
                 id="createEmail"
-                type="email"
+                type="text"
                 value={createForm.email}
-                onChange={(e) =>
-                  setCreateForm({ ...createForm, email: e.target.value })
-                }
+                onChange={(e) => {
+                  const email = e.target.value;
+                  setCreateForm({ ...createForm, email });
+                  const isValid = email === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                  setEmailErrors(prev => ({ ...prev, create: !isValid }));
+                }}
                 placeholder="Enter email address"
+                className={emailErrors.create ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}
               />
             </div>
             <div>

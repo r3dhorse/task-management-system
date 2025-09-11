@@ -114,9 +114,9 @@ export const ForgotPasswordModal = ({ open, onOpenChange }: ForgotPasswordModalP
                     <FormControl>
                       <Input
                         {...field}
-                        type="email"
+                        type="text"
                         placeholder="Enter your email"
-                        className="w-full"
+                        className={`w-full ${form.formState.errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
                         disabled={isPending}
                       />
                     </FormControl>

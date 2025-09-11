@@ -207,9 +207,10 @@ export const RegisterUserModal = ({ isOpen, onClose, workspaceId }: RegisterUser
                   <FormControl>
                     <Input
                       {...field}
-                      type="email"
+                      type="text"
                       placeholder="Enter email address"
                       disabled={isRegistering}
+                      className={form.formState.errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}
                     />
                   </FormControl>
                   <FormMessage />
