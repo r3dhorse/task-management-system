@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { MemberRole, Member } from "@/features/members/types";
+import { useWorkspaceAuthorization } from "@/features/workspaces/hooks/use-workspace-authorization";
 
 export const ServiceSwitcher = () => {
   const router = useRouter();
@@ -33,13 +34,16 @@ export const ServiceSwitcher = () => {
   const { open } = useCreateServiceModal();
   const { mutate: deleteService } = useDeleteService();
   
-  // Check if current user is workspace admin
+  // Check if current user is workspace admin or owner
   const { data: currentUser } = useCurrent();
+  const { workspace } = useWorkspaceAuthorization({ workspaceId });
   const { data: membersData } = useGetMembers({ workspaceId });
   const currentMember = membersData?.documents?.find(member => 
     (member as Member).userId === currentUser?.id
   ) as Member;
   const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
+  const isWorkspaceOwner = workspace?.userId === currentUser?.id;
+  const canManageServices = isWorkspaceAdmin || isWorkspaceOwner;
 
   const [DeleteDialog, confirmDelete] = useConfirm(
     "Delete Service",
@@ -71,7 +75,7 @@ export const ServiceSwitcher = () => {
       <DeleteDialog />
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold uppercase text-neutral-700 tracking-wide">Services</p>
-        {isWorkspaceAdmin && (
+        {canManageServices && (
           <RiAddCircleFill 
             onClick={open} 
             className="size-7 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200" 
@@ -110,7 +114,7 @@ export const ServiceSwitcher = () => {
                     </div>
                     <span className="text-xs font-medium">{service.name}</span>
                   </div>
-                  {isWorkspaceAdmin && (
+                  {canManageServices && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button

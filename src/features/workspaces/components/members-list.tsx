@@ -3,6 +3,7 @@ import { useState, Fragment } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useWorkspaceId } from "../hooks/use-workspace-id";
+import { useWorkspaceAuthorization } from "../hooks/use-workspace-authorization";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeftIcon, MoreVerticalIcon, UserPlusIcon, ShieldIcon, UserIcon, SearchIcon, UsersIcon, UserCheckIcon } from "@/lib/lucide-icons";
 import Link from "next/link";
@@ -35,6 +36,7 @@ interface PopulatedMember {
 export const MembersList = () => {
   const workspaceId = useWorkspaceId();
   const { data: currentUser } = useCurrent();
+  const { workspace } = useWorkspaceAuthorization({ workspaceId });
   const addMemberModal = useAddMemberModal();
   const registerUserModal = useRegisterUserModal();
   
@@ -57,6 +59,10 @@ export const MembersList = () => {
   // Find current user's member record to check if they're admin
   const currentMember = data?.documents?.find(member => (member as unknown as PopulatedMember).userId === currentUser?.id) as unknown as PopulatedMember | undefined;
   const isCurrentUserAdmin = currentMember?.role === MemberRole.ADMIN;
+  
+  // Check if current user is workspace owner or admin
+  const isWorkspaceOwner = workspace?.userId === currentUser?.id;
+  const canManageMembers = isCurrentUserAdmin || isWorkspaceOwner;
 
   const handleUpdateMember = (memberId: string, role: MemberRole) => {
     updateMember({
@@ -115,7 +121,7 @@ export const MembersList = () => {
               </p>
             </div>
           </div>
-          {isCurrentUserAdmin && (
+          {canManageMembers && (
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               <Button 
                 onClick={addMemberModal.open}
@@ -226,7 +232,7 @@ export const MembersList = () => {
                       </p>
                     </div>
                     
-                    {isCurrentUserAdmin && (
+                    {canManageMembers && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
@@ -285,7 +291,7 @@ export const MembersList = () => {
                 <p className="text-xs sm:text-sm text-muted-foreground mb-4">
                   {search ? 'Try adjusting your search terms' : 'This workspace has no members yet'}
                 </p>
-                {isCurrentUserAdmin && !search && (
+                {canManageMembers && !search && (
                   <div className="flex flex-col sm:flex-row gap-2 justify-center">
                     <Button onClick={addMemberModal.open} variant="outline" size="sm">
                       <UserPlusIcon className="h-4 w-4 mr-2" />
@@ -302,7 +308,7 @@ export const MembersList = () => {
           </div>
 
           {/* Admin Help Text */}
-          {isCurrentUserAdmin && filteredMembers.length > 0 && (
+          {canManageMembers && filteredMembers.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mt-4 sm:mt-6">
               <div className="flex items-start gap-3">
                 <div className="bg-blue-100 rounded-full p-1 hidden sm:block">
@@ -311,10 +317,10 @@ export const MembersList = () => {
                 <div>
                   <p className="text-xs sm:text-sm font-medium text-blue-900 mb-1 flex items-center gap-2">
                     <ShieldIcon className="h-4 w-4 text-blue-600 sm:hidden" />
-                    Administrator Privileges
+                    Management Privileges
                   </p>
                   <p className="text-xs text-blue-700">
-                    As an admin, you can add new members, change roles, and remove members from this workspace.
+                    As a workspace {isWorkspaceOwner ? 'owner' : 'admin'}, you can add new members, change roles, and remove members from this workspace.
                   </p>
                 </div>
               </div>
