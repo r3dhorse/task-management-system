@@ -199,6 +199,8 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('source', 'chat');
+      formData.append('workspaceId', workspaceId);
+      formData.append('taskId', taskId);
 
       const response = await fetch('/api/upload', {
         method: 'POST',

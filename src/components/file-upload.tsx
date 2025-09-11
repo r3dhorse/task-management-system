@@ -16,6 +16,8 @@ interface FileUploadProps {
   currentFileName?: string;
   disabled?: boolean;
   showRemoveButton?: boolean; // Control when to show the X button
+  workspaceId?: string;
+  taskId?: string;
 }
 
 export const FileUpload = ({
@@ -25,6 +27,8 @@ export const FileUpload = ({
   currentFileName,
   disabled = false,
   showRemoveButton = true, // Default to showing remove button for backward compatibility
+  workspaceId,
+  taskId,
 }: FileUploadProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<{
@@ -60,6 +64,12 @@ export const FileUpload = ({
       const formData = new FormData();
       formData.append("file", file);
       formData.append("source", "task");
+      if (workspaceId) {
+        formData.append("workspaceId", workspaceId);
+      }
+      if (taskId) {
+        formData.append("taskId", taskId);
+      }
 
       // Upload file using the RPC client
       const response = await fetch("/api/upload", {

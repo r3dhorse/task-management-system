@@ -281,6 +281,8 @@ export const TaskPropertiesModal = ({
               currentFileName={task.attachmentId ? "attachment.pdf" : undefined}
               disabled={isLoading}
               showRemoveButton={true}
+              workspaceId={task.workspaceId}
+              taskId={task.id}
             />
           </div>
 

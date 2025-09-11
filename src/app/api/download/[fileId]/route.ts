@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getFile } from "@/lib/file-storage";
+import { getObjectFromS3, getSignedDownloadUrl } from "@/lib/s3-client";
 import { getCurrentUser } from "@/lib/auth-utils";
-import { promises as fs } from "fs";
 import { prisma } from "@/lib/prisma";
 
 interface RouteProps {
@@ -27,16 +26,6 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       return NextResponse.json(
         { error: "File ID is required" },
         { status: 400 }
-      );
-    }
-
-    // Get file info from storage
-    const fileInfo = await getFile(fileId);
-    
-    if (!fileInfo) {
-      return NextResponse.json(
-        { error: "File not found" },
-        { status: 404 }
       );
     }
 
@@ -67,26 +56,92 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
           { status: 403 }
         );
       }
+
+      // Get the file from S3 using the S3 key stored in filePath
+      const s3Key = taskAttachment.filePath;
+      
+      try {
+        const fileBuffer = await getObjectFromS3(s3Key);
+        
+        // For images, use inline disposition to allow viewing in browser
+        // For PDFs and other files, use attachment to force download
+        const isImage = taskAttachment.mimeType.startsWith('image/');
+        const disposition = isImage 
+          ? `inline; filename="${taskAttachment.originalName}"`
+          : `attachment; filename="${taskAttachment.originalName}"`;
+
+        // Return the file as a response with proper headers
+        return new NextResponse(new Uint8Array(fileBuffer), {
+          headers: {
+            "Content-Type": taskAttachment.mimeType,
+            "Content-Disposition": disposition,
+            "Cache-Control": "public, max-age=31536000, immutable",
+          },
+        });
+      } catch (s3Error) {
+        console.error("S3 download error:", s3Error);
+        return NextResponse.json(
+          { error: "File not found in storage" },
+          { status: 404 }
+        );
+      }
     }
 
-    // Read file from disk
-    const fileBuffer = await fs.readFile(fileInfo.filePath);
-    
-    // For images, use inline disposition to allow viewing in browser
-    // For PDFs and other files, use attachment to force download
-    const isImage = fileInfo.mimeType.startsWith('image/');
-    const disposition = isImage 
-      ? `inline; filename="${fileInfo.fileName}"`
-      : `attachment; filename="${fileInfo.fileName}"`;
-
-    // Return the file as a response with proper headers
-    return new NextResponse(new Uint8Array(fileBuffer), {
-      headers: {
-        "Content-Type": fileInfo.mimeType,
-        "Content-Disposition": disposition,
-        "Cache-Control": "public, max-age=31536000, immutable",
+    // If not found as task attachment, check for message attachments
+    const messageAttachment = await prisma.taskMessage.findFirst({
+      where: { attachmentId: fileId },
+      include: {
+        workspace: {
+          include: {
+            members: {
+              where: { userId: user.id },
+            },
+          },
+        },
       },
     });
+
+    if (messageAttachment) {
+      // User must be a member of the workspace
+      if (messageAttachment.workspace.members.length === 0) {
+        return NextResponse.json(
+          { error: "Access denied" },
+          { status: 403 }
+        );
+      }
+
+      // For message attachments, the attachmentId is the S3 key
+      try {
+        const s3Key = messageAttachment.attachmentId!; // attachmentId is the S3 key for messages
+        const fileBuffer = await getObjectFromS3(s3Key);
+        
+        const isImage = (messageAttachment.attachmentType || '').startsWith('image/');
+        const disposition = isImage 
+          ? `inline; filename="${messageAttachment.attachmentName || 'attachment'}"`
+          : `attachment; filename="${messageAttachment.attachmentName || 'attachment'}"`;
+
+        return new NextResponse(new Uint8Array(fileBuffer), {
+          headers: {
+            "Content-Type": messageAttachment.attachmentType || 'application/octet-stream',
+            "Content-Disposition": disposition,
+            "Cache-Control": "public, max-age=31536000, immutable",
+          },
+        });
+      } catch (s3Error) {
+        console.error("S3 download error for message attachment:", s3Error);
+        return NextResponse.json(
+          { error: "File not found in storage" },
+          { status: 404 }
+        );
+      }
+    }
+
+    // If not found as task attachment or message attachment
+    return NextResponse.json(
+      { error: "File not found or access denied" },
+      { status: 404 }
+    );
+
   } catch (error) {
     console.error("File download error:", error);
     return NextResponse.json(

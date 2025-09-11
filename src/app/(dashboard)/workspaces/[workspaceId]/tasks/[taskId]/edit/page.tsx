@@ -319,6 +319,8 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
                 currentFileId={editForm.attachmentId}
                 currentFileName={task.attachmentId ? "attachment.pdf" : undefined}
                 disabled={isUpdating}
+                workspaceId={task.workspaceId}
+                taskId={task.id}
               />
             </CardContent>
           </Card>
