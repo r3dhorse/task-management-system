@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +65,7 @@ interface UsersResponse {
 export function UserManagementClient() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300); // 300ms debounce
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -88,19 +90,36 @@ export function UserManagementClient() {
 
   const queryClient = useQueryClient();
 
-  // Fetch users
+  // Reset page when search changes
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  // Cleanup queries when component unmounts
+  useEffect(() => {
+    return () => {
+      queryClient.removeQueries({ queryKey: ["users"] });
+    };
+  }, [queryClient]);
+
+  // Fetch users with optimizations
   const { data, isLoading, error } = useQuery<UsersResponse>({
-    queryKey: ["users", page, search],
+    queryKey: ["users", page, debouncedSearch],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: "15",
-        ...(search && { search }),
+        ...(debouncedSearch && { search: debouncedSearch }),
       });
       const response = await fetch(`/api/users?${params}`);
       if (!response.ok) throw new Error("Failed to fetch users");
       return response.json();
     },
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   // Create user mutation
@@ -124,7 +143,11 @@ export function UserManagementClient() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      // Optimized invalidation - only invalidate current page
+      queryClient.invalidateQueries({ 
+        queryKey: ["users", page, debouncedSearch],
+        exact: true 
+      });
       toast.success("User created successfully");
       setCreatedUserPassword(data.temporaryPassword);
       setCreateForm({
@@ -158,7 +181,11 @@ export function UserManagementClient() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      // Optimized invalidation - only invalidate current page
+      queryClient.invalidateQueries({ 
+        queryKey: ["users", page, debouncedSearch],
+        exact: true 
+      });
       toast.success("User updated successfully");
       setEditDialogOpen(false);
     },
@@ -180,7 +207,11 @@ export function UserManagementClient() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      // Optimized invalidation - only invalidate current page
+      queryClient.invalidateQueries({ 
+        queryKey: ["users", page, debouncedSearch],
+        exact: true 
+      });
       toast.success("User deleted successfully");
       setDeleteDialogOpen(false);
     },
@@ -212,23 +243,6 @@ export function UserManagementClient() {
     },
   });
 
-  const handleEdit = (user: User) => {
-    setSelectedUser(user);
-    setEditForm({
-      name: user.name || "",
-      email: user.email,
-      isAdmin: user.isAdmin,
-      isSuperAdmin: user.isSuperAdmin,
-    });
-    setEditDialogOpen(true);
-  };
-
-  const handleTempPassword = (user: User) => {
-    setSelectedUser(user);
-    setTempPassword("");
-    setGeneratedPassword("");
-    setTempPasswordDialogOpen(true);
-  };
 
   const generateRandomPassword = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
@@ -253,12 +267,9 @@ export function UserManagementClient() {
     toast.success("Password copied to clipboard");
   };
 
-  const handleDelete = (user: User) => {
-    setSelectedUser(user);
-    setDeleteDialogOpen(true);
-  };
 
-  const handleCreateUser = () => {
+  // Memoized handlers to prevent re-renders
+  const handleCreateUser = useCallback(() => {
     setCreateForm({
       name: "",
       email: "",
@@ -268,7 +279,30 @@ export function UserManagementClient() {
     });
     setCreatedUserPassword("");
     setCreateDialogOpen(true);
-  };
+  }, []);
+
+  const handleEdit = useCallback((user: User) => {
+    setSelectedUser(user);
+    setEditForm({
+      name: user.name || "",
+      email: user.email,
+      isAdmin: user.isAdmin,
+      isSuperAdmin: user.isSuperAdmin,
+    });
+    setEditDialogOpen(true);
+  }, []);
+
+  const handleDelete = useCallback((user: User) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleTempPassword = useCallback((user: User) => {
+    setSelectedUser(user);
+    setTempPassword("");
+    setGeneratedPassword("");
+    setTempPasswordDialogOpen(true);
+  }, []);
 
   const handleCreateSubmit = () => {
     if (!createForm.name.trim() || !createForm.email.trim() || !createForm.temporaryPassword.trim()) {
@@ -313,6 +347,40 @@ export function UserManagementClient() {
     deleteUserMutation.mutate(selectedUser.id);
   };
 
+  // Memoized pagination info to prevent recalculation
+  const paginationInfo = useMemo(() => {
+    if (!data) return null;
+    
+    const { pagination } = data;
+    const startItem = ((page - 1) * 15) + 1;
+    const endItem = Math.min(page * 15, pagination.totalCount);
+    
+    return {
+      startItem,
+      endItem,
+      totalCount: pagination.totalCount,
+      totalPages: pagination.totalPages,
+      hasMultiplePages: pagination.totalPages > 1,
+    };
+  }, [data, page]);
+
+  // Memoized page numbers for pagination
+  const pageNumbers = useMemo(() => {
+    if (!paginationInfo) return [];
+    
+    const { totalPages } = paginationInfo;
+    const maxPages = Math.min(5, totalPages);
+    const startPage = Math.max(1, Math.min(
+      totalPages - 4,
+      Math.max(1, page - 2)
+    ));
+    
+    return Array.from({ length: maxPages }, (_, i) => {
+      const pageNum = startPage + i;
+      return pageNum <= totalPages ? pageNum : null;
+    }).filter(Boolean) as number[];
+  }, [paginationInfo, page]);
+
   if (error) {
     return (
       <div className="container mx-auto p-6">
@@ -342,10 +410,7 @@ export function UserManagementClient() {
               <Input
                 placeholder="Search by name or email..."
                 value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -436,10 +501,10 @@ export function UserManagementClient() {
                 </TableBody>
               </Table>
 
-              {data && data.pagination.totalPages > 1 && (
+              {paginationInfo?.hasMultiplePages && (
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
                   <div className="text-sm text-gray-600">
-                    Showing {((page - 1) * 15) + 1} to {Math.min(page * 15, data.pagination.totalCount)} of {data.pagination.totalCount} users
+                    Showing {paginationInfo.startItem} to {paginationInfo.endItem} of {paginationInfo.totalCount} users
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -451,32 +516,23 @@ export function UserManagementClient() {
                       Previous
                     </Button>
                     <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(5, data.pagination.totalPages) }, (_, i) => {
-                        const pageNum = Math.max(1, Math.min(
-                          data.pagination.totalPages - 4,
-                          Math.max(1, page - 2)
-                        )) + i;
-                        
-                        if (pageNum > data.pagination.totalPages) return null;
-                        
-                        return (
-                          <Button
-                            key={pageNum}
-                            variant={pageNum === page ? "secondary" : "outline"}
-                            size="sm"
-                            onClick={() => setPage(pageNum)}
-                            className="w-10 h-8"
-                          >
-                            {pageNum}
-                          </Button>
-                        );
-                      })}
+                      {pageNumbers.map((pageNum) => (
+                        <Button
+                          key={pageNum}
+                          variant={pageNum === page ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setPage(pageNum)}
+                          className="w-10 h-8"
+                        >
+                          {pageNum}
+                        </Button>
+                      ))}
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setPage((p) => p + 1)}
-                      disabled={page === data.pagination.totalPages}
+                      disabled={page === paginationInfo.totalPages}
                     >
                       Next
                     </Button>
