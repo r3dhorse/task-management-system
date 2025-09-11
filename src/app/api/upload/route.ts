@@ -63,9 +63,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get workspace name for folder structure
+    // Get workspace and task name for folder structure
     let workspaceName = "unknown-workspace";
-    if (workspaceId) {
+    let taskName: string | undefined;
+    
+    if (taskId) {
+      // Get task and workspace details
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: { workspace: { select: { name: true } } }
+      });
+      if (task) {
+        taskName = task.name;
+        workspaceName = task.workspace.name;
+      }
+    } else if (workspaceId) {
+      // Get workspace name if task is not provided
       const workspace = await prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { name: true }
@@ -73,29 +86,31 @@ export async function POST(request: NextRequest) {
       if (workspace) {
         workspaceName = workspace.name;
       }
-    } else if (taskId) {
-      // Get workspace from task if not directly provided
-      const task = await prisma.task.findUnique({
-        where: { id: taskId },
-        include: { workspace: { select: { name: true } } }
-      });
-      if (task?.workspace) {
-        workspaceName = task.workspace.name;
-      }
     }
 
     // Generate unique file ID and S3 key
     const fileId = randomUUID();
     const extension = file.name.split('.').pop() || '';
     const fileName = `${fileId}.${extension}`;
-    const s3Key = generateS3Key(workspaceName, fileName);
+    const s3Key = generateS3Key(workspaceName, fileName, taskName);
+    
+    console.log('Generated S3 key:', {
+      s3Key,
+      workspaceName,
+      taskName,
+      fileName,
+      fileType,
+      source
+    });
 
     // Convert File to Buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     // Upload file to S3
+    console.log('Starting S3 upload for:', file.name);
     const uploadResult: S3UploadResult = await uploadToS3(buffer, s3Key, file.type);
+    console.log('S3 upload completed:', uploadResult);
 
     // If this is a task attachment, save to database
     if (fileType === 'task' && taskId) {

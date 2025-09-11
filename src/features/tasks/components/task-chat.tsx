@@ -472,7 +472,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
   };
 
   const handleDownloadFile = (fileId: string) => {
-    window.open(`/api/download/${fileId}`, '_blank');
+    window.open(`/api/download/${encodeURIComponent(fileId)}`, '_blank');
   };
 
   // Group messages by date
@@ -630,7 +630,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                             {isImage(message.attachmentType || '') ? (
                               <div className="w-full max-w-sm max-h-80 overflow-hidden rounded-lg border-0 bg-gray-100">
                                 <Image
-                                  src={`/api/download/${message.attachmentId}`}
+                                  src={`/api/download/${encodeURIComponent(message.attachmentId || '')}`}
                                   alt={message.attachmentName || "Image attachment"}
                                   width={400}
                                   height={320}
