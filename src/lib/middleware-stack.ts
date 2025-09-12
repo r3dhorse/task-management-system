@@ -1,11 +1,28 @@
-import { cache, withCache, CacheKeys } from './cache';
 import { createAdvancedRateLimitMiddleware, advancedRateLimiters } from './advanced-rate-limiter';
 import { performanceMonitor, createPerformanceMiddleware } from './performance-monitor';
-import { sessionMiddleware } from './session-middleware';
+import { cache } from './cache';
+
+interface User {
+  id: string;
+}
+
+interface HonoContext {
+  req: { 
+    header: (key: string) => string | undefined;
+    method: string;
+    path: string;
+    query: () => string;
+  };
+  res: Response;
+  header: (key: string, value: string) => void;
+  status: (status: number) => void;
+  json: (data: unknown, status?: number) => Response;
+  get: (key: string) => unknown;
+}
 
 // Compression middleware for responses
 export function createCompressionMiddleware() {
-  return async (c: any, next: any) => {
+  return async (c: HonoContext, next: () => Promise<void>) => {
     await next();
     
     // Only compress if response is large enough and client accepts it
@@ -26,7 +43,7 @@ export function createCompressionMiddleware() {
 
 // Security headers middleware
 export function createSecurityMiddleware() {
-  return async (c: any, next: any) => {
+  return async (c: HonoContext, next: () => Promise<void>) => {
     // Security headers
     c.header('X-Content-Type-Options', 'nosniff');
     c.header('X-Frame-Options', 'DENY');
@@ -48,7 +65,7 @@ export function createSecurityMiddleware() {
 
 // Request validation middleware
 export function createValidationMiddleware() {
-  return async (c: any, next: any) => {
+  return async (c: HonoContext, next: () => Promise<void>) => {
     const contentType = c.req.header('content-type');
     const method = c.req.method;
     
@@ -75,10 +92,10 @@ export function createCachingMiddleware(
   shouldCache: (path: string, method: string) => boolean = (path, method) => 
     method === 'GET' && !path.includes('/auth/')
 ) {
-  return async (c: any, next: any) => {
+  return async (c: HonoContext, next: () => Promise<void>) => {
     const path = c.req.path;
     const method = c.req.method;
-    const user = c.get('user');
+    const user = c.get('user') as User | undefined;
     
     if (!shouldCache(path, method)) {
       await next();
@@ -105,7 +122,7 @@ export function createCachingMiddleware(
         const body = await response.clone().json();
         await cache.set(cacheKey, body, ttl);
         c.header('X-Cache', 'MISS');
-      } catch (error) {
+      } catch {
         // Non-JSON response, skip caching
       }
     }
@@ -114,18 +131,19 @@ export function createCachingMiddleware(
 
 // Error handling middleware
 export function createErrorHandlingMiddleware() {
-  return async (c: any, next: any) => {
+  return async (c: HonoContext, next: () => Promise<void>) => {
     try {
       await next();
     } catch (error) {
       console.error('API Error:', error);
       
       // Log error with performance context
+      const user = c.get('user') as User | undefined;
       performanceMonitor.addMetric('api.error', 0, {
         error: error instanceof Error ? error.message : 'Unknown error',
         path: c.req.path,
         method: c.req.method,
-        userId: c.get('user')?.id,
+        userId: user?.id,
       });
       
       // Return appropriate error response
@@ -160,7 +178,7 @@ export function createErrorHandlingMiddleware() {
 
 // Request logging middleware
 export function createLoggingMiddleware() {
-  return async (c: any, next: any) => {
+  return async (c: HonoContext, next: () => Promise<void>) => {
     const start = Date.now();
     const method = c.req.method;
     const path = c.req.path;
@@ -171,7 +189,7 @@ export function createLoggingMiddleware() {
     
     const duration = Date.now() - start;
     const status = c.res?.status || 0;
-    const user = c.get('user');
+    const user = c.get('user') as User | undefined;
     
     // Log request in development
     if (process.env.NODE_ENV === 'development') {
@@ -263,7 +281,11 @@ export const publicMiddlewareStack = createMiddlewareStack({
 });
 
 // Utility to apply middleware stack to Hono app
-export function applyMiddlewareStack(app: any, middlewares: any[]) {
+interface HonoApp {
+  use: (path: string, middleware: (c: HonoContext, next: () => Promise<void>) => Promise<void>) => void;
+}
+
+export function applyMiddlewareStack(app: HonoApp, middlewares: Array<(c: HonoContext, next: () => Promise<void>) => Promise<void>>) {
   middlewares.forEach(middleware => {
     app.use('*', middleware);
   });

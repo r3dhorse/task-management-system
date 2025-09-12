@@ -1,8 +1,10 @@
+import React, { useEffect } from 'react';
+
 interface PerformanceMetric {
   name: string;
   duration: number;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface DatabaseMetrics {
@@ -28,7 +30,7 @@ class PerformanceMonitor {
   /**
    * Start timing a performance metric
    */
-  startTiming(name: string, metadata?: Record<string, any>): () => void {
+  startTiming(name: string, metadata?: Record<string, unknown>): () => void {
     const startTime = performance.now();
     
     return () => {
@@ -43,7 +45,7 @@ class PerformanceMonitor {
   async timeFunction<T>(
     name: string,
     fn: () => Promise<T> | T,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<T> {
     const stopTiming = this.startTiming(name, metadata);
     
@@ -58,7 +60,7 @@ class PerformanceMonitor {
   /**
    * Add a performance metric
    */
-  addMetric(name: string, duration: number, metadata?: Record<string, any>): void {
+  addMetric(name: string, duration: number, metadata?: Record<string, unknown>): void {
     const metric: PerformanceMetric = {
       name,
       duration,
@@ -193,11 +195,11 @@ class PerformanceMonitor {
 export const performanceMonitor = new PerformanceMonitor();
 
 // Utility decorators and helpers
-export function withPerformanceTracking<T extends (...args: any[]) => any>(
+export function withPerformanceTracking<T extends (...args: unknown[]) => unknown>(
   fn: T,
   name?: string
 ): T {
-  return (async (...args: any[]) => {
+  return (async (...args: unknown[]) => {
     const functionName = name || fn.name || 'anonymous';
     return performanceMonitor.timeFunction(functionName, () => fn(...args));
   }) as T;
@@ -211,7 +213,7 @@ export function withComponentPerformance<P extends object>(
   const WrappedComponent = (props: P) => {
     const componentName = displayName || Component.displayName || Component.name || 'Component';
     
-    React.useEffect(() => {
+    useEffect(() => {
       const stopTiming = performanceMonitor.startTiming(`${componentName}.mount`);
       return stopTiming;
     }, [componentName]);
@@ -243,8 +245,17 @@ export function getMemoryUsage(): {
 }
 
 // Performance middleware for API routes
+interface HonoContext {
+  req: { 
+    method: string;
+    path: string;
+    header: (key: string) => string | undefined;
+  };
+  header: (key: string, value: string) => void;
+}
+
 export function createPerformanceMiddleware(operationName?: string) {
-  return async (c: any, next: any) => {
+  return async (c: HonoContext, next: () => Promise<void>) => {
     const stopTiming = performanceMonitor.startTiming(
       operationName || `${c.req.method} ${c.req.path}`,
       {

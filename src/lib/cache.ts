@@ -7,7 +7,7 @@ interface CacheConfig {
 
 class CacheManager {
   private redis?: Redis;
-  private memoryCache: Map<string, { value: any; expiry: number }> = new Map();
+  private memoryCache: Map<string, { value: unknown; expiry: number }> = new Map();
   private config: CacheConfig;
 
   constructor(config: CacheConfig = { defaultTTL: 300, keyPrefix: 'task-mgmt:' }) {
@@ -17,7 +17,6 @@ class CacheManager {
     if (process.env.REDIS_URL) {
       try {
         this.redis = new Redis(process.env.REDIS_URL, {
-          retryDelayOnFailover: 100,
           maxRetriesPerRequest: 3,
           lazyConnect: true,
         });
@@ -50,7 +49,7 @@ class CacheManager {
     // Fallback to memory cache
     const memoryEntry = this.memoryCache.get(fullKey);
     if (memoryEntry && memoryEntry.expiry > Date.now()) {
-      return memoryEntry.value;
+      return memoryEntry.value as T;
     }
     
     this.memoryCache.delete(fullKey);

@@ -86,7 +86,6 @@ export class FileOptimizer {
         case 'webp':
           sharpInstance = sharpInstance.webp({
             quality: finalConfig.quality,
-            progressive: finalConfig.progressive,
             effort: 6, // Max compression effort
           });
           break;

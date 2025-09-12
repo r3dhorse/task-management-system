@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getObjectFromS3, getSignedDownloadUrl } from "@/lib/s3-client";
+import { getObjectFromS3 } from "@/lib/s3-client";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 

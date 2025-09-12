@@ -11,9 +11,6 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     serverComponentsExternalPackages: ['@prisma/client'],
-    turbotrace: {
-      logLevel: 'error',
-    },
   },
   
   // Image optimization

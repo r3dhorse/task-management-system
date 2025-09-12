@@ -1,15 +1,6 @@
-import { cache } from './cache';
-
 interface RateLimitEntry {
   count: number;
   resetAt: number;
-}
-
-interface RateLimitResult {
-  allowed: boolean;
-  remaining: number;
-  resetTime: number;
-  totalHits: number;
 }
 
 class RateLimiter {

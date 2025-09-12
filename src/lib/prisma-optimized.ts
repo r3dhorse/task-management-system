@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma: ReturnType<typeof prismaClientSingleton> | undefined;
 };
 
 const prismaClientSingleton = () => {
@@ -15,7 +15,7 @@ const prismaClientSingleton = () => {
   }).$extends({
     query: {
       $allModels: {
-        async findMany({ model, operation, args, query }) {
+        async findMany({ args, query }) {
           args.take = args.take ?? 1000;
           return query(args);
         },
@@ -47,7 +47,6 @@ const prismaClientSingleton = () => {
   });
 };
 
-type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>;
 
 const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
 

@@ -1,5 +1,16 @@
 import { cache } from './cache';
 
+interface HonoContext {
+  req: { raw: Request };
+  get: (key: string) => unknown;
+  header: (key: string, value: string) => void;
+  json: (data: unknown, status?: number) => Response;
+}
+
+interface User {
+  id: string;
+}
+
 interface RateLimitConfig {
   windowMs: number;
   maxRequests: number;
@@ -104,9 +115,9 @@ export function createAdvancedRateLimitMiddleware(
     req.headers.get('x-real-ip') || 
     'unknown'
 ) {
-  return async (c: any, next: any) => {
+  return async (c: HonoContext, next: () => Promise<void>) => {
     const request = c.req.raw;
-    const user = c.get('user');
+    const user = c.get('user') as User | undefined;
     const identifier = getIdentifier(request, user?.id);
     
     const result = await limiter.checkLimit(identifier);

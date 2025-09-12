@@ -56,8 +56,10 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "critters": "^0.0.23",
     "date-fns": "^4.1.0",
     "hono": "4.6.3",
+    "ioredis": "^5.3.2",
     "lucide-react": "^0.263.1",
     "next": "14.2.14",
     "next-auth": "^4.24.11",
@@ -75,13 +77,12 @@
     "react-use": "17.5.1",
     "recharts": "^2.15.3",
     "server-only": "^0.0.1",
+    "sharp": "^0.32.6",
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
-    "zod": "^3.24.3",
-    "ioredis": "^5.3.2",
-    "sharp": "^0.32.6"
+    "zod": "^3.24.3"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
@@ -95,6 +96,6 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.19.4",
-    "typescript": "^5"
+    "typescript": "^5.9.2"
   }
 }

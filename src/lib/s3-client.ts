@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -11,14 +11,6 @@ const s3Client = new S3Client({
 });
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'task-management-system-2025';
-
-console.log('S3 Client initialized with:', {
-  region: process.env.AWS_REGION || 'ap-southeast-2',
-  bucket: BUCKET_NAME,
-  hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
-  hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY,
-  accessKeyLength: process.env.AWS_ACCESS_KEY_ID?.length || 0
-});
 
 export interface S3UploadResult {
   key: string;
@@ -132,14 +124,30 @@ export async function getObjectFromS3(key: string): Promise<Buffer> {
       throw new Error('No body in S3 response');
     }
 
-    const chunks: Uint8Array[] = [];
-    const stream = response.Body as any;
+    // Convert the body to a buffer
+    const streamToBuffer = async (stream: ReadableStream | NodeJS.ReadableStream | Blob | Uint8Array | undefined): Promise<Buffer> => {
+      if (!stream) {
+        throw new Error('No stream to convert');
+      }
+      
+      if (stream instanceof Uint8Array) {
+        return Buffer.from(stream);
+      }
+      
+      if (stream instanceof Blob) {
+        const arrayBuffer = await stream.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+      }
+      
+      // Handle Node.js Readable Stream
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of stream as NodeJS.ReadableStream) {
+        chunks.push(chunk instanceof Uint8Array ? chunk : Buffer.from(chunk));
+      }
+      return Buffer.concat(chunks);
+    };
     
-    for await (const chunk of stream) {
-      chunks.push(chunk);
-    }
-    
-    return Buffer.concat(chunks);
+    return await streamToBuffer(response.Body);
   } catch (error) {
     console.error('Error getting object from S3:', error);
     throw new Error('Failed to get file from S3');
