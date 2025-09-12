@@ -1,30 +1,29 @@
-@keyframes rgbFlow {
+@keyframes glassmorphism {
   0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
+    transform: translateY(0px) scale(1);
+    opacity: 0;
   }
   100% {
-    background-position: 0% 50%;
+    transform: translateY(0px) scale(1);
+    opacity: 1;
   }
 }
 
-@keyframes rgbShift {
+@keyframes shimmer {
   0% {
-    filter: hue-rotate(0deg) drop-shadow(0 15px 50px rgba(0, 0, 0, 0.3));
-  }
-  25% {
-    filter: hue-rotate(90deg) drop-shadow(0 15px 50px rgba(255, 0, 0, 0.2));
-  }
-  50% {
-    filter: hue-rotate(180deg) drop-shadow(0 15px 50px rgba(0, 255, 0, 0.2));
-  }
-  75% {
-    filter: hue-rotate(270deg) drop-shadow(0 15px 50px rgba(0, 0, 255, 0.2));
+    transform: translateX(-100%);
   }
   100% {
-    filter: hue-rotate(360deg) drop-shadow(0 15px 50px rgba(0, 0, 0, 0.3));
+    transform: translateX(100%);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }
 
@@ -32,42 +31,83 @@
   position: relative;
   background: transparent;
   border: none;
+  animation: glassmorphism 0.6s ease-out forwards, float 6s ease-in-out infinite;
 }
 
 .animatedCard::before {
   content: "";
   position: absolute;
   inset: 0;
-  padding: 2px;
-  background: linear-gradient(
-    90deg,
-    #ff0000 0%,
-    #ff7f00 16.67%,
-    #ffff00 33.33%,
-    #00ff00 50%,
-    #0000ff 66.67%,
-    #4b0082 83.33%,
-    #9400d3 100%
-  );
-  background-size: 300% 300%;
-  border-radius: 20px;
+  padding: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: xor;
   -webkit-mask-composite: xor;
-  animation: rgbFlow 3s ease-in-out infinite, rgbShift 4s linear infinite;
 }
 
 .animatedCard::after {
   content: "";
   position: absolute;
-  inset: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(16px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  inset: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
 }
 
 .cardContent {
   position: relative;
   z-index: 1;
+}
+
+/* Enhanced glassmorphism effect for inputs */
+.glassmorphismInput {
+  background: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.glassmorphismInput:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1) !important;
+}
+
+.glassmorphismInput:focus {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 
+    0 0 0 3px rgba(255, 255, 255, 0.1),
+    0 8px 30px rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Enhanced glassmorphism button */
+.glassmorphismButton {
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.glassmorphismButton:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 
+    0 12px 35px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-2px) !important;
+}
+
+.glassmorphismButton:active {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(0px) scale(0.98) !important;
 }

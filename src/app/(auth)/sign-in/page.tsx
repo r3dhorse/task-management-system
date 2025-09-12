@@ -1,13 +1,13 @@
 import { getCurrent } from "@/features/auth/queries";
-import { SignInCard } from "@/features/auth/components/sign-in-card";
 import { redirect } from "next/navigation";
+import { ReadyForWorkLogin } from "@/features/auth/components/ready-for-work-login";
 
 const SignInPage = async () => {
   const user = await getCurrent();
 
   if (user) redirect("/");
 
-  return <SignInCard />
+  return <ReadyForWorkLogin />
 
 };
 

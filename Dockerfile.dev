@@ -20,7 +20,7 @@ COPY . .
 RUN npx prisma generate
 
 # Create necessary directories
-RUN mkdir -p ./uploads ./test-results ./playwright-report ./.next
+RUN mkdir -p ./uploads ./.next
 
 # Set proper permissions for all directories (run as root to avoid volume mount issues)
 RUN chmod -R 777 /app

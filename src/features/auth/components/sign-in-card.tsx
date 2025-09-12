@@ -77,8 +77,8 @@ export const SignInCard = () => {
                       placeholder="Email address"
                       autoComplete="email"
                       data-testid="email-input"
-                      className={`h-12 px-4 text-base bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white/50 focus:ring-white/25 backdrop-blur-sm transition-all duration-200 hover:bg-white/25 focus:bg-white/25 ${
-                        form.formState.errors.email ? 'border-red-400 focus:border-red-400 focus:ring-red-200' : ''
+                      className={`${styles.glassmorphismInput} h-12 px-4 text-base text-white placeholder:text-white/70 focus:ring-0 focus:ring-offset-0 ${
+                        form.formState.errors.email ? 'border-red-400/60 focus:border-red-400/80 !bg-red-500/10' : ''
                       }`}
                     />
                   </FormControl>
@@ -101,7 +101,7 @@ export const SignInCard = () => {
                         placeholder="Password"
                         autoComplete="current-password"
                         data-testid="password-input"
-                        className="h-12 px-4 pr-12 text-base bg-white/20 border-white/30 text-white placeholder:text-white/60 focus:border-white/50 focus:ring-white/25 backdrop-blur-sm transition-all duration-200 hover:bg-white/25 focus:bg-white/25"
+                        className={`${styles.glassmorphismInput} h-12 px-4 pr-12 text-base text-white placeholder:text-white/70 focus:ring-0 focus:ring-offset-0`}
                       />
                       <Button
                         type="button"
@@ -128,7 +128,7 @@ export const SignInCard = () => {
               type="submit"
               size="lg"
               data-testid="signin-button"
-              className="w-full h-12 text-base font-semibold bg-white/20 hover:bg-white/30 active:bg-white/40 text-white border border-white/30 focus:ring-2 focus:ring-white/25 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-200 backdrop-blur-sm disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+              className={`${styles.glassmorphismButton} w-full h-12 text-base font-semibold text-white focus:ring-0 focus:ring-offset-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none`}
             >
               {isPending ? (
                 <div className="flex items-center gap-2">

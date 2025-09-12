@@ -43,29 +43,28 @@ RUN apk add --no-cache postgresql-client bash
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy built application
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Copy built application with correct ownership
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma files for migrations
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# Copy Prisma files for migrations with correct ownership
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy production dependencies (includes tsx for seeding)
-COPY --from=deps /app/node_modules ./node_modules
+# Copy production dependencies (includes tsx for seeding) with correct ownership
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 # Copy package.json for scripts
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 # Copy startup script
-COPY --from=builder /app/docker-start.sh ./docker-start.sh
+COPY --from=builder --chown=nextjs:nodejs /app/docker-start.sh ./docker-start.sh
 RUN chmod +x ./docker-start.sh
 
-# Create necessary directories and fix permissions
-RUN mkdir -p ./uploads ./test-results ./playwright-report
-RUN chown -R nextjs:nodejs ./uploads ./test-results ./playwright-report ./node_modules ./prisma ./docker-start.sh
+# Create necessary directories with correct ownership
+RUN mkdir -p ./uploads && chown -R nextjs:nodejs ./uploads ./prisma
 
 # Set user
 USER nextjs
