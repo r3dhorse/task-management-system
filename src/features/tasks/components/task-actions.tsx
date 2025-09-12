@@ -8,19 +8,19 @@ import { useRouter } from "next/navigation";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { Member } from "@/features/members/types";
+import { Member, MemberRole } from "@/features/members/types";
 
 interface TaskActionsProps {
   id: string;
   serviceId: string;
   children: React.ReactNode;
   deleteOnly?: boolean;
-  creatorId?: string; // Task creator's user ID
-  assigneeId?: string; // Task assignee's member ID
+  creatorId?: string; // Task creator's user ID (kept for prop compatibility)
+  assigneeId?: string; // Task assignee's member ID (kept for prop compatibility)
   status?: string; // Task status to determine if already archived
 };
 
-export const TaskActions = ({ id, serviceId, children, deleteOnly = false, creatorId, assigneeId, status }: TaskActionsProps) => {
+export const TaskActions = ({ id, serviceId, children, deleteOnly = false, status }: TaskActionsProps) => {
   const workspaceId = useWorkspaceId();
   const router = useRouter();
   
@@ -33,10 +33,9 @@ export const TaskActions = ({ id, serviceId, children, deleteOnly = false, creat
     (member as Member).userId === currentUser?.id
   ) as Member;
   
-  const isCreator = currentUser && creatorId ? currentUser.id === creatorId : false;
-  const isAssignee = currentMember && assigneeId ? currentMember.id === assigneeId : false;
-  const isSuperAdmin = currentUser?.isSuperAdmin || false;
-  const canDelete = isCreator || isAssignee || isSuperAdmin;
+  // Only workspace admins can archive tasks
+  const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
+  const canArchive = isWorkspaceAdmin;
   const isAlreadyArchived = status === "ARCHIVED";
 
   const [ConfirmDialog, confirm] = useConfirm(
@@ -85,7 +84,7 @@ export const TaskActions = ({ id, serviceId, children, deleteOnly = false, creat
         <DropdownMenuTrigger asChild>
           {children}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-28">
+        <DropdownMenuContent align="end" className="w-48">
           {!deleteOnly && (
             <>
               <DropdownMenuItem
@@ -106,7 +105,7 @@ export const TaskActions = ({ id, serviceId, children, deleteOnly = false, creat
             </>
           )}
 
-          {canDelete && !isAlreadyArchived && (
+          {canArchive && !isAlreadyArchived && (
             <DropdownMenuItem
               onClick={onArchive}
               disabled={isPending}

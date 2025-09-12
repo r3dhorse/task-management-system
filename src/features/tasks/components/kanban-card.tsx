@@ -3,9 +3,8 @@
 import React from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { PopulatedTask } from "../types";
-import { EyeOffIcon, MoreHorizontal } from "@/lib/lucide-icons";
+import { EyeOffIcon } from "@/lib/lucide-icons";
 import { TaskDate } from "./task-date";
-import { TaskActions } from "./task-actions";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useRouter } from "next/navigation";
@@ -83,22 +82,15 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
         >
           {/* Card Header */}
           <div className="p-3 pb-2">
-            <div className="flex items-start justify-between gap-x-2 mb-2">
-              <div className="flex items-start gap-2 flex-1">
-                <h3 className="text-sm font-semibold text-neutral-900 line-clamp-2 flex-1 leading-snug break-words overflow-hidden">
-                  {task.name}
-                </h3>
-                {task.isConfidential && (
-                  <div className="flex-shrink-0 mt-0.5">
-                    <EyeOffIcon className="size-3 text-orange-600" />
-                  </div>
-                )}
-              </div>
-              <TaskActions id={task.id} serviceId={task.serviceId} creatorId={task.creatorId || undefined} assigneeId={task.assigneeId || undefined} status={task.status}>
-                <div className="opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity duration-200 p-2 hover:bg-neutral-100 rounded touch-manipulation">
-                  <MoreHorizontal className="size-4 text-neutral-500" />
+            <div className="flex items-start gap-2 mb-2">
+              <h3 className="text-sm font-semibold text-neutral-900 line-clamp-2 flex-1 leading-snug break-words overflow-hidden">
+                {task.name}
+              </h3>
+              {task.isConfidential && (
+                <div className="flex-shrink-0 mt-0.5">
+                  <EyeOffIcon className="size-3 text-orange-600" />
                 </div>
-              </TaskActions>
+              )}
             </div>
           </div>
 

@@ -1,11 +1,10 @@
 "use client"
 
-import { ArrowUpDown, EyeOffIcon, Trash2 } from "@/lib/lucide-icons"
+import { ArrowUpDown, EyeOffIcon } from "@/lib/lucide-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { PopulatedTask } from "../types"
 import { Button } from "@/components/ui/button"
 import { TaskDate } from "./task-date"
-import { TaskActions } from "./task-actions"
 import { StatusBadge } from "./status-badge"
 
 export const columns: ColumnDef<PopulatedTask>[] = [
@@ -145,29 +144,6 @@ export const columns: ColumnDef<PopulatedTask>[] = [
 
       return <StatusBadge status={status} size="sm" />
 
-    }
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const id = row.original.id;
-      const serviceId = row.original.serviceId;
-      const creatorId = row.original.creatorId;
-      const assigneeId = row.original.assigneeId;
-      const status = row.original.status;
-
-      // Hide trash icon if task is already archived
-      if (status === "ARCHIVED") {
-        return null;
-      }
-
-      return (
-        <TaskActions id={id} serviceId={serviceId} deleteOnly={true} creatorId={creatorId || undefined} assigneeId={assigneeId || undefined} status={status} >
-          <Button variant="ghost" className="size-8 p-0">
-            <Trash2 className="size-4" />
-          </Button>
-        </TaskActions>
-      )
     }
   }
 ];

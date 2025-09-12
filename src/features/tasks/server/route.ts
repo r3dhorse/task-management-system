@@ -43,17 +43,9 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401)
       }
 
-      // Visitors cannot archive tasks
-      if (member.role === MemberRole.VISITOR) {
-        return c.json({ error: "Forbidden" }, 403);
-      }
-
-      // Only the task creator or workspace admin can archive the task
-      const isTaskCreator = task.creatorId && task.creatorId === user.id;
-      const isWorkspaceAdmin = member.role === MemberRole.ADMIN;
-      
-      if (!isTaskCreator && !isWorkspaceAdmin) {
-        return c.json({ error: "Forbidden" }, 403);
+      // Only workspace admins can archive tasks
+      if (member.role !== MemberRole.ADMIN) {
+        return c.json({ error: "Only workspace administrators can archive tasks" }, 403);
       }
 
       // Archive the task by setting status to ARCHIVED for audit purposes
