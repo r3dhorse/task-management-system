@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getObjectFromS3 } from "@/lib/s3-client";
+import { getFile } from "@/lib/file-storage";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
+import { readFile } from "fs/promises";
 
 interface RouteProps {
   params: {
     fileId: string;
   };
+}
+
+// Check if AWS S3 is configured
+function isS3Configured(): boolean {
+  return !!(process.env.AWS_ACCESS_KEY_ID && 
+           process.env.AWS_SECRET_ACCESS_KEY && 
+           process.env.AWS_REGION);
+}
+
+// Helper function to determine if a file path is an S3 key vs local path
+function isS3FilePath(filePath: string): boolean {
+  return filePath.startsWith('task-management-system-2025/') || filePath.includes('/');
 }
 
 export async function GET(request: NextRequest, { params }: RouteProps) {
@@ -60,11 +74,23 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
         );
       }
 
-      // Get the file from S3 using the S3 key stored in filePath
-      const s3Key = taskAttachment.filePath;
+      const filePath = taskAttachment.filePath;
+      const isS3File = isS3FilePath(filePath);
       
       try {
-        const fileBuffer = await getObjectFromS3(s3Key);
+        let fileBuffer: Buffer;
+        
+        if (isS3File && isS3Configured()) {
+          // Get file from S3
+          fileBuffer = await getObjectFromS3(filePath);
+        } else {
+          // Get file from local storage
+          const localFile = await getFile(taskAttachment.id);
+          if (!localFile) {
+            throw new Error('File not found in local storage');
+          }
+          fileBuffer = await readFile(localFile.filePath);
+        }
         
         // For images, use inline disposition to allow viewing in browser
         // For PDFs and other files, use attachment to force download
@@ -81,8 +107,8 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
             "Cache-Control": "public, max-age=31536000, immutable",
           },
         });
-      } catch (s3Error) {
-        console.error("S3 download error:", s3Error);
+      } catch (error) {
+        console.error("File download error:", error);
         return NextResponse.json(
           { error: "File not found in storage" },
           { status: 404 }

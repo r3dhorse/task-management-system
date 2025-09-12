@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadToS3, generateS3Key, S3UploadResult } from "@/lib/s3-client";
+import { uploadFile as uploadToLocal, FileStorageError } from "@/lib/file-storage";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
@@ -8,12 +9,13 @@ const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || "10485760"); // 10MB
 
 type FileType = "task" | "message";
 
-class FileStorageError extends Error {
-  constructor(message: string, public code: string) {
-    super(message);
-    this.name = "FileStorageError";
-  }
+// Check if AWS S3 is configured
+function isS3Configured(): boolean {
+  return !!(process.env.AWS_ACCESS_KEY_ID && 
+           process.env.AWS_SECRET_ACCESS_KEY && 
+           process.env.AWS_REGION);
 }
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,54 +65,83 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get workspace and task name for folder structure
-    let workspaceName = "unknown-workspace";
-    let taskName: string | undefined;
+    const useS3 = isS3Configured();
+    console.log(`Using ${useS3 ? 'S3' : 'local'} storage for file upload`);
+
+    let uploadResult: {
+      id: string;
+      filePath: string;
+      location: string;
+      isS3: boolean;
+    };
+    let fileId: string = randomUUID();
     
-    if (taskId) {
-      // Get task and workspace details
-      const task = await prisma.task.findUnique({
-        where: { id: taskId },
-        include: { workspace: { select: { name: true } } }
-      });
-      if (task) {
-        taskName = task.name;
-        workspaceName = task.workspace.name;
+    if (useS3) {
+      // S3 Upload Logic
+      let workspaceName = "unknown-workspace";
+      let taskName: string | undefined;
+      
+      if (taskId) {
+        // Get task and workspace details
+        const task = await prisma.task.findUnique({
+          where: { id: taskId },
+          include: { workspace: { select: { name: true } } }
+        });
+        if (task) {
+          taskName = task.name;
+          workspaceName = task.workspace.name;
+        }
+      } else if (workspaceId) {
+        // Get workspace name if task is not provided
+        const workspace = await prisma.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { name: true }
+        });
+        if (workspace) {
+          workspaceName = workspace.name;
+        }
       }
-    } else if (workspaceId) {
-      // Get workspace name if task is not provided
-      const workspace = await prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { name: true }
+
+      // Generate S3 key
+      const extension = file.name.split('.').pop() || '';
+      const fileName = `${fileId}.${extension}`;
+      const s3Key = generateS3Key(workspaceName, fileName, taskName);
+      
+      console.log('Generated S3 key:', {
+        s3Key,
+        workspaceName,
+        taskName,
+        fileName,
+        fileType,
+        source
       });
-      if (workspace) {
-        workspaceName = workspace.name;
-      }
+
+      // Convert File to Buffer and upload to S3
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const s3Result: S3UploadResult = await uploadToS3(buffer, s3Key, file.type);
+      console.log('S3 upload completed:', s3Result);
+
+      uploadResult = {
+        id: fileType === 'message' ? s3Result.key : fileId,
+        filePath: s3Result.key,
+        location: s3Result.location,
+        isS3: true
+      };
+    } else {
+      // Local Storage Upload Logic
+      console.log('Starting local file upload for:', file.name);
+      const localResult = await uploadToLocal(file, fileType);
+      console.log('Local upload completed:', localResult);
+
+      uploadResult = {
+        id: localResult.id,
+        filePath: localResult.filePath,
+        location: `/api/download/${localResult.id}`,
+        isS3: false
+      };
+      fileId = localResult.id;
     }
-
-    // Generate unique file ID and S3 key
-    const fileId = randomUUID();
-    const extension = file.name.split('.').pop() || '';
-    const fileName = `${fileId}.${extension}`;
-    const s3Key = generateS3Key(workspaceName, fileName, taskName);
-    
-    console.log('Generated S3 key:', {
-      s3Key,
-      workspaceName,
-      taskName,
-      fileName,
-      fileType,
-      source
-    });
-
-    // Convert File to Buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Upload file to S3
-    console.log('Starting S3 upload for:', file.name);
-    const uploadResult: S3UploadResult = await uploadToS3(buffer, s3Key, file.type);
-    console.log('S3 upload completed:', uploadResult);
 
     // If this is a task attachment, save to database
     if (fileType === 'task' && taskId) {
@@ -118,27 +149,25 @@ export async function POST(request: NextRequest) {
         data: {
           id: fileId,
           taskId,
-          fileName,
+          fileName: uploadResult.isS3 ? `${fileId}.${file.name.split('.').pop() || ''}` : file.name,
           originalName: file.name,
           fileSize: file.size,
           mimeType: file.type,
-          filePath: uploadResult.key, // Store S3 key as filePath
+          filePath: uploadResult.filePath,
         },
       });
     }
 
-    // For message attachments, return the S3 key as the ID since they're not stored in a separate table
-    const responseId = fileType === 'message' ? uploadResult.key : fileId;
-
     return NextResponse.json({
       data: {
-        $id: responseId,
-        id: responseId, // Add both formats for compatibility
+        $id: uploadResult.id,
+        id: uploadResult.id,
         name: file.name,
         size: file.size,
         mimeType: file.type,
-        s3Key: uploadResult.key,
+        filePath: uploadResult.filePath,
         location: uploadResult.location,
+        storageType: uploadResult.isS3 ? 's3' : 'local'
       },
     });
   } catch (error) {

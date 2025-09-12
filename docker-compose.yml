@@ -43,6 +43,12 @@ services:
       NODE_ENV: production
       UPLOAD_DIR: "./uploads"
       MAX_FILE_SIZE: 10485760  # 10MB
+      
+      # AWS S3 Configuration
+      AWS_ACCESS_KEY_ID: "AKIAU5S7M2SQ7KWWKGWT"
+      AWS_SECRET_ACCESS_KEY: "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"
+      AWS_REGION: "ap-southeast-2"
+      S3_BUCKET_NAME: "task-management-system-2025"
     ports:
       - "3000:3000"
     volumes:
