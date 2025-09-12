@@ -36,8 +36,8 @@ WORKDIR /app
 # Set environment to production
 ENV NODE_ENV=production
 
-# Install PostgreSQL client for database operations
-RUN apk add --no-cache postgresql-client
+# Install PostgreSQL client and bash for database operations
+RUN apk add --no-cache postgresql-client bash
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
@@ -78,4 +78,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
 # Start the application with proper database initialization
-CMD ["./docker-start.sh"]
+ENTRYPOINT ["/app/docker-start.sh"]
