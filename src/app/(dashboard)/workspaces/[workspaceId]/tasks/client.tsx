@@ -680,7 +680,18 @@ export const MyTasksClient = () => {
                     const percentage = totalTasks > 0 ? (count / totalTasks) * 100 : 0;
                     const config = statusConfig[status as TaskStatus] || statusConfig[TaskStatus.TODO];
                     return (
-                      <div key={status} className="group">
+                      <div
+                        key={status}
+                        className="group cursor-pointer hover:bg-slate-50 rounded-lg p-2 transition-colors"
+                        onClick={() => {
+                          const params = new URLSearchParams();
+                          params.set('status', status);
+                          if (currentMember?.id) {
+                            params.set('assigneeId', currentMember.id);
+                          }
+                          router.push(`/workspaces/${workspaceId}/workspace-tasks?${params.toString()}`);
+                        }}
+                      >
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-3">
                             <div className={`w-3 h-3 rounded-full ${config.bgColor} group-hover:scale-125 transition-transform duration-200`} />
@@ -696,9 +707,9 @@ export const MyTasksClient = () => {
                           </div>
                         </div>
                         <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                          <div 
+                          <div
                             className={`h-full ${config.bgColor} rounded-full transition-all duration-700 ease-out group-hover:opacity-90`}
-                            style={{ 
+                            style={{
                               width: `${percentage}%`,
                               animationDelay: `${index * 100}ms`
                             }}
@@ -722,7 +733,7 @@ export const MyTasksClient = () => {
               <CardContent>
                 <div className="space-y-3">
                   {filteredTasks.length > 0 ? (
-                    filteredTasks.slice(0, 3).map((task: typeof filteredTasks[0], index: number) => {
+                    filteredTasks.slice(0, 4).map((task: typeof filteredTasks[0], index: number) => {
                       const config = statusConfig[task.status as TaskStatus] || statusConfig[TaskStatus.TODO];
                       const taskDoc = task;
                       const daysUntilDue = taskDoc.dueDate ? differenceInDays(new Date(taskDoc.dueDate), new Date()) : null;

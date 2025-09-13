@@ -359,10 +359,21 @@ const WorkspaceIdPage = () => {
               {Object.entries(taskStatusCount).map(([status, count]) => {
                 const percentage = totalTasks > 0 ? (count / totalTasks) * 100 : 0;
                 return (
-                  <div key={status} className="group hover:bg-gray-50 rounded-lg p-3 transition-colors">
+                  <div
+                    key={status}
+                    className="group hover:bg-gray-50 rounded-lg p-3 transition-colors cursor-pointer"
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      params.set('status', status);
+                      if (currentMember?.id) {
+                        params.set('assigneeId', currentMember.id);
+                      }
+                      router.push(`/workspaces/${workspaceId}/workspace-tasks?${params.toString()}`);
+                    }}
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div 
+                        <div
                           className={`w-4 h-4 rounded-full shadow-sm ${
                             status === TaskStatus.BACKLOG ? 'bg-gray-500' :
                             status === TaskStatus.TODO ? 'bg-blue-500' :
@@ -382,7 +393,7 @@ const WorkspaceIdPage = () => {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="w-24 bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                          <div 
+                          <div
                             className={`h-full rounded-full transition-all duration-300 ${
                               status === TaskStatus.BACKLOG ? 'bg-gray-500' :
                               status === TaskStatus.TODO ? 'bg-blue-500' :
