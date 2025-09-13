@@ -111,6 +111,13 @@ const app = new Hono()
         isConfidential?: boolean;
         dueDate?: Date;
         name?: { contains: string; mode: 'insensitive' };
+        followers?: { some: { id: string } };
+        OR?: Array<{
+          isConfidential?: boolean;
+          creatorId?: string;
+          assigneeId?: string;
+          followers?: { some: { id: string } };
+        }>;
       } = {
         workspaceId,
       };
@@ -155,12 +162,28 @@ const app = new Hono()
         where.name = { contains: search, mode: 'insensitive' };
       }
 
-      // Get total count for pagination
-      const totalCount = await prisma.task.count({ where });
+      // Add confidential task filtering to the where clause
+      // Users can see confidential tasks if they are the creator, assignee, or follower
+      where.OR = [
+        { isConfidential: false }, // Non-confidential tasks are visible to everyone
+        { isConfidential: true, creatorId: user.id }, // User created the task
+        { isConfidential: true, assigneeId: member.id }, // User is assigned to the task
+        { isConfidential: true, followers: { some: { id: member.id } } }, // User is following the task
+      ];
+
+      // For visitors, add additional filtering to only show tasks they are following
+      if (member.role === MemberRole.VISITOR) {
+        where.followers = { some: { id: member.id } };
+        // Remove the OR clause for visitors since they can only see tasks they follow
+        delete where.OR;
+      }
 
       const tasks = await prisma.task.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'desc' }  // Secondary sort by ID for stable pagination
+        ],
         take: limit,
         skip: offset,
         include: {
@@ -190,7 +213,8 @@ const app = new Hono()
         }
       });
 
-      let populatedTasks = tasks.map((task) => ({
+      // Map tasks to the expected format (filtering is now done at database level)
+      const populatedTasks = tasks.map((task) => ({
         ...task,
         dueDate: task.dueDate ? task.dueDate.toISOString() : null,
         createdAt: task.createdAt.toISOString(),
@@ -203,39 +227,9 @@ const app = new Hono()
         followedIds: JSON.stringify(task.followers.map(f => f.id)),
       }));
 
-      // If user is a visitor, only show tasks they are following
-      if (member.role === MemberRole.VISITOR) {
-        populatedTasks = populatedTasks.filter((task) => {
-          return task.followers.some(follower => follower.id === member.id);
-        });
-      }
-
-      // Filter confidential tasks - only visible to creator, assignee, and followers
-      populatedTasks = populatedTasks.filter((task) => {
-        // If task is not confidential, everyone can see it
-        if (!task.isConfidential) {
-          return true;
-        }
-
-        // If task is confidential, check permissions:
-        // 1. Task creator can always see it
-        if (task.creatorId === user.id) {
-          return true;
-        }
-
-        // 2. Task assignee can see it
-        if (task.assigneeId === member.id) {
-          return true;
-        }
-
-        // 3. Followers can see it
-        if (task.followers.some(follower => follower.id === member.id)) {
-          return true;
-        }
-
-        // If none of the above conditions are met, deny access
-        return false;
-      });
+      // Get the actual total count AFTER loading to ensure consistency
+      // We need to get total from a separate query to ensure pagination works correctly
+      const totalCount = await prisma.task.count({ where });
 
       return c.json({
         data: {

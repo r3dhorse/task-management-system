@@ -224,8 +224,8 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     [TaskStatus.TODO]: true,
     [TaskStatus.IN_PROGRESS]: true,
     [TaskStatus.IN_REVIEW]: true,
-    [TaskStatus.DONE]: false, // Collapsed by default
-    [TaskStatus.BACKLOG]: false, // Collapsed by default
+    [TaskStatus.DONE]: true, // Expanded by default
+    [TaskStatus.BACKLOG]: true, // Expanded by default
   });
   
   // Track drag state for enhanced animations

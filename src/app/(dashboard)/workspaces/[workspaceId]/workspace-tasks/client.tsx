@@ -51,6 +51,7 @@ export const WorkspaceTasksClient = () => {
     search,
     limit: currentLimit,
     offset: currentOffset,
+    includeArchived: false, // Explicitly exclude archived tasks from load more count
   });
 
   // Reset when filters or view changes
