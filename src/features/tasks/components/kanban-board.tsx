@@ -11,8 +11,12 @@ import './drag-animations.css';
 
 interface KanbanBoardProps {
   data: PopulatedTask[];
+  totalCount: number;
   onChange?: (tasks: PopulatedTask[]) => void;
   onRequestBacklog?: () => void; // Callback to request backlog tasks when BACKLOG column is opened
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
 }
 
 const boards = [
@@ -212,7 +216,7 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
 
 CollapsibleColumn.displayName = "CollapsibleColumn";
 
-export const KanbanBoard = ({ data, onChange, onRequestBacklog }: KanbanBoardProps) => {
+export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLoadMore, isLoadingMore, hasMore }: KanbanBoardProps) => {
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask({ showSuccessToast: false });
   
   // Track expanded state for each column
@@ -453,6 +457,29 @@ export const KanbanBoard = ({ data, onChange, onRequestBacklog }: KanbanBoardPro
           ))}
         </div>
       </DragDropContext>
+
+      {/* Load More button */}
+      {hasMore && (
+        <div className="flex justify-center mt-4 pb-2">
+          <Button
+            onClick={onLoadMore}
+            disabled={isLoadingMore}
+            variant="outline"
+            className="min-w-[200px]"
+          >
+            {isLoadingMore ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
+                <span>Loading...</span>
+              </div>
+            ) : (
+              <span>
+                Load More ({data.length} of {totalCount})
+              </span>
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Loading overlay during API updates only */}
       {isUpdating && (

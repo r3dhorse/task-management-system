@@ -10,6 +10,8 @@ interface UseGetTasksProps {
   search?: string | null;
   dueDate?: string | null;
   includeArchived?: boolean;
+  limit?: number;
+  offset?: number;
 };
 
 
@@ -21,7 +23,8 @@ export const useGetTasks = ({
   assigneeId,
   dueDate,
   includeArchived,
-
+  limit,
+  offset,
 }: UseGetTasksProps) => {
   const query = useQuery({
     queryKey: [
@@ -33,6 +36,8 @@ export const useGetTasks = ({
       assigneeId,
       dueDate,
       includeArchived,
+      limit,
+      offset,
     ],
     queryFn: async () => {
       const response = await client.api.tasks.$get({
@@ -44,6 +49,8 @@ export const useGetTasks = ({
           search: search ?? undefined,
           dueDate: dueDate ?? undefined,
           includeArchived: includeArchived ? "true" : undefined,
+          limit: limit?.toString(),
+          offset: offset?.toString(),
         },
       });
 

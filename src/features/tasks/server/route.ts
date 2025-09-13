@@ -73,7 +73,8 @@ const app = new Hono()
         search: z.string().nullish(),
         dueDate: z.string().nullish(),
         includeArchived: z.string().optional().transform(val => val === "true"),
-
+        limit: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
+        offset: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
       })
     ),
     async (c) => {
@@ -86,7 +87,9 @@ const app = new Hono()
         search,
         assigneeId,
         dueDate,
-        includeArchived
+        includeArchived,
+        limit,
+        offset
       } = c.req.valid("query");
 
       const member = await getMember({
@@ -152,9 +155,14 @@ const app = new Hono()
         where.name = { contains: search, mode: 'insensitive' };
       }
 
+      // Get total count for pagination
+      const totalCount = await prisma.task.count({ where });
+
       const tasks = await prisma.task.findMany({
         where,
         orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
         include: {
           service: true,
           assignee: {
@@ -232,7 +240,7 @@ const app = new Hono()
       return c.json({
         data: {
           documents: populatedTasks,
-          total: populatedTasks.length,
+          total: totalCount,
         },
       });
     }

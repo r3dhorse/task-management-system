@@ -12,7 +12,6 @@ import {
   SortingState,
   useReactTable,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   getCoreRowModel,
 } from "@tanstack/react-table";
@@ -44,30 +43,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-
-interface DataTableProps<TData, TValue> {
+interface DataTablePaginatedProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  pageSize?: number;
+  totalCount: number;
+  pageSize: number;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTablePaginated<TData, TValue>({
   columns,
   data,
-  pageSize = 20
-}: DataTableProps<TData, TValue>) {
+  totalCount,
+  pageSize,
+  currentPage,
+  onPageChange,
+  onPageSizeChange,
+}: DataTablePaginatedProps<TData, TValue>) {
   const router = useRouter();
   const workspaceId = useWorkspaceId();
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
@@ -76,17 +81,34 @@ export function DataTable<TData, TValue>({
       sorting,
       columnFilters,
     },
-    initialState: {
-      pagination: {
-        pageSize: pageSize,
-      },
-    },
+    manualPagination: true,
+    pageCount: totalPages,
   });
+
+  const handleRowClick = (row: { original: unknown }, e: React.MouseEvent) => {
+    // Check if the click was on the actions column (avoid navigating when clicking actions)
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-testid="task-actions"]')) {
+      return;
+    }
+
+    const original = row.original as { id?: string };
+    const taskId = original.id;
+
+    // Validate task ID format before navigation (same validation as kanban card)
+    if (!taskId || taskId.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(taskId)) {
+      console.error("Invalid task ID format:", taskId);
+      toast.error("Invalid task ID format");
+      return;
+    }
+
+    if (taskId && workspaceId) {
+      router.push(`/workspaces/${workspaceId}/tasks/${taskId}`);
+    }
+  };
 
   // Generate page numbers for pagination
   const generatePageNumbers = () => {
-    const currentPage = table.getState().pagination.pageIndex + 1;
-    const totalPages = table.getPageCount();
     const pages: (number | 'ellipsis')[] = [];
 
     if (totalPages <= 7) {
@@ -123,45 +145,11 @@ export function DataTable<TData, TValue>({
     return pages;
   };
 
-  const handleRowClick = (row: { original: unknown }, e: React.MouseEvent) => {
-    // Check if the click was on the actions column (avoid navigating when clicking actions)
-    const target = e.target as HTMLElement;
-    if (target.closest('[data-testid="task-actions"]')) {
-      return;
-    }
-
-    const original = row.original as { id?: string };
-    const taskId = original.id;
-    
-    // Validate task ID format before navigation (same validation as kanban card)
-    if (!taskId || taskId.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(taskId)) {
-      console.error("Invalid task ID format:", taskId);
-      toast.error("Invalid task ID format");
-      return;
-    }
-    
-    if (taskId && workspaceId) {
-      router.push(`/workspaces/${workspaceId}/tasks/${taskId}`);
-    }
-  };
+  const startItem = (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalCount);
 
   return (
     <div>
-
-      {/* <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter tasks"
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-      </div> */}
-
-
-
-
       <div className="rounded-lg border-2 border-neutral-200/80 bg-white/50 backdrop-blur-sm shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <Table className="min-w-full">
@@ -183,29 +171,29 @@ export function DataTable<TData, TValue>({
                 </TableRow>
               ))}
             </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-blue-50/50 hover:shadow-sm transition-all duration-200 border-b border-neutral-200/60 cursor-pointer touch-manipulation group hover:scale-[1.01] hover:border-blue-300/60"
-                  onClick={(e) => handleRowClick(row, e)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-2 sm:px-4 py-3 sm:py-2 whitespace-nowrap">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className="hover:bg-blue-50/50 hover:shadow-sm transition-all duration-200 border-b border-neutral-200/60 cursor-pointer touch-manipulation group hover:scale-[1.01] hover:border-blue-300/60"
+                    onClick={(e) => handleRowClick(row, e)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="px-2 sm:px-4 py-3 sm:py-2 whitespace-nowrap">
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    No data available.
+                  </TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No data available.
-                </TableCell>
-              </TableRow>
-            )}
+              )}
             </TableBody>
           </Table>
         </div>
@@ -219,30 +207,25 @@ export function DataTable<TData, TValue>({
               Rows per page:
             </p>
             <Select
-              value={`${table.getState().pagination.pageSize}`}
+              value={`${pageSize}`}
               onValueChange={(value) => {
-                table.setPageSize(Number(value));
+                onPageSizeChange(Number(value));
               }}
             >
               <SelectTrigger className="h-8 w-[70px]">
-                <SelectValue placeholder={table.getState().pagination.pageSize} />
+                <SelectValue placeholder={pageSize} />
               </SelectTrigger>
               <SelectContent side="top">
-                {[10, 20, 30, 40, 50].map((pageSize) => (
-                  <SelectItem key={pageSize} value={`${pageSize}`}>
-                    {pageSize}
+                {[10, 20, 30, 40, 50].map((size) => (
+                  <SelectItem key={size} value={`${size}`}>
+                    {size}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="text-sm text-muted-foreground">
-            {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
-            {Math.min(
-              (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-              table.getFilteredRowModel().rows.length
-            )}{" "}
-            of {table.getFilteredRowModel().rows.length} items
+            {startItem}-{endItem} of {totalCount} items
           </div>
         </div>
 
@@ -251,10 +234,10 @@ export function DataTable<TData, TValue>({
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious
-                onClick={() => table.previousPage()}
+                onClick={() => onPageChange(currentPage - 1)}
                 className={cn(
                   "cursor-pointer",
-                  !table.getCanPreviousPage() && "pointer-events-none opacity-50"
+                  currentPage === 1 && "pointer-events-none opacity-50"
                 )}
               />
             </PaginationItem>
@@ -265,8 +248,8 @@ export function DataTable<TData, TValue>({
                   <PaginationEllipsis />
                 ) : (
                   <PaginationLink
-                    onClick={() => table.setPageIndex(page - 1)}
-                    isActive={table.getState().pagination.pageIndex === page - 1}
+                    onClick={() => onPageChange(page)}
+                    isActive={currentPage === page}
                     className="cursor-pointer"
                   >
                     {page}
@@ -277,17 +260,16 @@ export function DataTable<TData, TValue>({
 
             <PaginationItem>
               <PaginationNext
-                onClick={() => table.nextPage()}
+                onClick={() => onPageChange(currentPage + 1)}
                 className={cn(
                   "cursor-pointer",
-                  !table.getCanNextPage() && "pointer-events-none opacity-50"
+                  currentPage === totalPages && "pointer-events-none opacity-50"
                 )}
               />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
       </div>
-
     </div>
   );
 }
