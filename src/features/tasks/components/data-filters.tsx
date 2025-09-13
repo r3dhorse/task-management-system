@@ -8,6 +8,7 @@ import { Package, UserIcon, ListChecksIcon, FilterX } from "@/lib/lucide-icons";
 import { TaskStatus } from "../types";
 import { useTaskFilters } from "../hooks/use-task-filters";
 import { Member, MemberRole } from "@/features/members/types";
+import { TaskNumberSearch } from "./task-number-search";
 
 export const DataFilters = () => {
   const workspaceId = useWorkspaceId();
@@ -33,7 +34,8 @@ export const DataFilters = () => {
     status,
     assigneeId,
     serviceId,
-    dueDate
+    dueDate,
+    search
   }, setFilters] = useTaskFilters();
 
   const onStatusChange = (value: string) => { setFilters({ status: value === "all" ? null : (value as TaskStatus), }); };
@@ -46,14 +48,17 @@ export const DataFilters = () => {
       assigneeId: null,
       serviceId: null,
       dueDate: null,
+      search: null,
     });
   };
 
-  const hasActiveFilters = status || assigneeId || serviceId || dueDate;
+  const hasActiveFilters = status || assigneeId || serviceId || dueDate || search;
 
   if (isLoading) return null;
   return (
     <div className="flex flex-col lg:flex-row gap-2">
+      {/* Task Number Search */}
+      <TaskNumberSearch />
 
       <Select
         value={status || "all"}

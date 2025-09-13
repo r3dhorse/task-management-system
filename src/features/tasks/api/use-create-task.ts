@@ -81,8 +81,24 @@ export const useCreateTask = () => {
       toast.error(error.message || "Failed to create task");
     },
 
-    onSuccess: () => {
-      toast.success("Task created");
+    onSuccess: (data) => {
+      const taskNumber = data.data?.taskNumber;
+      toast.success(
+        taskNumber
+          ? `🎉 Success! ${taskNumber} has been created. Click to copy the task number for reference.`
+          : "Task created successfully!",
+        {
+          duration: Infinity, // Disable auto-close
+          dismissible: true,  // Enable close button (X)
+          action: taskNumber ? {
+            label: "Copy",
+            onClick: () => {
+              navigator.clipboard.writeText(taskNumber);
+              toast.success("Task number copied to clipboard!", { duration: 2000 });
+            }
+          } : undefined
+        }
+      );
       queryClient.invalidateQueries();
     },
 

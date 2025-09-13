@@ -103,23 +103,8 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      // Build the where clause for filtering
-      const where: {
-        workspaceId: string;
-        serviceId?: string;
-        status?: TaskStatus | { not: TaskStatus };
-        assigneeId?: string | null;
-        isConfidential?: boolean;
-        dueDate?: Date;
-        name?: { contains: string; mode: 'insensitive' };
-        followers?: { some: { id: string } };
-        OR?: Array<{
-          isConfidential?: boolean;
-          creatorId?: string;
-          assigneeId?: string;
-          followers?: { some: { id: string } };
-        }>;
-      } = {
+      // Build the where clause for filtering using more flexible typing
+      const where: any = {
         workspaceId,
       };
 
@@ -159,13 +144,42 @@ const app = new Hono()
         where.dueDate = new Date(dueDate);
       }
 
+      // Handle search - can search both task name and task number
       if (search) {
-        where.name = { contains: search, mode: 'insensitive' };
+        // Check if search looks like a task number (contains only digits or "Task #" format)
+        const isTaskNumberSearch = /^\d+$/.test(search.trim()) || /^Task #\d+$/i.test(search.trim());
+
+        if (isTaskNumberSearch) {
+          // Extract digits from search
+          const digits = search.replace(/[^\d]/g, '');
+          if (digits) {
+            // Search for task numbers containing these digits in various formats
+            const searchPatterns = [
+              digits, // exact digits: 163
+              digits.padStart(4, '0'), // 4-digit format: 0163
+              digits.padStart(7, '0'), // 7-digit format: 0000163
+            ];
+
+            where.AND = [{
+              OR: searchPatterns.map(pattern => ({
+                taskNumber: { contains: pattern, mode: 'insensitive' as const }
+              }))
+            }];
+          }
+        } else {
+          // Regular text search in task name and task number
+          where.AND = [{
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { taskNumber: { contains: search, mode: 'insensitive' as const } }
+            ]
+          }];
+        }
       }
 
       // Add confidential task filtering to the where clause
       // Users can see confidential tasks if they are the creator, assignee, or follower
-      where.OR = [
+      const confidentialFilter = [
         { isConfidential: false }, // Non-confidential tasks are visible to everyone
         { isConfidential: true, creatorId: user.id }, // User created the task
         { isConfidential: true, assigneeId: member.id }, // User is assigned to the task
@@ -175,8 +189,15 @@ const app = new Hono()
       // For visitors, add additional filtering to only show tasks they are following
       if (member.role === MemberRole.VISITOR) {
         where.followers = { some: { id: member.id } };
-        // Remove the OR clause for visitors since they can only see tasks they follow
-        delete where.OR;
+      } else {
+        // Combine search filter with confidential filter using AND
+        if (where.AND && where.AND.length > 0) {
+          // We already have search filters, add confidential filter to AND array
+          where.AND.push({ OR: confidentialFilter });
+        } else {
+          // No search filters, just add confidential filter as OR
+          where.OR = confidentialFilter;
+        }
       }
 
       const tasks = await prisma.task.findMany({
