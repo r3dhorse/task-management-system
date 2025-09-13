@@ -103,8 +103,48 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
-      // Build the where clause for filtering using more flexible typing
-      const where: any = {
+      // Build the where clause for filtering
+      interface TaskWhereClause {
+        workspaceId: string;
+        serviceId?: string;
+        status?: TaskStatus | { not: TaskStatus };
+        assigneeId?: string;
+        dueDate?: Date;
+        followers?: {
+          some: {
+            id: string;
+            userId?: string;
+          };
+        };
+        AND?: Array<{
+          OR?: Array<{
+            name?: { contains: string; mode: 'insensitive' };
+            taskNumber?: { contains: string; mode: 'insensitive' };
+            isConfidential?: boolean;
+            creatorId?: string;
+            assigneeId?: string;
+            followers?: {
+              some: {
+                id?: string;
+                userId?: string;
+              };
+            };
+          }>;
+        }>;
+        OR?: Array<{
+          isConfidential?: boolean;
+          creatorId?: string;
+          assigneeId?: string;
+          followers?: {
+            some: {
+              id?: string;
+              userId?: string;
+            };
+          };
+        }>;
+      }
+
+      const where: TaskWhereClause = {
         workspaceId,
       };
 

@@ -2,17 +2,28 @@ import { toast } from "sonner"
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { InferRequestType, InferResponseType } from "hono";
 import { client } from "@/lib/rpc";
+import { useRouter } from "next/navigation";
+import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 
 
 type ResponseType = InferResponseType<typeof client.api.tasks["$post"], 200>;
 type RequestType = InferRequestType<typeof client.api.tasks["$post"]>;
 
+// Extend the response type to include taskNumber which exists at runtime
+interface TaskCreationResponse extends Omit<ResponseType, 'data'> {
+  data: ResponseType['data'] & {
+    taskNumber?: string;
+  };
+}
+
 export const useCreateTask = () => {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const workspaceId = useWorkspaceId();
 
 
   const mutation = useMutation<
-    ResponseType,
+    TaskCreationResponse,
     Error,
     RequestType
   >({
@@ -83,12 +94,28 @@ export const useCreateTask = () => {
 
     onSuccess: (data) => {
       const taskNumber = data.data?.taskNumber;
+      const taskId = data.data?.id;
+
+      console.log("Task creation success:", { taskId, taskNumber, workspaceId });
+
+      // Navigate to the created task after toast dismissal
+      const navigateToTask = () => {
+        console.log("Attempting to navigate to task:", { taskId, workspaceId });
+        if (taskId && workspaceId) {
+          const url = `/workspaces/${workspaceId}/tasks/${taskId}`;
+          console.log("Navigating to:", url);
+          router.push(url);
+        } else {
+          console.error("Missing taskId or workspaceId:", { taskId, workspaceId });
+        }
+      };
+
       toast.success(
         taskNumber
-          ? `🎉 Success! ${taskNumber} has been created. Click to copy the task number for reference.`
-          : "Task created successfully!",
+          ? `🎉 Success! ${taskNumber} has been created. Redirecting you to the task...`
+          : "Task created successfully! Redirecting you to the task...",
         {
-          duration: Infinity, // Disable auto-close
+          duration: 3000, // Auto-close after 3 seconds
           dismissible: true,  // Enable close button (X)
           action: taskNumber ? {
             label: "Copy",
@@ -96,9 +123,14 @@ export const useCreateTask = () => {
               navigator.clipboard.writeText(taskNumber);
               toast.success("Task number copied to clipboard!", { duration: 2000 });
             }
-          } : undefined
+          } : undefined,
         }
       );
+
+      // Navigate after a short delay to allow users to see the success toast
+      setTimeout(() => {
+        navigateToTask();
+      }, 3500);
       queryClient.invalidateQueries();
     },
 
