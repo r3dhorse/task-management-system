@@ -177,7 +177,7 @@ export function DataTablePaginated<TData, TValue>({
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
-                    className="hover:bg-blue-50/50 hover:shadow-sm transition-all duration-200 border-b border-neutral-200/60 cursor-pointer touch-manipulation group hover:scale-[1.01] hover:border-blue-300/60"
+                    className="hover:bg-blue-50/50 transition-colors duration-200 border-b border-neutral-200/60 cursor-pointer touch-manipulation"
                     onClick={(e) => handleRowClick(row, e)}
                   >
                     {row.getVisibleCells().map((cell) => (

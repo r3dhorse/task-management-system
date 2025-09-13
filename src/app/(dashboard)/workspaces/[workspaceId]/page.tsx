@@ -198,13 +198,13 @@ const WorkspaceIdPage = () => {
           </div>
           
           {/* Date Range Filter */}
-          <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full max-w-[900px]">
+          <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full max-w-[900px] relative z-10">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
               <div className="flex items-center gap-2">
                 <CalendarIcon className="size-4 text-blue-600" />
                 <span className="text-sm font-medium text-blue-900">Date Range:</span>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap relative z-20">
                 <DatePicker
                   value={dateFrom}
                   onChange={setDateFrom}
@@ -361,7 +361,7 @@ const WorkspaceIdPage = () => {
                 return (
                   <div
                     key={status}
-                    className="group hover:bg-gray-50 rounded-lg p-3 transition-colors cursor-pointer"
+                    className="group hover:bg-gray-50 rounded-lg p-3 transition-colors cursor-pointer border border-transparent hover:border-black"
                     onClick={() => {
                       const params = new URLSearchParams();
                       params.set('status', status);

@@ -20,6 +20,7 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
   ({ value, onChange, className, placeholder = "Select Date", disabled }, ref) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const [mounted, setMounted] = React.useState(false);
+    const [dropUp, setDropUp] = React.useState(false);
     const calendarRef = React.useRef<HTMLDivElement>(null);
     const buttonRef = React.useRef<HTMLButtonElement>(null);
 
@@ -38,6 +39,16 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
       e.preventDefault();
       e.stopPropagation();
       if (!disabled) {
+        // Calculate if we should drop up or down
+        if (buttonRef.current) {
+          const buttonRect = buttonRef.current.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const spaceBelow = viewportHeight - buttonRect.bottom;
+          const spaceAbove = buttonRect.top;
+
+          // If there's more space above or if we're in the bottom half of viewport, drop up
+          setDropUp(spaceAbove > spaceBelow || buttonRect.top > viewportHeight / 2);
+        }
         setIsOpen(!isOpen);
       }
     };
@@ -111,9 +122,11 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
         </Button>
         
         {mounted && isOpen && (
-          <div 
+          <div
             ref={calendarRef}
-            className="absolute z-[99999] mt-2 bg-popover rounded-md border shadow-lg p-0 left-0 w-auto"
+            className={`absolute z-[9999999] bg-popover rounded-md border shadow-lg p-0 left-0 w-auto ${
+              dropUp ? 'mb-2 bottom-full' : 'mt-2 top-full'
+            }`}
             style={{ minWidth: '280px' }}
             onClick={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
