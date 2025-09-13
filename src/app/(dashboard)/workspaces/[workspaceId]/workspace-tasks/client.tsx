@@ -34,7 +34,7 @@ export const WorkspaceTasksClient = () => {
 
   // Table pagination state
   const [tablePage, setTablePage] = useState(1);
-  const [tablePageSize, setTablePageSize] = useState(20);
+  const [tablePageSize, setTablePageSize] = useState(15);
   const TABLE_BATCH_SIZE = tablePageSize;
 
   // Determine which view is active to fetch appropriate data

@@ -20,9 +20,10 @@ echo "🐳 Starting full Docker development containers..."
 docker-compose -f docker-compose.dev.yml up --build
 
 echo "✅ Full Docker Development environment started!"
-echo "📱 Application: http://localhost:3001 (running in Docker)"
+echo "📱 Application: http://localhost:3000 (running in Docker)"
 echo "🗃️  Database: localhost:5432 (running in Docker)"
-echo "🔥 Hot Reload: Enabled with volume mounting"
+echo "🔥 Hot Reload: Enabled with volume mounting - changes will auto-update!"
 echo ""
 echo "🎯 Both app and database are running in Docker containers"
+echo "📝 Make code changes and they will automatically reload"
 echo "📝 Test the setup with: ./test-full-docker.sh"

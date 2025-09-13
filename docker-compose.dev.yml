@@ -36,10 +36,10 @@ services:
       # NextAuth.js configuration
       NEXTAUTH_URL: "http://localhost:3000"
       NEXTAUTH_SECRET: "dev-secret-key-not-for-production"
-      
+
       # Frontend API URL
       NEXT_PUBLIC_APP_URL: "http://localhost:3000"
-      
+
       # Application settings
       NODE_ENV: development
       PORT: 3000
@@ -56,7 +56,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["npm", "run", "dev"]
+    command: ["npm", "run", "dev:docker"]
+    stdin_open: true
+    tty: true
 
 volumes:
   postgres_dev_data:
