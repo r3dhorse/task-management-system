@@ -155,6 +155,7 @@ enum TaskStatus {
 
 model Task {
   id            String     @id @default(cuid())
+  taskNumber    String     @unique
   name          String
   description   String?
   status        TaskStatus @default(TODO)

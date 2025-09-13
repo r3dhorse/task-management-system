@@ -9,6 +9,30 @@ import { StatusBadge } from "./status-badge"
 
 export const columns: ColumnDef<PopulatedTask>[] = [
   {
+    accessorKey: "taskNumber",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() =>
+            column.toggleSorting(column.getIsSorted() === "asc")
+          }
+        >
+          Task #
+          <ArrowUpDown className="ml-3 h-4 w-4" />
+        </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const taskNumber = row.original.taskNumber;
+      return (
+        <div className="font-mono text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200 inline-block">
+          {taskNumber}
+        </div>
+      )
+    }
+  },
+  {
     accessorKey: "name",
     header: ({ column }) => {
       return (

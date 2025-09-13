@@ -8,6 +8,7 @@ import { z } from "zod";
 import { TaskStatus, Task } from "../types";
 import { TaskHistoryAction } from "../types/history";
 import { detectTaskChanges } from "../utils/history";
+import { generateTaskNumber } from "@/lib/task-number-generator";
 
 
 const app = new Hono()
@@ -297,6 +298,9 @@ const app = new Hono()
 
         const newPosition = highestPositionTask ? highestPositionTask.position + 1000 : 1000;
 
+        // Generate the next task number
+        const taskNumber = await generateTaskNumber(prisma);
+
         // Prepare followers - automatically add the task creator as a follower
         const followerIds: string[] = [];
         if (followedIds) {
@@ -335,6 +339,7 @@ const app = new Hono()
 
         const task = await prisma.task.create({
           data: {
+            taskNumber,
             name,
             status,
             workspaceId,
@@ -560,6 +565,7 @@ const app = new Hono()
         // Convert Prisma task to match the expected format
         const taskForComparison: Task = {
           id: existingTask.id,
+          taskNumber: existingTask.taskNumber,
           name: existingTask.name,
           status: existingTask.status as TaskStatus,
           workspaceId: existingTask.workspaceId,

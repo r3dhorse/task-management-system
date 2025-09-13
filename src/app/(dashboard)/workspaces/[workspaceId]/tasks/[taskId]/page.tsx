@@ -445,6 +445,12 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
           <div className="space-y-4">
             <div className="flex items-start gap-4">
               <div className="flex-1 min-w-0">
+                {/* Task Number */}
+                <div className="mb-3">
+                  <span className="text-sm font-mono text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 inline-block">
+                    {task.taskNumber}
+                  </span>
+                </div>
                 <h1 className="text-3xl font-bold text-gray-900 break-words">{task.name}</h1>
               </div>
             </div>
@@ -603,6 +609,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         onClose={() => setIsPropertiesModalOpen(false)}
         task={{
           id: task.id,
+          taskNumber: task.taskNumber,
           name: task.name,
           status: task.status as TaskStatus,
           workspaceId: task.workspaceId,

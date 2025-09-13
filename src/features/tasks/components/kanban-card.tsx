@@ -82,15 +82,21 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
         >
           {/* Card Header */}
           <div className="p-3 pb-2">
+            {/* Task Number */}
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200">
+                {task.taskNumber}
+              </span>
+              {task.isConfidential && (
+                <div className="flex-shrink-0">
+                  <EyeOffIcon className="size-3 text-orange-600" />
+                </div>
+              )}
+            </div>
             <div className="flex items-start gap-2 mb-2">
               <h3 className="text-sm font-semibold text-neutral-900 line-clamp-2 flex-1 leading-snug break-words overflow-hidden">
                 {task.name}
               </h3>
-              {task.isConfidential && (
-                <div className="flex-shrink-0 mt-0.5">
-                  <EyeOffIcon className="size-3 text-orange-600" />
-                </div>
-              )}
             </div>
           </div>
 

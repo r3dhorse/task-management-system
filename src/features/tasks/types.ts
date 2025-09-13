@@ -9,6 +9,7 @@ export enum TaskStatus {
 
 export type Task = {
   id: string;
+  taskNumber: string;
   name: string;
   status: TaskStatus;
   workspaceId: string;
