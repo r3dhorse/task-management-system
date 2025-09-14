@@ -59,9 +59,9 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
 
       const handleClickOutside = (event: MouseEvent) => {
         const target = event.target as Node;
-        
+
         if (
-          calendarRef.current && 
+          calendarRef.current &&
           !calendarRef.current.contains(target) &&
           buttonRef.current &&
           !buttonRef.current.contains(target)
@@ -70,11 +70,11 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
         }
       };
 
-      // Use capture phase to handle events before they bubble
-      document.addEventListener('mousedown', handleClickOutside, true);
-      
+      // Use normal event phase to avoid interfering with calendar clicks
+      document.addEventListener('mousedown', handleClickOutside);
+
       return () => {
-        document.removeEventListener('mousedown', handleClickOutside, true);
+        document.removeEventListener('mousedown', handleClickOutside);
       };
     }, [isOpen, mounted]);
 
@@ -124,12 +124,10 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
         {mounted && isOpen && (
           <div
             ref={calendarRef}
-            className={`absolute z-[9999999] bg-popover rounded-md border shadow-lg p-0 left-0 w-auto ${
+            className={`absolute z-[9999] bg-popover rounded-md border shadow-lg p-0 left-0 w-auto pointer-events-auto ${
               dropUp ? 'mb-2 bottom-full' : 'mt-2 top-full'
             }`}
             style={{ minWidth: '280px' }}
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
           >
             <Calendar
               mode="single"

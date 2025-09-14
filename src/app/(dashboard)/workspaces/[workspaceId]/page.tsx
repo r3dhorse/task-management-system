@@ -180,85 +180,20 @@ const WorkspaceIdPage = () => {
     <div className="flex flex-col space-y-8 py-2">
       {/* Header */}
       <div className="flex justify-between items-start ">
-        <div className="flex flex-col gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-                <BarChart3Icon className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {workspace?.name || "Workspace Dashboard"}
-                </h1>
-                <p className="text-muted-foreground">
-                  {workspace?.description || "Overview of workspace metrics and performance"}
-                </p>
-              </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+              <BarChart3Icon className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {workspace?.name || "Workspace Dashboard"}
+              </h1>
+              <p className="text-muted-foreground">
+                {workspace?.description || "Overview of workspace metrics and performance"}
+              </p>
             </div>
           </div>
-          
-          {/* Date Range Filter */}
-          <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full max-w-[900px] relative z-10">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="size-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-900">Date Range:</span>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap relative z-20">
-                <DatePicker
-                  value={dateFrom}
-                  onChange={setDateFrom}
-                  placeholder="From date"
-                  className="w-44 min-w-[11rem]"
-                />
-                <span className="text-muted-foreground text-sm shrink-0">to</span>
-                <DatePicker
-                  value={dateTo}
-                  onChange={setDateTo}
-                  placeholder="To date"
-                  className="w-44 min-w-[11rem]"
-                />
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const today = new Date();
-                    setDateTo(today);
-                    setDateFrom(subDays(today, 7));
-                  }}
-                  className="bg-white hover:bg-blue-50 text-xs px-3"
-                >
-                  7 days
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const today = new Date();
-                    setDateTo(today);
-                    setDateFrom(subDays(today, 15));
-                  }}
-                  className="bg-white hover:bg-blue-50 text-xs px-3"
-                >
-                  15 days
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const today = new Date();
-                    setDateTo(today);
-                    setDateFrom(subDays(today, 30));
-                  }}
-                  className="bg-white hover:bg-blue-50 text-xs px-3"
-                >
-                  30 days
-                </Button>
-              </div>
-            </div>
-          </Card>
         </div>
         
         {/* User Info */}
@@ -269,8 +204,71 @@ const WorkspaceIdPage = () => {
 
       <DottedSeparator />
 
+      {/* Date Range Filter */}
+      <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full relative z-10">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="size-4 text-blue-600" />
+            <span className="text-sm font-medium text-blue-900">Date Range:</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap relative z-0">
+            <DatePicker
+              value={dateFrom}
+              onChange={setDateFrom}
+              placeholder="From date"
+              className="w-44 min-w-[11rem]"
+            />
+            <span className="text-muted-foreground text-sm shrink-0">to</span>
+            <DatePicker
+              value={dateTo}
+              onChange={setDateTo}
+              placeholder="To date"
+              className="w-44 min-w-[11rem]"
+            />
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const today = new Date();
+                setDateTo(today);
+                setDateFrom(subDays(today, 7));
+              }}
+              className="bg-white hover:bg-blue-50 text-xs px-3"
+            >
+              7 days
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const today = new Date();
+                setDateTo(today);
+                setDateFrom(subDays(today, 15));
+              }}
+              className="bg-white hover:bg-blue-50 text-xs px-3"
+            >
+              15 days
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const today = new Date();
+                setDateTo(today);
+                setDateFrom(subDays(today, 30));
+              }}
+              className="bg-white hover:bg-blue-50 text-xs px-3"
+            >
+              30 days
+            </Button>
+          </div>
+        </div>
+      </Card>
+
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-0">
         <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
           <div className="absolute inset-0 bg-black/5" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
