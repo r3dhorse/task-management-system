@@ -69,9 +69,10 @@ Dockerfile
 docker-compose.yml
 docker-compose.yaml
 
-# Scripts not needed in container
+# Scripts not needed in container (but allow docker start scripts)
 dev.sh
 reset-db.sh
+!docker-start*.sh
 
 # Uploads (will be created in container)
 uploads/*

@@ -19,8 +19,7 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Copy development startup script and make it executable
-COPY docker-start-dev.sh ./docker-start-dev.sh
+# Make startup script executable
 RUN chmod +x ./docker-start-dev.sh
 
 # Create necessary directories
@@ -32,5 +31,5 @@ RUN chmod -R 777 /app
 # Expose development port
 EXPOSE 3000
 
-# Development startup command with database initialization
-CMD ["./docker-start-dev.sh"]
+# Development startup command
+CMD ["sh", "-c", "echo 'Starting development server...' && npx prisma generate && npx prisma db push && npm run db:seed || echo 'Seeding skipped' && npm run dev"]

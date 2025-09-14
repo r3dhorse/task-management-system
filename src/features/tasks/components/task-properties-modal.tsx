@@ -84,19 +84,19 @@ export const TaskPropertiesModal = ({
   };
 
   return (
-    <ResponsiveModal 
-      open={isOpen} 
+    <ResponsiveModal
+      open={isOpen}
       onOpenChange={() => {}} // Disable auto-close, only close via buttons
       disableOutsideClick={true} // Always disable outside click
       hideCloseButton={true} // Hide the X button in upper right
     >
-      <Card className="w-full max-w-2xl border-none shadow-none">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-xl font-semibold flex items-center gap-2">
-            <SettingsIcon className="w-5 h-5 text-blue-600" />
+      <Card className="w-full max-w-5xl border-none shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <SettingsIcon className="w-4 h-4 text-blue-600" />
             Task Properties
           </CardTitle>
-          <p className="text-sm text-gray-600">
+          <p className="text-xs text-gray-600">
             Update task information, confidentiality settings, and manage followers.
           </p>
         </CardHeader>
@@ -105,169 +105,242 @@ export const TaskPropertiesModal = ({
           <DottedSeparator />
         </div>
 
-        <CardContent className="pt-6 space-y-6 max-h-[70vh] overflow-y-auto">
-          {/* Task Name */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" />
+        <CardContent className="pt-4 space-y-4">
+          {/* Task Name - Full Width */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
               Task Name
             </label>
-            <Input
+            <Textarea
               value={editForm.name}
               onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Enter task name..."
-              className="border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              className="min-h-[56px] max-h-[56px] text-sm resize-none border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              rows={2}
             />
           </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-gray-500 rounded-full" />
+          {/* Description - Full Width */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-gray-500 rounded-full" />
               Description
             </label>
             <Textarea
               value={editForm.description}
               onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe what needs to be done..."
-              className="min-h-[120px] resize-none border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              className="min-h-[120px] max-h-[120px] text-sm resize-none border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              rows={5}
             />
           </div>
 
-          {/* Status */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-indigo-500 rounded-full" />
-              Status
-              {!canEditStatus && (
-                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
-                  Read-only
-                </span>
-              )}
-            </label>
-            {canEditStatus ? (
-              <Select
-                value={editForm.status}
-                onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value as TaskStatus }))}
-              >
-                <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={TaskStatus.BACKLOG}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                      📋 Backlog
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={TaskStatus.TODO}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      📝 To Do
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={TaskStatus.IN_PROGRESS}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      🚀 In Progress
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={TaskStatus.IN_REVIEW}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                      👀 In Review
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={TaskStatus.DONE}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                      ✅ Done
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <div className="flex items-center justify-between p-3 bg-gray-50/80 rounded-lg border border-gray-200/60">
-                <StatusIndicator status={task.status} />
-              </div>
-            )}
-          </div>
-
-          {/* Assignee */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              Assignee
-              {editForm.isConfidential && (
-                <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
-                  Required for confidential tasks
-                </span>
-              )}
-            </label>
-            <Select
-              value={editForm.assigneeId}
-              onValueChange={(value) => setEditForm(prev => ({ ...prev, assigneeId: value }))}
-            >
-              <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                <SelectValue placeholder="Select assignee" />
-              </SelectTrigger>
-              <SelectContent>
-                {!editForm.isConfidential && (
-                  <SelectItem value="unassigned">
-                    👤 Unassigned
-                  </SelectItem>
+          {/* Two Column Grid for Main Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Left Column */}
+            <div className="space-y-3">
+              {/* Status */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                  Status
+                  {!canEditStatus && (
+                    <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
+                      Read-only
+                    </span>
+                  )}
+                </label>
+                {canEditStatus ? (
+                  <Select
+                    value={editForm.status}
+                    onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value as TaskStatus }))}
+                  >
+                    <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={TaskStatus.BACKLOG}>
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+                          📋 Backlog
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={TaskStatus.TODO}>
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                          📝 To Do
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={TaskStatus.IN_PROGRESS}>
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                          🚀 In Progress
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={TaskStatus.IN_REVIEW}>
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                          👀 In Review
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={TaskStatus.DONE}>
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                          ✅ Done
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="flex items-center p-2 bg-gray-50/80 rounded-lg border border-gray-200/60">
+                    <StatusIndicator status={task.status} />
+                  </div>
                 )}
-                {members?.documents
-                  .filter(member => (member as Member).role !== MemberRole.VISITOR)
-                  .map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    👤 {member.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              </div>
+
+              {/* Service */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                  Service
+                </label>
+                <Select
+                  value={editForm.serviceId}
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, serviceId: value }))}
+                >
+                  <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                    <SelectValue placeholder="Select service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services?.documents.map((serv) => (
+                      <SelectItem key={serv.id} value={serv.id}>
+                        <span className="text-sm">📁 {serv.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Due Date */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                  Due Date
+                </label>
+                <DatePicker
+                  value={editForm.dueDate}
+                  onChange={(date) => setEditForm(prev => ({ ...prev, dueDate: date || new Date() }))}
+                  className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-3">
+              {/* Assignee */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                  Assignee
+                  {editForm.isConfidential && (
+                    <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
+                      Required
+                    </span>
+                  )}
+                </label>
+                <Select
+                  value={editForm.assigneeId}
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, assigneeId: value }))}
+                >
+                  <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                    <SelectValue placeholder="Select assignee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {!editForm.isConfidential && (
+                      <SelectItem value="unassigned">
+                        <span className="text-sm">👤 Unassigned</span>
+                      </SelectItem>
+                    )}
+                    {members?.documents
+                      .filter(member => (member as Member).role !== MemberRole.VISITOR)
+                      .map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        <span className="text-sm">👤 {member.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Confidential */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                  Confidential
+                </label>
+                <div className="flex items-center justify-between p-2 bg-gray-50/80 rounded-lg border border-gray-200/60">
+                  <div className="flex items-center gap-1.5">
+                    <EyeOffIcon className="w-3.5 h-3.5 text-gray-500" />
+                    <span className="text-xs text-gray-700">
+                      Restricted visibility
+                    </span>
+                  </div>
+                  <Switch
+                    checked={editForm.isConfidential}
+                    onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, isConfidential: checked }))}
+                    className="scale-90"
+                  />
+                </div>
+              </div>
+
+              {/* Followers */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-violet-500 rounded-full" />
+                    Followers ({followers.length})
+                  </label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onManageFollowers}
+                    className="h-5 w-5 p-0 hover:bg-violet-100 text-violet-600 hover:text-violet-700"
+                    title="Manage followers"
+                  >
+                    <PlusIcon className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <div className="p-2 bg-gray-50/80 rounded-lg border border-gray-200/60 max-h-[72px] overflow-y-auto">
+                  {followers.length > 0 ? (
+                    <div className="space-y-1">
+                      {followers.slice(0, 3).map((follower) => (
+                        <div key={follower.id} className="flex items-center gap-1.5 text-xs">
+                          <UsersIcon className="size-3 text-gray-500" />
+                          <span className="truncate">{follower.name}</span>
+                        </div>
+                      ))}
+                      {followers.length > 3 && (
+                        <p className="text-xs text-gray-500 pl-4">
+                          +{followers.length - 3} more
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center text-gray-500 py-1">
+                      <UsersIcon className="size-3 mr-1.5" />
+                      <span className="text-xs">No followers</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Service */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-orange-500 rounded-full" />
-              Service
-            </label>
-            <Select
-              value={editForm.serviceId}
-              onValueChange={(value) => setEditForm(prev => ({ ...prev, serviceId: value }))}
-            >
-              <SelectTrigger className="w-full border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                <SelectValue placeholder="Select service" />
-              </SelectTrigger>
-              <SelectContent>
-                {services?.documents.map((serv) => (
-                  <SelectItem key={serv.id} value={serv.id}>
-                    📁 {serv.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Due Date */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full" />
-              Due Date
-            </label>
-            <DatePicker
-              value={editForm.dueDate}
-              onChange={(date) => setEditForm(prev => ({ ...prev, dueDate: date || new Date() }))}
-              className="w-full border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-            />
-          </div>
-
-          {/* Attachment */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" />
+          {/* Attachment - Full Width */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
               Attachment
             </label>
             <FileUpload
@@ -286,94 +359,33 @@ export const TaskPropertiesModal = ({
             />
           </div>
 
-          {/* Confidential */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-orange-500 rounded-full" />
-              Confidential
-            </label>
-            <div className="flex items-center justify-between p-3 bg-gray-50/80 rounded-lg border border-gray-200/60">
-              <div className="flex items-center gap-2">
-                <EyeOffIcon className="w-4 h-4 text-gray-500" />
-                <span className="text-xs text-gray-700">
-                  Only visible to creator, assignee, and followers
-                </span>
-              </div>
-              <Switch
-                checked={editForm.isConfidential}
-                onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, isConfidential: checked }))}
-              />
-            </div>
-          </div>
-
-          {/* Followers */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <div className="w-2 h-2 bg-violet-500 rounded-full" />
-                Followers
-              </label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onManageFollowers}
-                className="h-6 w-6 p-0 hover:bg-violet-100 text-violet-600 hover:text-violet-700"
-                title="Manage followers"
-              >
-                <PlusIcon className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="p-3 bg-gray-50/80 rounded-lg border border-gray-200/60">
-              {followers.length > 0 ? (
-                <div className="space-y-2">
-                  {followers.map((follower) => (
-                    <div key={follower.id} className="flex items-center gap-2 text-sm">
-                      <UsersIcon className="size-3 text-gray-500" />
-                      <span className="font-medium">{follower.name}</span>
-                    </div>
-                  ))}
-                  <div className="border-t pt-2 mt-2">
-                    <p className="text-xs text-gray-500">
-                      {followers.length} follower{followers.length !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center text-gray-500">
-                  <UsersIcon className="size-4 mr-2" />
-                  <span className="text-sm">No followers</span>
-                </div>
-              )}
-            </div>
-          </div>
-
           <DottedSeparator />
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row justify-between gap-2 pt-1">
             <Button
               type="button"
               variant="outline"
               onClick={handleCancel}
               disabled={isLoading}
-              className="w-full sm:w-auto"
+              className="w-full sm:w-auto h-9 text-sm"
             >
-              <XIcon className="w-4 h-4 mr-2" />
+              <XIcon className="w-3.5 h-3.5 mr-1.5" />
               Cancel
             </Button>
             <Button
               onClick={handleSave}
               disabled={isLoading}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+              className="w-full sm:w-auto h-9 text-sm bg-blue-600 hover:bg-blue-700 sm:ml-auto"
             >
               {isLoading ? (
                 <>
-                  <LoadingSpinner size="sm" className="mr-2" />
+                  <LoadingSpinner size="sm" className="mr-1.5" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <SaveIcon className="w-4 h-4 mr-2" />
+                  <SaveIcon className="w-3.5 h-3.5 mr-1.5" />
                   Save Changes
                 </>
               )}

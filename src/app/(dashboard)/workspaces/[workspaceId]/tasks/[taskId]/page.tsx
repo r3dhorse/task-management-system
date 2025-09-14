@@ -101,27 +101,64 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   
   if (isInvalidTaskId) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-          <div className="flex flex-col items-center justify-center h-96">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                <FileTextIcon className="w-8 h-8 text-gray-400" />
-              </div>
-              <div className="space-y-2">
-                <h1 className="text-2xl font-bold text-gray-900">Invalid Task ID</h1>
-                <p className="text-gray-600 max-w-md">
-                  The task ID format is invalid. Please check the URL and try again.
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+        {/* Invalid ID header */}
+        <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => router.back()}
-                className="mt-6 hover:bg-gray-50 transition-colors"
+                className="hover:bg-gray-100 transition-all duration-200 group"
               >
-                <ArrowLeftIcon className="size-4 mr-2" />
-                Go Back
+                <ArrowLeftIcon className="size-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                Back
               </Button>
+              <div className="h-4 w-px bg-gray-300" />
+              <span className="text-sm text-yellow-600 font-medium">Invalid Task ID</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg p-8 lg:p-12">
+            <div className="text-center space-y-6">
+              {/* Enhanced warning icon */}
+              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-full flex items-center justify-center shadow-lg">
+                <FileTextIcon className="w-12 h-12 text-yellow-600" />
+              </div>
+
+              {/* Enhanced warning content */}
+              <div className="space-y-4">
+                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">Invalid Task ID</h1>
+                <div className="max-w-md mx-auto space-y-3">
+                  <p className="text-gray-600 text-lg">
+                    The task ID format is invalid. Please check the URL and try again.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    Task IDs should contain only letters, numbers, hyphens, and underscores.
+                  </p>
+                </div>
+              </div>
+
+              {/* Enhanced action buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => router.back()}
+                  className="hover:bg-gray-50 transition-all duration-200 group px-6 py-3"
+                >
+                  <ArrowLeftIcon className="size-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                  Go Back
+                </Button>
+                <Button
+                  onClick={() => router.push(`/workspaces/${workspaceId}/tasks`)}
+                  className="bg-blue-600 hover:bg-blue-700 transition-all duration-200 px-6 py-3"
+                >
+                  View All Tasks
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -133,37 +170,166 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-          <div className="animate-pulse space-y-8">
-            {/* Header Skeleton */}
-            <div className="space-y-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+        {/* Enhanced Loading Header */}
+        <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="animate-pulse">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-16 bg-gray-200 rounded" />
+                  <div className="h-8 w-16 bg-gray-200/80 rounded-lg" />
                   <div className="h-4 w-px bg-gray-200" />
-                  <div className="h-4 w-32 bg-gray-200 rounded" />
+                  <div className="h-4 w-32 bg-gray-200/80 rounded" />
                 </div>
                 <div className="flex gap-2">
-                  <div className="h-8 w-20 bg-gray-200 rounded" />
-                  <div className="h-8 w-24 bg-gray-200 rounded" />
+                  <div className="h-8 w-24 bg-gray-200/80 rounded-lg" />
+                  <div className="h-8 w-20 bg-gray-200/80 rounded-lg" />
                 </div>
               </div>
-              <div className="h-10 w-2/3 bg-gray-200 rounded" />
-              <div className="h-4 w-1/3 bg-gray-200 rounded" />
             </div>
-            
-            {/* Content Skeleton */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
-              <div className="lg:col-span-2 xl:col-span-2 space-y-6">
-                <div className="h-64 bg-gray-200 rounded-lg" />
-                <div className="h-[380px] bg-gray-200 rounded-lg" />
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+          <div className="space-y-8">
+            {/* Enhanced Header Skeleton */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg p-6 lg:p-8 animate-fade-in">
+              <div className="space-y-6">
+                {/* Status and badges row */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-24 bg-gradient-to-r from-blue-200/40 via-blue-300/60 to-blue-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded-full" />
+                    <div className="h-6 w-20 bg-gradient-to-r from-red-200/40 via-red-300/60 to-red-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded-full" style={{animationDelay: '0.1s'}} />
+                  </div>
+                  <div className="h-10 w-64 bg-gradient-to-r from-gray-200/40 via-gray-300/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded-lg" style={{animationDelay: '0.2s'}} />
+                </div>
+
+                {/* Title skeleton */}
+                <div className="space-y-3">
+                  <div className="h-10 w-3/4 bg-gradient-to-r from-gray-200/40 via-gray-400/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded-lg" style={{animationDelay: '0.3s'}} />
+                  <div className="h-6 w-1/2 bg-gradient-to-r from-gray-200/40 via-gray-300/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded" style={{animationDelay: '0.4s'}} />
+                </div>
+
+                {/* Meta info grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-gray-100/60 rounded-lg animate-pulse" style={{animationDelay: `${0.5 + i * 0.1}s`}}>
+                      <div className="w-8 h-8 bg-gradient-to-r from-gray-200/40 via-gray-400/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded-lg" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 w-16 bg-gradient-to-r from-gray-200/40 via-gray-300/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded" />
+                        <div className="h-4 w-20 bg-gradient-to-r from-gray-200/40 via-gray-400/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="lg:col-span-1 xl:col-span-2">
-                <div className="h-[720px] bg-gray-200 rounded-lg" />
+            </div>
+
+            {/* Enhanced Content Skeleton */}
+            <div className="grid grid-cols-1 xl:grid-cols-10 gap-6 lg:gap-8">
+              {/* Left column - Description & History */}
+              <div className="xl:col-span-6 space-y-6">
+                {/* Description skeleton */}
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg animate-slide-up" style={{animationDelay: '0.9s'}}>
+                  <div className="p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-2 h-8 bg-gradient-to-b from-blue-300/40 via-blue-400/60 to-blue-300/40 animate-pulse rounded-full" />
+                      <div className="h-6 w-32 bg-gradient-to-r from-gray-200/40 via-gray-400/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded" />
+                    </div>
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="h-4 bg-gradient-to-r from-gray-200/40 via-gray-300/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded"
+                          style={{
+                            width: `${85 - i * 15}%`,
+                            animationDelay: `${1.0 + i * 0.1}s`
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* History skeleton */}
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg animate-slide-up" style={{animationDelay: '1.3s'}}>
+                  <div className="p-6">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-2 h-8 bg-gradient-to-b from-green-300/40 via-green-400/60 to-green-300/40 animate-pulse rounded-full" />
+                      <div className="h-6 w-40 bg-gradient-to-r from-gray-200/40 via-gray-400/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded" />
+                    </div>
+                    <div className="space-y-4">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="flex items-start gap-3 animate-fade-in" style={{animationDelay: `${1.4 + i * 0.1}s`}}>
+                          <div className="w-8 h-8 bg-gradient-to-r from-gray-200/40 via-gray-400/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded-full flex-shrink-0" />
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-gradient-to-r from-gray-200/40 via-gray-300/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded" style={{width: `${70 + i * 10}%`}} />
+                            <div className="h-3 w-24 bg-gradient-to-r from-gray-200/30 via-gray-300/50 to-gray-200/30 bg-size-200 bg-pos-0 animate-shimmer rounded" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="lg:col-span-1 xl:col-span-1">
-                <div className="h-[600px] bg-gray-200 rounded-lg" />
+
+              {/* Right column - Chat skeleton */}
+              <div className="xl:col-span-4">
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg animate-slide-up" style={{animationDelay: '1.8s'}}>
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-8 bg-gradient-to-b from-blue-300/40 via-blue-400/60 to-blue-300/40 animate-pulse rounded-full" />
+                        <div className="h-6 w-24 bg-gradient-to-r from-gray-200/40 via-gray-400/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded" />
+                      </div>
+                      {/* Live indicator skeleton */}
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                        <div className="h-3 w-8 bg-gradient-to-r from-gray-200/40 via-gray-300/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded" />
+                      </div>
+                    </div>
+                    <div className="space-y-4 h-96 overflow-hidden">
+                      {[...Array(6)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`flex gap-3 animate-fade-in ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}
+                          style={{animationDelay: `${1.9 + i * 0.1}s`}}
+                        >
+                          {i % 2 !== 0 && (
+                            <div className="w-8 h-8 bg-gradient-to-r from-gray-200/40 via-gray-400/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded-full flex-shrink-0" />
+                          )}
+                          <div className={`${
+                            i % 2 === 0
+                              ? 'bg-gradient-to-r from-blue-200/40 via-blue-300/60 to-blue-200/40'
+                              : 'bg-gradient-to-r from-gray-200/40 via-gray-300/60 to-gray-200/40'
+                          } bg-size-200 bg-pos-0 animate-shimmer p-3 rounded-lg space-y-2 max-w-xs`}>
+                            <div className="h-3 bg-white/60 rounded" style={{width: `${50 + Math.random() * 40}%`}} />
+                            {Math.random() > 0.5 && <div className="h-3 bg-white/40 rounded" style={{width: `${30 + Math.random() * 30}%`}} />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="border-t p-4">
+                    <div className="h-10 bg-gradient-to-r from-gray-200/40 via-gray-300/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded-full" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Enhanced Loading indicator */}
+            <div className="flex items-center justify-center py-8 animate-fade-in" style={{animationDelay: '2.5s'}}>
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex items-center gap-3 text-gray-500">
+                  <LoadingSpinner size="lg" className="text-blue-500" />
+                  <span className="text-lg font-medium animate-pulse">Loading task details...</span>
+                </div>
+                {/* Progress dots */}
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}} />
+                  <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}} />
+                </div>
               </div>
             </div>
           </div>
@@ -174,27 +340,64 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
   if (!task) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-        <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-          <div className="flex flex-col items-center justify-center h-96">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
-                <FileTextIcon className="w-8 h-8 text-gray-400" />
-              </div>
-              <div className="space-y-2">
-                <h1 className="text-2xl font-bold text-gray-900">Task not found</h1>
-                <p className="text-gray-600 max-w-md">
-                  The task you&apos;re looking for doesn&apos;t exist or has been removed.
-                </p>
-              </div>
-              <Button 
-                variant="outline" 
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+        {/* Error state header */}
+        <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => router.back()}
-                className="mt-6 hover:bg-gray-50 transition-colors"
+                className="hover:bg-gray-100 transition-all duration-200 group"
               >
-                <ArrowLeftIcon className="size-4 mr-2" />
-                Go Back
+                <ArrowLeftIcon className="size-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                Back
               </Button>
+              <div className="h-4 w-px bg-gray-300" />
+              <span className="text-sm text-red-600 font-medium">Task Not Found</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg p-8 lg:p-12">
+            <div className="text-center space-y-6">
+              {/* Enhanced error icon */}
+              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-red-50 to-red-100 rounded-full flex items-center justify-center shadow-lg">
+                <FileTextIcon className="w-12 h-12 text-red-500" />
+              </div>
+
+              {/* Enhanced error content */}
+              <div className="space-y-4">
+                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">Task Not Found</h1>
+                <div className="max-w-md mx-auto space-y-3">
+                  <p className="text-gray-600 text-lg">
+                    The task you&apos;re looking for doesn&apos;t exist or has been removed.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    This could happen if the task was deleted, archived, or if you don&apos;t have permission to view it.
+                  </p>
+                </div>
+              </div>
+
+              {/* Enhanced action buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => router.back()}
+                  className="hover:bg-gray-50 transition-all duration-200 group px-6 py-3"
+                >
+                  <ArrowLeftIcon className="size-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                  Go Back
+                </Button>
+                <Button
+                  onClick={() => router.push(`/workspaces/${workspaceId}/tasks`)}
+                  className="bg-blue-600 hover:bg-blue-700 transition-all duration-200 px-6 py-3"
+                >
+                  View All Tasks
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -414,7 +617,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       <ConfirmDialog />
       <ManageFollowersModal
         isOpen={isFollowersModalOpen}
@@ -424,173 +627,322 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         availableMembers={(members?.documents || []) as Member[]}
         isLoading={isUpdating}
       />
-      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        {/* Header Section */}
-        <div className="mb-8">
-          {/* Breadcrumb Bar */}
-          <div className="flex items-center gap-x-3 mb-4">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => router.back()}
-              className="hover:bg-gray-100 transition-colors"
-            >
-              <ArrowLeftIcon className="size-4 mr-2" />
-              Back
-            </Button>
+
+      {/* Enhanced Header with Breadcrumb */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.back()}
+                className="hover:bg-gray-100 transition-all duration-200 group"
+                aria-label="Go back to previous page"
+              >
+                <ArrowLeftIcon className="size-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                Back
+              </Button>
+              <div className="h-4 w-px bg-gray-300" />
+              <span className="text-sm text-gray-600 font-medium">Task Details</span>
+            </div>
+
+            {/* Action Buttons - Always visible in header */}
+            <div className="flex items-center gap-2">
+              {task.attachmentId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewAttachment}
+                  className="hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200"
+                >
+                  <FileTextIcon className="size-4 mr-2" />
+                  <span className="hidden sm:inline">View</span> Attachment
+                </Button>
+              )}
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditMode}
+                  className="hover:bg-green-50 hover:border-green-200 hover:text-green-700 transition-all duration-200"
+                >
+                  <EditIcon className="size-4 mr-2" />
+                  <span className="hidden sm:inline">Update</span> Task
+                </Button>
+              )}
+              {canDelete && !isAlreadyArchived && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleArchiveTask}
+                  disabled={isDeleting}
+                  className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all duration-200"
+                >
+                  {isDeleting ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-2" />
+                      <span className="hidden sm:inline">Archiving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ArchiveIcon className="size-4 mr-2" />
+                      <span className="hidden sm:inline">Archive</span>
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
+        </div>
+      </div>
 
-
-          {/* Task Title */}
-          <div className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="flex-1 min-w-0">
-                {/* Task Number */}
-                <div className="mb-3">
-                  <span className="text-sm font-mono text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 inline-block">
-                    {task.taskNumber}
-                  </span>
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900 break-words">{task.name}</h1>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-end mb-4">
-              <div className="flex items-center gap-x-2">
-                {task.attachmentId && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleViewAttachment}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <FileTextIcon className="size-4 mr-2" />
-                    View Attachment
-                  </Button>
-                )}
-                {canEdit && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleEditMode}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <EditIcon className="size-4 mr-2" />
-                    Update Task
-                  </Button>
-                )}
-                {canDelete && !isAlreadyArchived && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleArchiveTask}
-                    disabled={isDeleting}
-                    className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-colors"
-                  >
-                    {isDeleting ? (
-                      <>
-                        <LoadingSpinner size="sm" className="mr-2" />
-                        Archiving...
-                      </>
-                    ) : (
-                      <>
-                        <ArchiveIcon className="size-4 mr-2" />
-                        Archive Task
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {/* Task Meta Info & Stage Indicator */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-6 text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <UserIcon className="size-4" />
-                  <span>{assignee?.name || "Unassigned"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="size-4" />
-                  <TaskDate value={task.dueDate} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Package className="size-4" />
-                  <span>{service?.name || "No service"}</span>
-                </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        {/* Enhanced Task Header */}
+        <div className="mb-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg p-6 lg:p-8">
+            {/* Task Number & Status Indicator Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-mono font-semibold text-blue-700 bg-blue-100 border border-blue-200 shadow-sm">
+                  {task.taskNumber || `Task #${task.id.slice(-7)}`}
+                </span>
                 {task.isConfidential && (
-                  <div className="flex items-center">
-                    <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded-md border border-red-200">
-                      Confidential
-                    </span>
-                  </div>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100 border border-red-200 shadow-sm">
+                    🔒 Confidential
+                  </span>
                 )}
               </div>
-              
+
               {/* Enhanced Stage Indicator */}
-              <EnhancedStageIndicator
-                currentStatus={task.status as TaskStatus}
-                onStatusChange={handleStatusChange}
-                taskName={task.name}
-                isClickable={isAssignee && canEditStatus}
-              />
+              <div className="flex-shrink-0">
+                <EnhancedStageIndicator
+                  currentStatus={task.status as TaskStatus}
+                  onStatusChange={handleStatusChange}
+                  taskName={task.name}
+                  isClickable={isAssignee && canEditStatus}
+                />
+              </div>
+            </div>
+
+            {/* Task Title */}
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight mb-6 break-words">
+              {task.name}
+            </h1>
+
+            {/* Enhanced Meta Information */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <UserIcon className="size-4 text-blue-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Assignee</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {assignee?.name || "Unassigned"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <CalendarIcon className="size-4 text-orange-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Due Date</p>
+                  <div className="text-sm font-semibold text-gray-900">
+                    <TaskDate value={task.dueDate} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Package className="size-4 text-green-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Service</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {service?.name || "No service"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <UserIcon className="size-4 text-purple-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Followers</p>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-semibold text-gray-900">
+                      {followers.length}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsFollowersModalOpen(true)}
+                      className="text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50 p-1 h-auto transition-all duration-200 hover:scale-105"
+                      aria-label={`Manage followers for task ${task.name}`}
+                    >
+                      Manage
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Primary Content Area */}
-          <div className="space-y-6">
-            {/* Description Section */}
-            <Card className="shadow-lg border-2 border-neutral-200/60 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <div className="w-1 h-6 bg-blue-500 rounded-full" />
-                  Description
+        {/* Enhanced Main Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-10 gap-6 lg:gap-8">
+          {/* Primary Content Area - Left Column */}
+          <div className="xl:col-span-6 space-y-6">
+            {/* Enhanced Description Section */}
+            <Card className="bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                  <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full shadow-sm" />
+                  <span>Description</span>
+                  {!task.description && (
+                    <span className="text-sm font-normal text-gray-500 ml-auto">
+                      No description provided
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[200px] overflow-y-auto">
+                {/* Fixed height container for exactly 6 lines */}
+                <div className="h-[144px] overflow-hidden">
                   {task.description ? (
-                    <div className="prose prose-sm max-w-none">
-                      <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    <div className="prose prose-sm max-w-none h-full">
+                      <div className="text-gray-700 whitespace-pre-wrap leading-6 p-4 bg-gray-50/50 rounded-xl border border-gray-200/50 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                         {task.description}
-                      </p>
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-40 border-2 border-dashed border-gray-200 rounded-lg">
-                      <p className="text-gray-500 italic">No description provided yet</p>
+                    <div className="flex flex-col items-center justify-center h-full text-center">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+                        <FileTextIcon className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-gray-500 text-sm font-medium mb-2">No description yet</p>
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleEditMode}
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs"
+                        >
+                          <EditIcon className="size-3 mr-1" />
+                          Add Description
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Activity History */}
-            <Card className="h-[390px] shadow-lg border-2 border-neutral-200/60 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300 flex flex-col">
-              <CardHeader className="pb-3 flex-shrink-0">
-                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <div className="w-1 h-6 bg-green-500 rounded-full" />
-                  Activity Timeline
+            {/* Enhanced Activity History */}
+            <Card className="bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                  <div className="w-2 h-8 bg-gradient-to-b from-green-500 to-green-600 rounded-full shadow-sm" />
+                  <span>Activity Timeline</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 overflow-hidden p-0">
-                <div className="h-full overflow-y-auto px-6 pb-6">
-                  <TaskHistory taskId={task.id} />
+              <CardContent className="p-0">
+                {/* Fixed height to align with chat */}
+                <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  <div className="px-6 pb-6">
+                    <TaskHistory taskId={task.id} />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Chat Section */}
-          <div>
-            <div className="sticky top-6">
-              <TaskChat taskId={task.id} className="h-[705px] shadow-lg border-2 border-neutral-200/60 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-shadow duration-300" />
+          {/* Enhanced Chat Section - Right Column */}
+          <div className="xl:col-span-4">
+            <div className="sticky top-24">
+              <TaskChat
+                taskId={task.id}
+                className="h-[780px] bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300"
+              />
+
+              {/* Quick actions panel for mobile - Aligned with chat height */}
+              <div className="xl:hidden mt-6">
+                <Card className="bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg h-[140px]">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <div className="w-1 h-6 bg-purple-500 rounded-full" />
+                      Quick Actions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pb-4">
+                    <div className="grid grid-cols-2 gap-2">
+                      {task.attachmentId && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleViewAttachment}
+                          className="justify-start hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200 text-xs h-8"
+                          aria-label="View attached file"
+                        >
+                          <FileTextIcon className="size-3 mr-1" />
+                          Attachment
+                        </Button>
+                      )}
+                      {canEdit && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleEditMode}
+                          className="justify-start hover:bg-green-50 hover:border-green-200 hover:text-green-700 transition-all duration-200 text-xs h-8"
+                          aria-label="Edit task properties"
+                        >
+                          <EditIcon className="size-3 mr-1" />
+                          Edit Task
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsFollowersModalOpen(true)}
+                        className="justify-start hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-all duration-200 text-xs h-8"
+                        aria-label="Manage task followers"
+                      >
+                        <UserIcon className="size-3 mr-1" />
+                        Followers
+                      </Button>
+                      {canDelete && !isAlreadyArchived && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleArchiveTask}
+                          disabled={isDeleting}
+                          className="justify-start text-orange-600 border-orange-200 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-700 transition-all duration-200 text-xs h-8"
+                          aria-label="Archive this task"
+                        >
+                          {isDeleting ? (
+                            <>
+                              <LoadingSpinner size="sm" className="mr-1" />
+                              Archiving...
+                            </>
+                          ) : (
+                            <>
+                              <ArchiveIcon className="size-3 mr-1" />
+                              Archive
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -609,7 +961,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         onClose={() => setIsPropertiesModalOpen(false)}
         task={{
           id: task.id,
-          taskNumber: task.taskNumber,
+          taskNumber: task.taskNumber || `Task #${task.id.slice(-7)}`,
           name: task.name,
           status: task.status as TaskStatus,
           workspaceId: task.workspaceId,
