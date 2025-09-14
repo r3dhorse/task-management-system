@@ -106,34 +106,66 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
   
   return (
     <div className={`flex flex-col gap-y-2 transition-all duration-300 ease-out rounded-lg ${getColumnStyling()}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-x-2">
+      {isExpanded && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggle}
+              className="h-auto p-0 hover:bg-transparent"
+            >
+              <div className="flex items-center gap-x-2">
+                <ChevronDown className="size-4 text-neutral-500" />
+                <span className="text-sm" role="img" aria-label={board.label}>
+                  {board.emoji}
+                </span>
+                <div className={`w-2 h-2 rounded-full ${board.bgColor} shadow-sm`} />
+                <h3 className="text-sm font-semibold text-gray-700">{board.label}</h3>
+                <div className={`size-5 flex items-center justify-center rounded-full text-xs text-white font-medium shadow-sm ${
+                  board.bgColor
+                }`}>
+                  {taskCount}
+                </div>
+              </div>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!isExpanded && (
+        <div className="flex flex-col items-center py-2 h-full">
           <Button
             variant="ghost"
             size="sm"
             onClick={onToggle}
-            className="h-auto p-0 hover:bg-transparent"
+            className="h-auto p-1 hover:bg-neutral-200/50 rounded-md transition-colors mb-2"
           >
-            <div className="flex items-center gap-x-2">
-              {isExpanded ? (
-                <ChevronDown className="size-4 text-neutral-500" />
-              ) : (
-                <ChevronRight className="size-4 text-neutral-500" />
-              )}
-              <span className="text-sm" role="img" aria-label={board.label}>
-                {board.emoji}
-              </span>
-              <div className={`w-2 h-2 rounded-full ${board.bgColor} shadow-sm`} />
-              <h3 className="text-sm font-semibold text-gray-700">{board.label}</h3>
-              <div className={`size-5 flex items-center justify-center rounded-full text-xs text-white font-medium shadow-sm ${
-                board.bgColor
-              }`}>
-                {taskCount}
-              </div>
-            </div>
+            <ChevronRight className="size-3 text-neutral-500" />
           </Button>
+
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-sm" role="img" aria-label={board.label}>
+              {board.emoji}
+            </span>
+
+            {/* Vertical text */}
+            <div className="flex flex-col items-center gap-0.5">
+              {board.label.split('').map((letter, index) => (
+                <span key={index} className="text-xs font-medium text-gray-600 uppercase leading-none">
+                  {letter === ' ' ? '·' : letter}
+                </span>
+              ))}
+            </div>
+
+            <div className={`size-4 flex items-center justify-center rounded-full text-xs text-white font-medium shadow-sm ${
+              board.bgColor
+            }`}>
+              {taskCount}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
       
       {isExpanded && (
         <Droppable droppableId={board.key} isDropDisabled={isArchived}>
@@ -197,18 +229,6 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
             );
           }}
         </Droppable>
-      )}
-      
-      {!isExpanded && (
-        <div className="flex items-center justify-center h-[480px] kanban-collapsed-state rounded-lg border-2 border-dashed border-neutral-300/80 bg-neutral-50/80 backdrop-blur-sm">
-          <div className="text-center">
-            <div className="text-2xl mb-2 opacity-60">{board.emoji}</div>
-            <p className="text-xs text-neutral-500 font-medium">
-              {taskCount === 0 ? `No tasks in ${board.label}` : `${taskCount} task${taskCount === 1 ? '' : 's'}`}
-            </p>
-            <p className="text-xs text-neutral-400 mt-1">Click to expand</p>
-          </div>
-        </div>
       )}
     </div>
   );
@@ -438,23 +458,28 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         <div className={`flex overflow-x-auto gap-2 pb-4 kanban-drag-container ${
           isUpdating ? 'blur-sm opacity-75' : ''
         } ${dragState.isDragging ? 'select-none' : ''}`}>
-          {boards.map((board) => (
-            <div 
-              key={board.key} 
-              className={`flex-shrink-0 w-72 sm:w-80 bg-muted/70 border border-neutral-200/60 p-1.5 rounded-lg shadow-sm backdrop-blur-sm transition-all duration-300 ease-out ${
-                dragState.isDragging ? 'transform-gpu' : ''
-              }`}
-            >
-              <CollapsibleColumn
-                board={board}
-                tasks={tasks[board.key]}
-                isExpanded={expandedColumns[board.key]}
-                onToggle={() => toggleColumn(board.key)}
-                taskCount={taskCounts[board.key]}
-                dragState={dragState}
-              />
-            </div>
-          ))}
+          {boards.map((board) => {
+            const isExpanded = expandedColumns[board.key];
+            return (
+              <div
+                key={board.key}
+                className={`flex-shrink-0 transition-all duration-300 ease-out bg-muted/70 border border-neutral-200/60 p-1.5 rounded-lg shadow-sm backdrop-blur-sm ${
+                  dragState.isDragging ? 'transform-gpu' : ''
+                } ${
+                  isExpanded ? 'w-72 sm:w-80' : 'w-24 sm:w-28'
+                }`}
+              >
+                <CollapsibleColumn
+                  board={board}
+                  tasks={tasks[board.key]}
+                  isExpanded={expandedColumns[board.key]}
+                  onToggle={() => toggleColumn(board.key)}
+                  taskCount={taskCounts[board.key]}
+                  dragState={dragState}
+                />
+              </div>
+            );
+          })}
         </div>
       </DragDropContext>
 
