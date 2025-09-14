@@ -11,18 +11,27 @@ import { DataTablePaginated } from "@/features/tasks/components/data-table-pagin
 import { columns } from "@/features/tasks/components/columns";
 import { KanbanBoard } from "@/features/tasks/components/kanban-board";
 import { PopulatedTask } from "@/features/tasks/types";
-import { ListTodo } from "@/lib/lucide-icons";
+import { ListTodo, Download } from "@/lib/lucide-icons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { useQueryState } from "nuqs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { UserWelcomeBadge } from "@/components/user-welcome-badge";
+import { useCurrent } from "@/features/auth/api/use-current";
+import { useGetMembers } from "@/features/members/api/use-get-members";
+import { MemberRole } from "@/features/members/types";
+import { exportTasksToExcel } from "@/lib/excel-export";
+import { toast } from "sonner";
 
 export const WorkspaceTasksClient = () => {
   const workspaceId = useWorkspaceId();
   const { isAuthorized } = useWorkspaceAuthorization({ workspaceId });
+  const { data: user } = useCurrent();
+  const { data: members } = useGetMembers({ workspaceId });
 
   const [{ status, serviceId, assigneeId, dueDate, search }] = useTaskFilters();
+  const [isExporting, setIsExporting] = useState(false);
   const [view, setView] = useQueryState("task-view", {
     defaultValue: "kanban"
   });
@@ -103,6 +112,56 @@ export const WorkspaceTasksClient = () => {
     // This will be handled by React Query's cache update
   }, []);
 
+  // Check if user has export permission
+  const currentMember = members?.documents?.find(member => member.userId === user?.id);
+  const hasExportPermission = user?.isSuperAdmin ||
+                             user?.isAdmin ||
+                             currentMember?.role === MemberRole.ADMIN;
+
+  // Handle export to Excel
+  const handleExportToExcel = useCallback(async () => {
+    if (!hasExportPermission) {
+      toast.error("You don't have permission to export tasks");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // Build query parameters for the export API
+      const params = new URLSearchParams();
+      if (serviceId) params.append('serviceId', serviceId);
+      if (assigneeId) params.append('assigneeId', assigneeId);
+      if (status) params.append('status', status);
+      if (search) params.append('search', search);
+      if (dueDate) params.append('dueDate', dueDate);
+
+      const response = await fetch(`/api/workspaces/${workspaceId}/tasks/export?${params.toString()}`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Export failed');
+      }
+
+      const { tasks, total } = await response.json();
+
+      if (tasks.length === 0) {
+        toast.info("No tasks found to export");
+        return;
+      }
+
+      // Export to Excel
+      const userDisplayName = user?.name || user?.email || 'Unknown User';
+      exportTasksToExcel(tasks, `Workspace_${workspaceId}`, userDisplayName);
+      toast.success(`Successfully exported ${total} tasks to Excel`);
+
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to export tasks');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [workspaceId, serviceId, assigneeId, status, search, dueDate, hasExportPermission, user]);
+
   // Don't render anything if not authorized (redirection will happen)
   if (!isAuthorized) {
     return null;
@@ -130,22 +189,47 @@ export const WorkspaceTasksClient = () => {
         <div className="h-full flex flex-col overflow-auto p-4 space-y-4">
           {/* Header Section: Tabs and User Info */}
           <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-3 sm:space-y-0 gap-3">
-            {/* Tabs List */}
-            <TabsList className="w-full sm:w-auto">
-              <TabsTrigger
-                className="h-10 w-full sm:w-auto touch-manipulation"
-                value="kanban"
-              >
-                Kanban
-              </TabsTrigger>
-              <TabsTrigger
-                className="h-10 w-full sm:w-auto touch-manipulation"
-                value="table"
-              >
-                Table
-              </TabsTrigger>
-            </TabsList>
-            
+            {/* Tabs List and Export Button */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <TabsList className="w-full sm:w-auto">
+                <TabsTrigger
+                  className="h-10 w-full sm:w-auto touch-manipulation"
+                  value="kanban"
+                >
+                  Kanban
+                </TabsTrigger>
+                <TabsTrigger
+                  className="h-10 w-full sm:w-auto touch-manipulation"
+                  value="table"
+                >
+                  Table
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Download List Button - Only visible to workspace admins and super users */}
+              {hasExportPermission && (
+                <Button
+                  onClick={handleExportToExcel}
+                  disabled={isExporting}
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto h-10 gap-2 bg-green-50 hover:bg-green-100 border-green-200 hover:border-green-300 text-green-700 hover:text-green-800 transition-colors"
+                >
+                  {isExporting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="size-4" />
+                      Download List
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+
             {/* User Welcome Message with Role */}
             <div className="hidden sm:block">
               <UserWelcomeBadge />
