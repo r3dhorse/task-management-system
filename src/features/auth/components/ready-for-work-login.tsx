@@ -18,12 +18,12 @@ export const ReadyForWorkLogin = () => {
           <div className="space-y-4">
             <h1 className="text-6xl md:text-8xl font-bold text-white tracking-tight">
               <span className="bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-2xl">
-                Begin Your Workday
+                Welcome to Task Management
               </span>
             </h1>
           </div>
           <p className="text-xl md:text-2xl text-white/80 font-light max-w-2xl mx-auto leading-relaxed drop-shadow-lg">
-            Optimize workflows, organize tasks with clarity, and drive team success.
+            Smart Tasking for Smarter Teams.
           </p>
         </div>
       </div>
@@ -51,14 +51,14 @@ export const ReadyForWorkLogin = () => {
           <div className="space-y-4">
             <h1 className="text-6xl md:text-8xl font-bold text-white tracking-tight">
               <span className="bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent drop-shadow-2xl">
-                Begin Your Workday
+                Welcome to Task Management
               </span>
             </h1>
           </div>
 
           {/* Subtitle */}
           <p className="text-xl md:text-2xl text-white/80 font-light max-w-2xl mx-auto leading-relaxed drop-shadow-lg">
-            Optimize workflows, organize tasks with clarity, and drive team success.
+            Smart Tasking for Smarter Teams.
           </p>
 
           {/* Interactive button */}
