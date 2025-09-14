@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useDebounce } from "@/hooks/use-debounce";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +21,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogOverlay,
+  DialogPortal,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -34,7 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Edit, Trash2, Loader2, Key, Shield, ShieldCheck, Copy, Plus } from "@/lib/lucide-icons";
+import { Search, Edit, Trash2, Loader2, Key, Shield, ShieldCheck, Copy, Plus, X } from "@/lib/lucide-icons";
 import { formatDistanceToNow } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 
@@ -62,7 +63,12 @@ interface UsersResponse {
   };
 }
 
-export function UserManagementClient() {
+interface UserManagementModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function UserManagementModal({ open, onOpenChange }: UserManagementModalProps) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 300); // 300ms debounce
@@ -71,11 +77,11 @@ export function UserManagementClient() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tempPasswordDialogOpen, setTempPasswordDialogOpen] = useState(false);
-  const [editForm, setEditForm] = useState({ 
-    name: "", 
-    email: "", 
-    isAdmin: false, 
-    isSuperAdmin: false 
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    isAdmin: false,
+    isSuperAdmin: false
   });
   const [createForm, setCreateForm] = useState({
     name: "",
@@ -95,6 +101,21 @@ export function UserManagementClient() {
   useEffect(() => {
     setPage(1);
   }, [debouncedSearch]);
+
+  // Reset states when modal closes
+  useEffect(() => {
+    if (!open) {
+      setPage(1);
+      setSearch("");
+      setSelectedUser(null);
+      setEditDialogOpen(false);
+      setCreateDialogOpen(false);
+      setDeleteDialogOpen(false);
+      setTempPasswordDialogOpen(false);
+      setCreatedUserPassword("");
+      setGeneratedPassword("");
+    }
+  }, [open]);
 
   // Cleanup queries when component unmounts
   useEffect(() => {
@@ -121,6 +142,7 @@ export function UserManagementClient() {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
+    enabled: open, // Only fetch when modal is open
   });
 
   // Create user mutation
@@ -145,9 +167,9 @@ export function UserManagementClient() {
     },
     onSuccess: (data) => {
       // Optimized invalidation - only invalidate current page
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ["users", page, debouncedSearch],
-        exact: true 
+        exact: true
       });
       toast.success("User created successfully");
       setCreatedUserPassword(data.temporaryPassword);
@@ -166,9 +188,9 @@ export function UserManagementClient() {
 
   // Update user mutation
   const updateUserMutation = useMutation({
-    mutationFn: async ({ userId, data }: { 
-      userId: string; 
-      data: { name?: string; email?: string; isAdmin?: boolean; isSuperAdmin?: boolean } 
+    mutationFn: async ({ userId, data }: {
+      userId: string;
+      data: { name?: string; email?: string; isAdmin?: boolean; isSuperAdmin?: boolean }
     }) => {
       const response = await fetch(`/api/users/${userId}`, {
         method: "PATCH",
@@ -183,9 +205,9 @@ export function UserManagementClient() {
     },
     onSuccess: () => {
       // Optimized invalidation - only invalidate current page
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ["users", page, debouncedSearch],
-        exact: true 
+        exact: true
       });
       toast.success("User updated successfully");
       setEditDialogOpen(false);
@@ -209,9 +231,9 @@ export function UserManagementClient() {
     },
     onSuccess: () => {
       // Optimized invalidation - only invalidate current page
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ["users", page, debouncedSearch],
-        exact: true 
+        exact: true
       });
       toast.success("User deleted successfully");
       setDeleteDialogOpen(false);
@@ -316,13 +338,13 @@ export function UserManagementClient() {
 
   const handleUpdateSubmit = () => {
     if (!selectedUser) return;
-    
+
     const updates: { name?: string; email?: string; isAdmin?: boolean; isSuperAdmin?: boolean } = {};
     if (editForm.name !== selectedUser.name) updates.name = editForm.name;
     if (editForm.email !== selectedUser.email) updates.email = editForm.email;
     if (editForm.isAdmin !== selectedUser.isAdmin) updates.isAdmin = editForm.isAdmin;
     if (editForm.isSuperAdmin !== selectedUser.isSuperAdmin) updates.isSuperAdmin = editForm.isSuperAdmin;
-    
+
     if (Object.keys(updates).length === 0) {
       toast.info("No changes to save");
       return;
@@ -336,10 +358,10 @@ export function UserManagementClient() {
       toast.error("Please enter a temporary password");
       return;
     }
-    
-    setTempPasswordMutation.mutate({ 
-      userId: selectedUser.id, 
-      temporaryPassword: tempPassword 
+
+    setTempPasswordMutation.mutate({
+      userId: selectedUser.id,
+      temporaryPassword: tempPassword
     });
   };
 
@@ -351,11 +373,11 @@ export function UserManagementClient() {
   // Memoized pagination info to prevent recalculation
   const paginationInfo = useMemo(() => {
     if (!data) return null;
-    
+
     const { pagination } = data;
     const startItem = ((page - 1) * 15) + 1;
     const endItem = Math.min(page * 15, pagination.totalCount);
-    
+
     return {
       startItem,
       endItem,
@@ -368,14 +390,14 @@ export function UserManagementClient() {
   // Memoized page numbers for pagination
   const pageNumbers = useMemo(() => {
     if (!paginationInfo) return [];
-    
+
     const { totalPages } = paginationInfo;
     const maxPages = Math.min(5, totalPages);
     const startPage = Math.max(1, Math.min(
       totalPages - 4,
       Math.max(1, page - 2)
     ));
-    
+
     return Array.from({ length: maxPages }, (_, i) => {
       const pageNum = startPage + i;
       return pageNum <= totalPages ? pageNum : null;
@@ -384,166 +406,196 @@ export function UserManagementClient() {
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
-        <Card>
-          <CardContent className="p-6">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl h-[80vh] p-0">
+          <div className="p-6">
             <p className="text-red-500">Error loading users: {error.message}</p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>User Management</CardTitle>
-            <Button onClick={handleCreateUser} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              Create User
-            </Button>
-          </div>
-          <div className="mt-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search by name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
-              />
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogPortal>
+          <DialogOverlay className="bg-white/70 backdrop-blur-md" />
+          <DialogContent className="max-w-6xl h-[80vh] p-0 gap-0 bg-white/95 backdrop-blur-sm border shadow-lg"
+            style={{ transform: "translate(-50%, -50%)", left: "50%", top: "50%", position: "fixed" }}
+            hideCloseButton={true}
+          >
+          <div className="flex flex-col h-full">
+            {/* Header with close button */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center gap-3">
+                <Shield className="h-6 w-6 text-purple-600" />
+                <DialogTitle className="text-xl font-semibold">User Management</DialogTitle>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Workspaces</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data?.users.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>{user.name || "No name"}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        {user.isSuperAdmin && (
-                          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-semibold">
-                            Super Admin
-                          </span>
-                        )}
-                        {!user.isSuperAdmin && user.isAdmin && (
-                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">
-                            Admin
-                          </span>
-                        )}
-                        {!user.isSuperAdmin && !user.isAdmin && (
-                          <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">
-                            User
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>Owned: {user._count.ownedWorkspaces}</div>
-                          <div>Member: {user._count.memberships}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {formatDistanceToNow(new Date(user.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(user)}
-                            title="Edit user"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleTempPassword(user)}
-                            title="Set temporary password"
-                          >
-                            <Key className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(user)}
-                            disabled={user.isSuperAdmin}
-                            title="Delete user"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
 
-              {paginationInfo?.hasMultiplePages && (
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-6">
-                  <div className="text-sm text-gray-600">
-                    Showing {paginationInfo.startItem} to {paginationInfo.endItem} of {paginationInfo.totalCount} users
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                    >
-                      Previous
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      {pageNumbers.map((pageNum) => (
-                        <Button
-                          key={pageNum}
-                          variant={pageNum === page ? "secondary" : "outline"}
-                          size="sm"
-                          onClick={() => setPage(pageNum)}
-                          className="w-10 h-8"
-                        >
-                          {pageNum}
-                        </Button>
-                      ))}
+            {/* Content */}
+            <div className="flex-1 overflow-hidden">
+              <div className="h-full overflow-auto p-6">
+                <div className="space-y-4">
+                  {/* Action bar */}
+                  <div className="flex justify-between items-center">
+                    <div className="relative flex-1 max-w-sm">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Input
+                        placeholder="Search by name or email..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => p + 1)}
-                      disabled={page === paginationInfo.totalPages}
-                    >
-                      Next
+                    <Button onClick={handleCreateUser} className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Create User
                     </Button>
                   </div>
+
+                  {/* Table */}
+                  {isLoading ? (
+                    <div className="flex justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg bg-white">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Role</TableHead>
+                            <TableHead>Workspaces</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {data?.users.map((user) => (
+                            <TableRow key={user.id}>
+                              <TableCell>{user.name || "No name"}</TableCell>
+                              <TableCell>{user.email}</TableCell>
+                              <TableCell>
+                                {user.isSuperAdmin && (
+                                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-semibold">
+                                    Super Admin
+                                  </span>
+                                )}
+                                {!user.isSuperAdmin && user.isAdmin && (
+                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-semibold">
+                                    Admin
+                                  </span>
+                                )}
+                                {!user.isSuperAdmin && !user.isAdmin && (
+                                  <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">
+                                    User
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  <div>Owned: {user._count.ownedWorkspaces}</div>
+                                  <div>Member: {user._count.memberships}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {formatDistanceToNow(new Date(user.createdAt), {
+                                  addSuffix: true,
+                                })}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleEdit(user)}
+                                    title="Edit user"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleTempPassword(user)}
+                                    title="Set temporary password"
+                                  >
+                                    <Key className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleDelete(user)}
+                                    disabled={user.isSuperAdmin}
+                                    title="Delete user"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+
+                  {/* Pagination */}
+                  {paginationInfo?.hasMultiplePages && (
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4">
+                      <div className="text-sm text-gray-600">
+                        Showing {paginationInfo.startItem} to {paginationInfo.endItem} of {paginationInfo.totalCount} users
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage((p) => Math.max(1, p - 1))}
+                          disabled={page === 1}
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {pageNumbers.map((pageNum) => (
+                            <Button
+                              key={pageNum}
+                              variant={pageNum === page ? "secondary" : "outline"}
+                              size="sm"
+                              onClick={() => setPage(pageNum)}
+                              className="w-10 h-8"
+                            >
+                              {pageNum}
+                            </Button>
+                          ))}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPage((p) => p + 1)}
+                          disabled={page === paginationInfo.totalPages}
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            </div>
+          </div>
+          </DialogContent>
+        </DialogPortal>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -582,10 +634,10 @@ export function UserManagementClient() {
                 className={emailErrors.edit ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}
               />
             </div>
-            
+
             <div className="space-y-4 border-t pt-4">
               <h4 className="font-medium text-sm text-gray-900">User Roles</h4>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Shield className="h-4 w-4 text-blue-600" />
@@ -604,7 +656,7 @@ export function UserManagementClient() {
                   }
                 />
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <ShieldCheck className="h-4 w-4 text-purple-600" />
@@ -711,10 +763,10 @@ export function UserManagementClient() {
                 Password must be at least 8 characters long
               </p>
             </div>
-            
+
             <div className="space-y-4 border-t pt-4">
               <h4 className="font-medium text-sm text-gray-900">User Roles</h4>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Shield className="h-4 w-4 text-blue-600" />
@@ -733,7 +785,7 @@ export function UserManagementClient() {
                   }
                 />
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <ShieldCheck className="h-4 w-4 text-purple-600" />
@@ -843,7 +895,7 @@ export function UserManagementClient() {
           <DialogHeader>
             <DialogTitle>Set Temporary Password</DialogTitle>
             <DialogDescription>
-              Set a temporary password for <strong>{selectedUser?.email}</strong>. 
+              Set a temporary password for <strong>{selectedUser?.email}</strong>.
               The user can use this to log in and should change it immediately.
             </DialogDescription>
           </DialogHeader>
@@ -872,7 +924,7 @@ export function UserManagementClient() {
                 Password must be at least 8 characters long
               </p>
             </div>
-            
+
             {generatedPassword && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-md">
                 <div className="flex items-center justify-between">
@@ -922,6 +974,6 @@ export function UserManagementClient() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

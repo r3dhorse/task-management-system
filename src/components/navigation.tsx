@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { SettingsIcon, UsersIcon, ListTodo, Shield } from "@/lib/lucide-icons";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { Member, MemberRole } from "@/features/members/types";
+import { UserManagementModal } from "@/components/user-management-modal";
 
 const routes = [
   {
@@ -56,16 +58,17 @@ const routes = [
 export const Navigation = () => {
   const workspaceId = useWorkspaceId();
   const pathname = usePathname();
-  
+  const [userManagementModalOpen, setUserManagementModalOpen] = useState(false);
+
   // Get current user and member information
   const { data: currentUser } = useCurrent();
   const { data: members } = useGetMembers({ workspaceId });
-  
+
   // Find current user's member record to check role
-  const currentMember = members?.documents.find(member => 
+  const currentMember = members?.documents.find(member =>
     (member as Member).userId === currentUser?.id
   ) as Member;
-  
+
   const isVisitor = currentMember?.role === MemberRole.VISITOR;
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
   
@@ -74,7 +77,8 @@ export const Navigation = () => {
   const serviceId = isInServiceContext ? pathname.match(/\/services\/([^\/]+)/)?.[1] : null;
 
   return (
-    <ul className="flex flex-col">
+    <>
+      <ul className="flex flex-col">
       {routes.map((item) => {
         // Check if this item should be disabled for visitors
         const isRestrictedForCurrentUser = isVisitor && item.restrictedForVisitors;
@@ -129,19 +133,26 @@ export const Navigation = () => {
       {isSuperAdmin && (
         <>
           <div className="my-2 h-px bg-gray-200" />
-          <Link href="/admin/users">
+          <div>
             <div
+              onClick={() => setUserManagementModalOpen(true)}
               className={cn(
-                "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation",
-                pathname === "/admin/users" && "bg-white shadow-sm hover:opacity-100 text-primary"
+                "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50"
               )}
             >
-              <Shield className={cn("size-5 flex-shrink-0", pathname === "/admin/users" ? "text-primary" : "text-neutral-500")} />
+              <Shield className="size-5 flex-shrink-0 text-neutral-500" />
               <span className="text-sm sm:text-base truncate">User Management</span>
             </div>
-          </Link>
+          </div>
         </>
       )}
     </ul>
+
+      {/* User Management Modal */}
+      <UserManagementModal
+        open={userManagementModalOpen}
+        onOpenChange={setUserManagementModalOpen}
+      />
+    </>
   );
 };
