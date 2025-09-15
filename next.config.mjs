@@ -11,6 +11,7 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     serverComponentsExternalPackages: ['@prisma/client'],
+    instrumentationHook: true,
   },
   
   // Image optimization

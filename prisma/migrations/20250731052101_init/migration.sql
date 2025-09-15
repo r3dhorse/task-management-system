@@ -5,7 +5,10 @@ CREATE TYPE "public"."MemberRole" AS ENUM ('ADMIN', 'MEMBER', 'VISITOR');
 CREATE TYPE "public"."TaskStatus" AS ENUM ('BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'ARCHIVED');
 
 -- CreateEnum
-CREATE TYPE "public"."TaskHistoryAction" AS ENUM ('CREATED', 'UPDATED', 'STATUS_CHANGED', 'ASSIGNEE_CHANGED', 'SERVICE_CHANGED', 'DUE_DATE_CHANGED', 'ATTACHMENT_ADDED', 'ATTACHMENT_REMOVED', 'ATTACHMENT_VIEWED', 'DESCRIPTION_UPDATED', 'NAME_CHANGED', 'FOLLOWERS_CHANGED');
+CREATE TYPE "public"."TaskHistoryAction" AS ENUM ('CREATED', 'UPDATED', 'STATUS_CHANGED', 'ASSIGNEE_CHANGED', 'SERVICE_CHANGED', 'DUE_DATE_CHANGED', 'ATTACHMENT_ADDED', 'ATTACHMENT_REMOVED', 'ATTACHMENT_VIEWED', 'DESCRIPTION_UPDATED', 'NAME_CHANGED', 'FOLLOWERS_CHANGED', 'CONFIDENTIAL_CHANGED', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "public"."NotificationType" AS ENUM ('MENTION', 'NEW_MESSAGE', 'TASK_ASSIGNED', 'TASK_UPDATE', 'TASK_COMMENT');
 
 -- CreateTable
 CREATE TABLE "public"."Account" (
@@ -51,6 +54,7 @@ CREATE TABLE "public"."users" (
     "image" TEXT,
     "password" TEXT,
     "isAdmin" BOOLEAN NOT NULL DEFAULT false,
+    "isSuperAdmin" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -86,6 +90,7 @@ CREATE TABLE "public"."services" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
+    "isPublic" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -95,6 +100,7 @@ CREATE TABLE "public"."services" (
 -- CreateTable
 CREATE TABLE "public"."tasks" (
     "id" TEXT NOT NULL,
+    "taskNumber" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
     "status" "public"."TaskStatus" NOT NULL DEFAULT 'TODO',
@@ -158,6 +164,24 @@ CREATE TABLE "public"."task_attachments" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."notifications" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" "public"."NotificationType" NOT NULL,
+    "title" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "workspaceId" TEXT NOT NULL,
+    "taskId" TEXT,
+    "messageId" TEXT,
+    "mentionedBy" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "readAt" TIMESTAMP(3),
+
+    CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."_TaskFollowers" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
@@ -181,10 +205,112 @@ CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "public"."Verifi
 CREATE UNIQUE INDEX "users_email_key" ON "public"."users"("email");
 
 -- CreateIndex
+CREATE INDEX "users_email_idx" ON "public"."users"("email");
+
+-- CreateIndex
+CREATE INDEX "users_createdAt_idx" ON "public"."users"("createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "workspaces_inviteCode_key" ON "public"."workspaces"("inviteCode");
 
 -- CreateIndex
+CREATE INDEX "workspaces_inviteCode_idx" ON "public"."workspaces"("inviteCode");
+
+-- CreateIndex
+CREATE INDEX "workspaces_userId_idx" ON "public"."workspaces"("userId");
+
+-- CreateIndex
+CREATE INDEX "workspaces_createdAt_idx" ON "public"."workspaces"("createdAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "members_userId_workspaceId_key" ON "public"."members"("userId", "workspaceId");
+
+-- CreateIndex
+CREATE INDEX "members_workspaceId_idx" ON "public"."members"("workspaceId");
+
+-- CreateIndex
+CREATE INDEX "members_userId_idx" ON "public"."members"("userId");
+
+-- CreateIndex
+CREATE INDEX "members_role_idx" ON "public"."members"("role");
+
+-- CreateIndex
+CREATE INDEX "services_workspaceId_idx" ON "public"."services"("workspaceId");
+
+-- CreateIndex
+CREATE INDEX "services_isPublic_idx" ON "public"."services"("isPublic");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "tasks_taskNumber_key" ON "public"."tasks"("taskNumber");
+
+-- CreateIndex
+CREATE INDEX "tasks_workspaceId_idx" ON "public"."tasks"("workspaceId");
+
+-- CreateIndex
+CREATE INDEX "tasks_serviceId_idx" ON "public"."tasks"("serviceId");
+
+-- CreateIndex
+CREATE INDEX "tasks_assigneeId_idx" ON "public"."tasks"("assigneeId");
+
+-- CreateIndex
+CREATE INDEX "tasks_status_idx" ON "public"."tasks"("status");
+
+-- CreateIndex
+CREATE INDEX "tasks_createdAt_idx" ON "public"."tasks"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "tasks_dueDate_idx" ON "public"."tasks"("dueDate");
+
+-- CreateIndex
+CREATE INDEX "tasks_isConfidential_idx" ON "public"."tasks"("isConfidential");
+
+-- CreateIndex
+CREATE INDEX "tasks_workspaceId_status_createdAt_idx" ON "public"."tasks"("workspaceId", "status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "task_history_taskId_idx" ON "public"."task_history"("taskId");
+
+-- CreateIndex
+CREATE INDEX "task_history_userId_idx" ON "public"."task_history"("userId");
+
+-- CreateIndex
+CREATE INDEX "task_history_action_idx" ON "public"."task_history"("action");
+
+-- CreateIndex
+CREATE INDEX "task_history_createdAt_idx" ON "public"."task_history"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "task_messages_taskId_idx" ON "public"."task_messages"("taskId");
+
+-- CreateIndex
+CREATE INDEX "task_messages_workspaceId_idx" ON "public"."task_messages"("workspaceId");
+
+-- CreateIndex
+CREATE INDEX "task_messages_senderId_idx" ON "public"."task_messages"("senderId");
+
+-- CreateIndex
+CREATE INDEX "task_messages_createdAt_idx" ON "public"."task_messages"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "task_attachments_taskId_idx" ON "public"."task_attachments"("taskId");
+
+-- CreateIndex
+CREATE INDEX "task_attachments_uploadedAt_idx" ON "public"."task_attachments"("uploadedAt");
+
+-- CreateIndex
+CREATE INDEX "notifications_userId_idx" ON "public"."notifications"("userId");
+
+-- CreateIndex
+CREATE INDEX "notifications_isRead_idx" ON "public"."notifications"("isRead");
+
+-- CreateIndex
+CREATE INDEX "notifications_workspaceId_idx" ON "public"."notifications"("workspaceId");
+
+-- CreateIndex
+CREATE INDEX "notifications_createdAt_idx" ON "public"."notifications"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "notifications_userId_isRead_createdAt_idx" ON "public"."notifications"("userId", "isRead", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "_TaskFollowers_B_index" ON "public"."_TaskFollowers"("B");
@@ -236,6 +362,21 @@ ALTER TABLE "public"."task_messages" ADD CONSTRAINT "task_messages_workspaceId_f
 
 -- AddForeignKey
 ALTER TABLE "public"."task_attachments" ADD CONSTRAINT "task_attachments_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "public"."tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."notifications" ADD CONSTRAINT "notifications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."notifications" ADD CONSTRAINT "notifications_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "public"."workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."notifications" ADD CONSTRAINT "notifications_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "public"."tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."notifications" ADD CONSTRAINT "notifications_messageId_fkey" FOREIGN KEY ("messageId") REFERENCES "public"."task_messages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."notifications" ADD CONSTRAINT "notifications_mentionedBy_fkey" FOREIGN KEY ("mentionedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."_TaskFollowers" ADD CONSTRAINT "_TaskFollowers_A_fkey" FOREIGN KEY ("A") REFERENCES "public"."members"("id") ON DELETE CASCADE ON UPDATE CASCADE;
