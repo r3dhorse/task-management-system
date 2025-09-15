@@ -59,12 +59,7 @@ export const WorkspaceSwitcher = () => {
                   value={workspace.id}
                   className="flex items-center gap-2"
                 >
-                  <span className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-blue-900 text-white flex items-center justify-center text-xs font-bold uppercase">
-                      {workspace.name.charAt(0)}
-                    </div>
-                    {workspace.name}
-                  </span>
+                  {workspace.name}
                 </SelectItem>
               ))
             ) : (

@@ -359,15 +359,7 @@ const WorkspaceIdPage = () => {
                 return (
                   <div
                     key={status}
-                    className="group hover:bg-gray-50 rounded-lg p-3 transition-colors cursor-pointer border border-transparent hover:border-black"
-                    onClick={() => {
-                      const params = new URLSearchParams();
-                      params.set('status', status);
-                      if (currentMember?.id) {
-                        params.set('assigneeId', currentMember.id);
-                      }
-                      router.push(`/workspaces/${workspaceId}/workspace-tasks?${params.toString()}`);
-                    }}
+                    className="group rounded-lg p-3 border border-transparent"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
