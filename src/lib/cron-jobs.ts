@@ -3,9 +3,27 @@ import { prisma } from '@/lib/prisma';
 import { TaskStatus } from '@/features/tasks/types';
 import { TaskHistoryAction } from '@/features/tasks/types/history';
 
+// Store last execution info for monitoring
+let lastExecutionLog: {
+  timestamp: Date;
+  success: boolean;
+  tasksUpdated: number;
+  error?: string;
+} | null = null;
+
 export const updateOverdueTasks = async () => {
   try {
     console.log('[CRON] Starting overdue tasks update job at', new Date().toISOString());
+
+    // Get a system user (superadmin) for audit trail
+    const systemUser = await prisma.user.findFirst({
+      where: { isSuperAdmin: true },
+      select: { id: true }
+    });
+
+    if (!systemUser) {
+      throw new Error('No superadmin user found to perform automated task updates');
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -52,11 +70,11 @@ export const updateOverdueTasks = async () => {
             await tx.taskHistory.create({
               data: {
                 taskId: task.id,
-                userId: 'system',
+                userId: systemUser.id,
                 action: TaskHistoryAction.STATUS_CHANGED,
                 oldValue: task.status,
                 newValue: TaskStatus.BACKLOG,
-                details: `Task automatically moved to backlog due to overdue date (${task.dueDate?.toLocaleDateString()}). Previous status: ${task.status}`,
+                details: `Task automatically moved to backlog due to overdue date (${task.dueDate?.toLocaleDateString()}). Previous status: ${task.status}. (Automated system update)`,
                 createdAt: new Date()
               }
             });
@@ -78,6 +96,7 @@ export const updateOverdueTasks = async () => {
 
     return {
       total: overdueTasks.length,
+      updatedCount: successCount,
       success: successCount,
       failed: failureCount
     };
@@ -101,10 +120,39 @@ export const initializeCronJobs = () => {
   cronJob = cron.schedule(
     cronExpression,
     async () => {
+      const currentTime = new Date().toLocaleString('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      console.log(`[CRON] ⏰ Automated overdue tasks update started at ${currentTime} (${timezone})`);
+
       try {
-        await updateOverdueTasks();
+        const result = await updateOverdueTasks();
+
+        // Log execution for monitoring
+        lastExecutionLog = {
+          timestamp: new Date(),
+          success: true,
+          tasksUpdated: result.updatedCount
+        };
+
+        console.log(`[CRON] ✅ Automated execution completed successfully. Updated ${result.updatedCount} tasks at ${currentTime}`);
       } catch (error) {
-        console.error('[CRON] Failed to execute overdue tasks update:', error);
+        // Log failed execution for monitoring
+        lastExecutionLog = {
+          timestamp: new Date(),
+          success: false,
+          tasksUpdated: 0,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        };
+
+        console.error(`[CRON] ❌ Automated execution failed at ${currentTime}:`, error);
       }
     },
     {
@@ -126,5 +174,37 @@ export const stopCronJobs = () => {
     cronJob.stop();
     cronJob = null;
     console.log('[CRON] Cron jobs stopped');
+  }
+};
+
+export const getCronJobStatus = () => {
+  return {
+    isRunning: cronJob !== null,
+    cronExpression: '0 0 * * *',
+    timezone: 'Asia/Manila',
+    nextExecution: cronJob ? getNextExecution() : null,
+    lastExecution: lastExecutionLog
+  };
+};
+
+const getNextExecution = () => {
+  try {
+    // Calculate next midnight in Manila timezone
+    const now = new Date();
+    const manila = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
+    const nextMidnight = new Date(manila);
+    nextMidnight.setHours(24, 0, 0, 0); // Next midnight
+
+    return nextMidnight.toLocaleString('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  } catch {
+    return 'Unable to calculate';
   }
 };

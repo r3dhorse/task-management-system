@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { updateOverdueTasks } from "@/lib/cron-jobs";
+import { updateOverdueTasks, getCronJobStatus } from "@/lib/cron-jobs";
 import { prisma } from "@/lib/prisma";
 
 export async function POST() {
@@ -88,11 +88,30 @@ export async function GET() {
       }
     });
 
+    // Get cron job status from monitoring system
+    const cronStatus = getCronJobStatus();
+
+    const currentTime = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
     return NextResponse.json({
       success: true,
+      currentTime: `${currentTime} (Asia/Manila)`,
       overdueTasksCount,
-      nextRun: "Midnight (00:00) Philippine Time",
-      timezone: "Asia/Manila"
+      cronJob: {
+        isRunning: cronStatus.isRunning,
+        schedule: cronStatus.cronExpression,
+        timezone: cronStatus.timezone,
+        nextExecution: cronStatus.nextExecution,
+        lastExecution: cronStatus.lastExecution
+      }
     });
   } catch (error) {
     console.error("[CRON] Status check failed:", error);

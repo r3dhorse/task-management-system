@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SettingsIcon, UsersIcon, ListTodo, Shield } from "@/lib/lucide-icons";
+import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw } from "@/lib/lucide-icons";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -11,6 +11,8 @@ import { useCurrent } from "@/features/auth/api/use-current";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { Member, MemberRole } from "@/features/members/types";
 import { UserManagementModal } from "@/components/user-management-modal";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 const routes = [
   {
@@ -59,6 +61,9 @@ export const Navigation = () => {
   const workspaceId = useWorkspaceId();
   const pathname = usePathname();
   const [userManagementModalOpen, setUserManagementModalOpen] = useState(false);
+  const [isRunningAudit, setIsRunningAudit] = useState(false);
+  const queryClient = useQueryClient();
+  const router = useRouter();
 
   // Get current user and member information
   const { data: currentUser } = useCurrent();
@@ -75,6 +80,41 @@ export const Navigation = () => {
   // Check if we're currently in a service context
   const isInServiceContext = pathname.includes('/services/');
   const serviceId = isInServiceContext ? pathname.match(/\/services\/([^\/]+)/)?.[1] : null;
+
+  const handleTaskAudit = async () => {
+    setIsRunningAudit(true);
+    try {
+      const response = await fetch('/api/cron/overdue-tasks', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const updatedCount = result.result?.updatedCount || 0;
+
+        if (updatedCount > 0) {
+          // Invalidate all task-related queries to refresh the UI
+          await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+          await queryClient.invalidateQueries({ queryKey: ['workspace-tasks'] });
+
+          // Refresh the current page to show updated data
+          router.refresh();
+
+          alert(`Task audit completed successfully! ${updatedCount} tasks were moved to backlog. The page will refresh to show the changes.`);
+        } else {
+          alert('Task audit completed successfully! No overdue tasks were found.');
+        }
+      } else {
+        const error = await response.json();
+        alert(`Task audit failed: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Task audit error:', error);
+      alert('Failed to run task audit. Please try again.');
+    } finally {
+      setIsRunningAudit(false);
+    }
+  };
 
   return (
     <>
@@ -142,6 +182,20 @@ export const Navigation = () => {
             >
               <Shield className="size-5 flex-shrink-0 text-neutral-500" />
               <span className="text-sm sm:text-base truncate">User Management</span>
+            </div>
+          </div>
+          <div>
+            <div
+              onClick={handleTaskAudit}
+              className={cn(
+                "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50",
+                isRunningAudit && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <RefreshCw className={cn("size-5 flex-shrink-0 text-neutral-500", isRunningAudit && "animate-spin")} />
+              <span className="text-sm sm:text-base truncate">
+                {isRunningAudit ? "Running Audit..." : "Run Task Audit"}
+              </span>
             </div>
           </div>
         </>
