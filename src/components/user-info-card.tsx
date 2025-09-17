@@ -3,13 +3,15 @@
 import { useCurrent } from "@/features/auth/api/use-current";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { User, Mail, Key } from "@/lib/lucide-icons";
+import { User, Mail, Key, Building2 } from "@/lib/lucide-icons";
 import { ChangePasswordModal } from "@/features/auth/components/change-password-modal";
+import { DefaultWorkspaceModal } from "@/features/auth/components/default-workspace-modal";
 import { useState } from "react";
 
 export const UserInfoCard = () => {
   const { data: user, isLoading } = useCurrent();
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isDefaultWorkspaceOpen, setIsDefaultWorkspaceOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -44,7 +46,7 @@ export const UserInfoCard = () => {
               <Mail className="w-4 h-4" />
               {user.email}
             </div>
-            <div className="pt-2">
+            <div className="pt-2 flex gap-2">
               <Button
                 onClick={() => setIsChangePasswordOpen(true)}
                 variant="outline"
@@ -54,6 +56,15 @@ export const UserInfoCard = () => {
                 <Key className="w-3 h-3 mr-1" />
                 Change Password
               </Button>
+              <Button
+                onClick={() => setIsDefaultWorkspaceOpen(true)}
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs"
+              >
+                <Building2 className="w-3 h-3 mr-1" />
+                Default Workspace
+              </Button>
             </div>
           </div>
         </div>
@@ -62,6 +73,11 @@ export const UserInfoCard = () => {
       <ChangePasswordModal
         isOpen={isChangePasswordOpen}
         onClose={() => setIsChangePasswordOpen(false)}
+      />
+
+      <DefaultWorkspaceModal
+        isOpen={isDefaultWorkspaceOpen}
+        onClose={() => setIsDefaultWorkspaceOpen(false)}
       />
     </Card>
   );

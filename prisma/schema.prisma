@@ -57,6 +57,7 @@ model User {
   password      String?   // For credentials auth
   isAdmin       Boolean   @default(false) // Replaces Appwrite "admin" label
   isSuperAdmin  Boolean   @default(false) // System-wide super admin with user management capabilities
+  defaultWorkspaceId String?  // Default workspace to route to on login
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -72,6 +73,7 @@ model User {
   sentMessages    TaskMessage[]
   notifications   Notification[]
   mentionNotifications Notification[] @relation("MentionNotifications")
+  defaultWorkspace Workspace? @relation("DefaultWorkspace", fields: [defaultWorkspaceId], references: [id], onDelete: SetNull)
 
   @@index([email])
   @@index([createdAt])
@@ -94,6 +96,7 @@ model Workspace {
   tasks         Task[]
   messages      TaskMessage[]
   notifications Notification[]
+  usersWithDefault User[]      @relation("DefaultWorkspace")
 
   @@index([inviteCode])
   @@index([userId])

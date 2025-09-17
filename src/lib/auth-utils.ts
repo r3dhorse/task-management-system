@@ -6,13 +6,29 @@ import { redirect } from "next/navigation"
 export async function getCurrentUser() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return null
-  
+
+  // Fetch the user from database to get the latest defaultWorkspaceId
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      isAdmin: true,
+      isSuperAdmin: true,
+      defaultWorkspaceId: true,
+    }
+  })
+
+  if (!user) return null
+
   return {
-    id: session.user.id,
-    email: session.user.email!,
-    name: session.user.name,
-    isAdmin: session.user.isAdmin || false,
-    isSuperAdmin: session.user.isSuperAdmin || false,
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    isAdmin: user.isAdmin || false,
+    isSuperAdmin: user.isSuperAdmin || false,
+    defaultWorkspaceId: user.defaultWorkspaceId,
   }
 }
 

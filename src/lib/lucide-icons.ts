@@ -142,6 +142,7 @@ export const TrashIcon = getIcon('Trash', ['TrashIcon']);
 export const UserCheckIcon = getIcon('UserCheck', ['UserCheckIcon']);
 export const Users = getIcon('Users', ['UsersIcon']);
 export const CheckCircle = getIcon('CheckCircle', ['CheckCircleIcon']);
+export const Building2 = getIcon('Building2', ['Building2Icon', 'Building']);
 
 // Export all lucide icons as a namespace for direct access
 export * from "lucide-react";
