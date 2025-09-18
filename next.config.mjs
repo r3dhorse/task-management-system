@@ -20,6 +20,25 @@ const nextConfig = {
     minimumCacheTTL: 300,
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3001',
+        pathname: '/api/download/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/api/download/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**',
+        pathname: '/api/download/**',
+      },
+    ],
   },
   
   // Bundle analyzer for development
