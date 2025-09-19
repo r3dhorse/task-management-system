@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { loginSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from "../schemas";
-import { createAdminClient } from "@/lib/appwrite";
 import { deleteCookie, setCookie } from "hono/cookie"
 import { AUTH_COOKIE } from "../constants";
 import { sessionMiddleware } from "@/lib/session-middleware";
@@ -21,26 +20,8 @@ const app = new Hono()
   .post("/login",
     zValidator("json", loginSchema),
     async (c) => {
-      try {
-        const { email, password } = c.req.valid("json");
-        const { account } = await createAdminClient();
-        const session = await account.createEmailPasswordSession(
-          email,
-          password,
-        );
-
-        setCookie(c, AUTH_COOKIE, session.secret, {
-          path: "/",
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "strict",
-          maxAge: 60 * 60 * 24 * 30,
-        });
-
-        return c.json({ success: true })
-      } catch {
-        return c.json({ error: "Invalid email or password" }, 401)
-      }
+      // Legacy Appwrite login - now handled by NextAuth
+      return c.json({ error: "This endpoint is deprecated. Please use NextAuth." }, 410)
     }
   )
 
@@ -112,12 +93,8 @@ const app = new Hono()
           }, 429);
         }
         
-        const { account } = await createAdminClient();
-        
-        const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`;
-        await account.createRecovery(email, redirectUrl);
-
-        return c.json({ success: true, message: "Password recovery email sent" });
+        // Legacy Appwrite recovery - now handled by NextAuth
+        return c.json({ error: "This endpoint is deprecated. Password recovery is not available." }, 410);
       } catch (error) {
         console.error("Forgot password error:", error);
         
@@ -134,12 +111,8 @@ const app = new Hono()
     zValidator("json", resetPasswordSchema),
     async (c) => {
       try {
-        const { userId, secret, password } = c.req.valid("json");
-        const { account } = await createAdminClient();
-        
-        await account.updateRecovery(userId, secret, password);
-
-        return c.json({ success: true, message: "Password reset successfully" });
+        // Legacy Appwrite reset - now handled by NextAuth
+        return c.json({ error: "This endpoint is deprecated. Password reset is not available." }, 410);
       } catch (error) {
         console.error("Reset password error:", error);
         return c.json({ error: "Failed to reset password. The link may be expired or invalid." }, 400);

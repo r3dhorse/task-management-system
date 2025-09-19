@@ -14,8 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/date-picker";
 import { CalendarIcon, UsersIcon, CheckCircle2Icon, Clock3Icon, ListTodoIcon, BarChart3Icon, TrendingUpIcon, StarIcon, ZapIcon, Target, Activity, Award, Briefcase, Rocket, Trophy } from "@/lib/lucide-icons";
-import { TaskStatus } from "@/features/tasks/types";
-import { Models } from "node-appwrite";
+import { TaskStatus, PopulatedTask } from "@/features/tasks/types";
 import { subDays, isAfter, isBefore } from "date-fns";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { UserInfoCard } from "@/components/user-info-card";
@@ -46,19 +45,6 @@ interface ServicePerformance {
   completionRate: number;
 }
 
-interface PopulatedTask extends Models.Document {
-  name: string;
-  status: TaskStatus;
-  workspaceId: string;
-  assigneeId: string;
-  projectId: string;
-  position: number;
-  dueDate: string;
-  description?: string;
-  attachmentId?: string;
-  project?: Models.Document;
-  assignees?: Models.Document[];
-}
 
 const WorkspaceIdPage = () => {
   const router = useRouter();
@@ -99,7 +85,6 @@ const WorkspaceIdPage = () => {
   }
 
   // Filter tasks by date range
-  // @ts-expect-error - Tasks are enriched with project and assignees from the API
   const filteredTasks = (tasks?.documents.filter((task) => {
     if (!dateFrom || !dateTo) return true;
     const taskDate = new Date(task.createdAt);
