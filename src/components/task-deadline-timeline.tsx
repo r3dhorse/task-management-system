@@ -452,10 +452,6 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
                 <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
                 <span>Overdue</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Lock className="h-3 w-3 text-blue-600" />
-                <span>Confidential</span>
-              </div>
             </div>
           </div>
         </ScrollArea>
