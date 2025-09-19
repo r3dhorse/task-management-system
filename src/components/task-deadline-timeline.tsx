@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CalendarIcon, Clock3Icon, AlertTriangleIcon, CheckCircle2Icon, ChevronRight, Calendar, CalendarDays, Clock, ChevronLeft } from "@/lib/lucide-icons";
+import { CalendarIcon, Clock3Icon, AlertTriangleIcon, CheckCircle2Icon, ChevronRight, Calendar, CalendarDays, Clock, ChevronLeft, Lock } from "@/lib/lucide-icons";
 import { TaskStatus, PopulatedTask } from "@/features/tasks/types";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { useCurrent } from "@/features/auth/api/use-current";
 
 interface TaskDeadlineTimelineProps {
   tasks: PopulatedTask[];
@@ -26,6 +27,7 @@ interface TimelineDay {
 
 export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelineProps) => {
   const router = useRouter();
+  const { data: currentUser } = useCurrent();
   const [dateOffset, setDateOffset] = useState(0); // Days to offset from today
 
   // Navigation limits: 4 weeks backward and forward
@@ -33,6 +35,30 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
   const MAX_WEEKS_FORWARD = 4;
   const MIN_OFFSET = -MAX_WEEKS_BACKWARD * 7; // -28 days
   const MAX_OFFSET = MAX_WEEKS_FORWARD * 7;   // +28 days
+
+  // Helper function to check if user can access confidential task
+  const canAccessConfidentialTask = (task: PopulatedTask) => {
+    if (!task.isConfidential) return true;
+    if (!currentUser) return false;
+
+    // Task creator can always access
+    if (task.creatorId === currentUser.id) return true;
+
+    // Assignee can always access
+    if (task.assigneeId === currentUser.id) return true;
+
+    // Followers can access
+    if (task.followedIds) {
+      try {
+        const followers = JSON.parse(task.followedIds) as string[];
+        if (followers.includes(currentUser.id)) return true;
+      } catch {
+        // If parsing fails, treat as no followers
+      }
+    }
+
+    return false;
+  };
 
   const timelineData = useMemo(() => {
     const today = new Date();
@@ -116,8 +142,11 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isPreviousDisabled, isNextDisabled]);
 
-  const handleTaskClick = (taskId: string) => {
-    router.push(`/workspaces/${workspaceId}/tasks/${taskId}`);
+  const handleTaskClick = (task: PopulatedTask) => {
+    if (!canAccessConfidentialTask(task)) {
+      return; // Prevent navigation for unauthorized confidential tasks
+    }
+    router.push(`/workspaces/${workspaceId}/tasks/${task.id}`);
   };
 
   const getStatusColor = (status: TaskStatus) => {
@@ -325,23 +354,39 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
               <div className="relative flex gap-2">
                 {timelineData.map((day, dayIndex) => (
                   <div key={`tasks-${dayIndex}`} className="flex-1 min-w-[80px] space-y-2">
-                    {day.tasks.map((task, taskIndex) => (
-                      <div
-                        key={task.id}
-                        className={cn(
-                          "group cursor-pointer rounded-lg p-2 text-center border transition-all duration-200 hover:scale-105 hover:shadow-md relative",
-                          day.isPast
-                            ? "bg-red-50 border-red-200 hover:bg-red-100"
-                            : day.isToday
-                            ? "bg-orange-50 border-orange-200 hover:bg-orange-100"
-                            : "bg-blue-50 border-blue-200 hover:bg-blue-100"
-                        )}
-                        onClick={() => handleTaskClick(task.id)}
-                        style={{
-                          minHeight: '40px'
-                        }}
-                        title={`${task.name} - ${formatStatusText(task.status)}${task.service ? ` (${task.service.name})` : ''}`}
-                      >
+                    {day.tasks.map((task, taskIndex) => {
+                      const canAccess = canAccessConfidentialTask(task);
+                      const isConfidential = task.isConfidential;
+
+                      return (
+                        <div
+                          key={task.id}
+                          className={cn(
+                            "group rounded-lg p-2 text-center border transition-all duration-200 relative",
+                            canAccess && "cursor-pointer hover:scale-105 hover:shadow-md",
+                            !canAccess && isConfidential && "cursor-not-allowed opacity-75",
+                            day.isPast
+                              ? canAccess
+                                ? "bg-red-50 border-red-200 hover:bg-red-100"
+                                : "bg-red-50 border-red-300"
+                              : day.isToday
+                              ? canAccess
+                                ? "bg-orange-50 border-orange-200 hover:bg-orange-100"
+                                : "bg-orange-50 border-orange-300"
+                              : canAccess
+                              ? "bg-blue-50 border-blue-200 hover:bg-blue-100"
+                              : "bg-blue-50 border-blue-300"
+                          )}
+                          onClick={() => handleTaskClick(task)}
+                          style={{
+                            minHeight: '40px'
+                          }}
+                          title={
+                            !canAccess && isConfidential
+                              ? "Confidential task - Access restricted"
+                              : `${task.name} - ${formatStatusText(task.status)}${task.service ? ` (${task.service.name})` : ''}`
+                          }
+                        >
                         {/* Task Number */}
                         <div className="font-mono font-bold text-gray-900 text-sm">
                           {task.taskNumber}
@@ -364,8 +409,19 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
                             <AlertTriangleIcon className="h-2 w-2 text-red-500" />
                           </div>
                         )}
+
+                        {/* Confidential indicator */}
+                        {isConfidential && (
+                          <div className="absolute top-1 left-1">
+                            <Lock className={cn(
+                              "h-2 w-2",
+                              canAccess ? "text-blue-600" : "text-gray-500"
+                            )} />
+                          </div>
+                        )}
                       </div>
-                    ))}
+                      );
+                    })}
 
                     {/* Empty state for days with no tasks */}
                     {day.tasks.length === 0 && (
@@ -395,6 +451,10 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
                 <span>Overdue</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Lock className="h-3 w-3 text-blue-600" />
+                <span>Confidential</span>
               </div>
             </div>
           </div>
