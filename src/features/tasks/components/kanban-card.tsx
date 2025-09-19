@@ -3,7 +3,7 @@
 import React from "react";
 import { Draggable } from "@hello-pangea/dnd";
 import { PopulatedTask } from "../types";
-import { EyeOffIcon } from "@/lib/lucide-icons";
+import { EyeOffIcon, FileTextIcon } from "@/lib/lucide-icons";
 import { TaskDate } from "./task-date";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -51,15 +51,49 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
   const handleCardDoubleClick = (e: React.MouseEvent) => {
     // Prevent drag events from interfering
     e.stopPropagation();
-    
+
     // Validate task ID format before navigation
     if (!task.id || task.id.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(task.id)) {
       console.error("Invalid task ID format:", task.id);
       toast.error("Invalid task ID format");
       return;
     }
-    
+
     router.push(`/workspaces/${workspaceId}/tasks/${task.id}`);
+  };
+
+  const handleViewAttachment = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    if (!task?.attachmentId) return;
+
+    try {
+      // Open PDF in new tab for viewing
+      const response = await fetch(`/api/download/${task.attachmentId}`);
+      if (!response.ok) {
+        throw new Error("Failed to load attachment");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      // Open in new tab for viewing
+      window.open(url, '_blank');
+
+      // Clean up the URL after a short delay
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 1000);
+    } catch (error) {
+      console.error("Error viewing attachment:", error);
+      toast.error("Failed to load attachment");
+      // Fallback: trigger download instead
+      const link = document.createElement("a");
+      link.href = `/api/download/${task.attachmentId}`;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
 
@@ -83,13 +117,24 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
           {/* Card Header */}
           <div className="p-3 pb-2">
             {/* Task Number */}
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200">
-                {task.taskNumber}
-              </span>
-              {task.isConfidential && (
-                <div className="flex-shrink-0">
-                  <EyeOffIcon className="size-3 text-orange-600" />
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200">
+                  {task.taskNumber}
+                </span>
+                {task.isConfidential && (
+                  <div className="flex-shrink-0">
+                    <EyeOffIcon className="size-3 text-orange-600" />
+                  </div>
+                )}
+              </div>
+              {task.attachmentId && (
+                <div
+                  className="flex-shrink-0 cursor-pointer hover:bg-blue-50 p-1.5 rounded transition-colors"
+                  onClick={handleViewAttachment}
+                  title="View attachment"
+                >
+                  <FileTextIcon className="size-4 text-blue-600 hover:text-blue-700" />
                 </div>
               )}
             </div>
