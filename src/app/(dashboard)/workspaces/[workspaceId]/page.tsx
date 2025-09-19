@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter } from "next/navigation";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
@@ -18,6 +19,8 @@ import { TaskStatus, PopulatedTask } from "@/features/tasks/types";
 import { subDays, isAfter, isBefore } from "date-fns";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { UserInfoCard } from "@/components/user-info-card";
+import { TaskDeadlineTimeline } from "@/components/task-deadline-timeline";
+import { WorkspaceAnalytics } from "@/components/workspace-analytics";
 
 interface TaskStatusCount {
   [TaskStatus.BACKLOG]: number;
@@ -49,8 +52,19 @@ interface ServicePerformance {
 const WorkspaceIdPage = () => {
   const router = useRouter();
   const workspaceId = useWorkspaceId();
-  const [dateFrom, setDateFrom] = useState<Date | undefined>(subDays(new Date(), 30));
-  const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // Initialize dates after component mounts to avoid SSR issues
+  useEffect(() => {
+    if (!dateFrom) {
+      setDateFrom(subDays(new Date(), 30));
+    }
+    if (!dateTo) {
+      setDateTo(new Date());
+    }
+  }, [dateFrom, dateTo]);
 
   const { data: currentUser } = useCurrent();
   const { workspace, isLoading: isLoadingWorkspace, isAuthorized } = useWorkspaceAuthorization({ workspaceId });
@@ -162,7 +176,7 @@ const WorkspaceIdPage = () => {
   }
 
   return (
-    <div className="flex flex-col space-y-8 py-2">
+    <div className="flex flex-col space-y-6 py-2">
       {/* Header */}
       <div className="flex justify-between items-start ">
         <div className="space-y-2">
@@ -180,7 +194,7 @@ const WorkspaceIdPage = () => {
             </div>
           </div>
         </div>
-        
+
         {/* User Info */}
         <div className="hidden sm:flex items-start">
           <UserInfoCard />
@@ -189,8 +203,26 @@ const WorkspaceIdPage = () => {
 
       <DottedSeparator />
 
-      {/* Date Range Filter */}
-      <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full relative z-10">
+      {/* Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <BarChart3Icon className="h-4 w-4" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="deadlines" className="flex items-center gap-2">
+            <CalendarIcon className="h-4 w-4" />
+            Task Deadlines
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <TrendingUpIcon className="h-4 w-4" />
+            Analytics
+          </TabsTrigger>
+        </TabsList>
+
+      {/* Date Range Filter - Hide on Task Deadline tab */}
+      {activeTab !== "deadlines" && (
+        <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full relative z-10 mt-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
           <div className="flex items-center gap-2">
             <CalendarIcon className="size-4 text-blue-600" />
@@ -251,9 +283,12 @@ const WorkspaceIdPage = () => {
           </div>
         </div>
       </Card>
+      )}
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-0">
+      {/* Overview Tab Content */}
+      <TabsContent value="overview" className="space-y-6 mt-6">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-0">
         <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
           <div className="absolute inset-0 bg-black/5" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
@@ -325,8 +360,8 @@ const WorkspaceIdPage = () => {
         </Card>
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Charts Section - moved to overview tab */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Task Status Distribution */}
         <Card className="border-0 shadow-lg">
           <CardHeader className="pb-4">
@@ -577,6 +612,27 @@ const WorkspaceIdPage = () => {
           </CardContent>
         </Card>
       </div>
+      </TabsContent>
+
+      {/* Task Deadlines Tab Content */}
+      <TabsContent value="deadlines" className="mt-6">
+        <TaskDeadlineTimeline
+          tasks={filteredTasks}
+          workspaceId={workspaceId}
+        />
+      </TabsContent>
+
+      {/* Analytics Tab Content */}
+      <TabsContent value="analytics" className="mt-6">
+        <WorkspaceAnalytics
+          tasks={filteredTasks}
+          members={members?.documents as Member[] || []}
+          services={services?.documents || []}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+        />
+      </TabsContent>
+      </Tabs>
     </div>
   );
 };
