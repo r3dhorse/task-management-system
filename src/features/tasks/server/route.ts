@@ -570,9 +570,55 @@ const app = new Hono()
           return c.json({ error: "Unauthorized" }, 401);
         }
 
-        // Visitors can update tasks but cannot change status
-        if (member.role === MemberRole.VISITOR && status !== undefined) {
-          return c.json({ error: "Visitors cannot update task status" }, 403);
+        // Permission checks based on task status and user roles
+        const isCurrentAssignee = existingTask.assigneeId === member.id;
+        const isCurrentReviewer = existingTask.reviewerId === member.id;
+        const isFollower = existingTask.followers.some(f => f.id === member.id);
+        const isWorkspaceAdmin = member.role === MemberRole.ADMIN;
+        const isWorkspaceMember = member.role === MemberRole.MEMBER;
+        const isVisitor = member.role === MemberRole.VISITOR;
+
+        // Global restriction: Visitors cannot change task status at all
+        if (isVisitor && status !== undefined && status !== existingTask.status) {
+          return c.json({ error: "Visitors cannot change task status" }, 403);
+        }
+
+        // Check if user can update task based on current status
+        if (existingTask.status === TaskStatus.TODO) {
+          // TODO status: all workspace members and visitors can update (except status change for visitors, handled above)
+          // No additional restrictions needed - everyone can update TODO tasks
+        } else if (existingTask.status === TaskStatus.IN_REVIEW) {
+          // In Review status: only reviewer or workspace admin can update the task
+          if (!isCurrentReviewer && !isWorkspaceAdmin) {
+            return c.json({ error: "Only the assigned reviewer or workspace admin can update tasks in review status" }, 403);
+          }
+        } else if (existingTask.status === TaskStatus.IN_PROGRESS) {
+          // In Progress status: only assignee and followers (with member role) can update
+          // Workspace members who are followers can update
+          const canUpdate = isCurrentAssignee ||
+                           (isFollower && (isWorkspaceMember || isWorkspaceAdmin)) ||
+                           isWorkspaceAdmin;
+
+          if (!canUpdate) {
+            return c.json({ error: "Only the assignee and followers (with member role) can update tasks in progress" }, 403);
+          }
+        } else {
+          // For other statuses (BACKLOG, DONE, ARCHIVED), no special restrictions
+          // All members can update, visitors can update fields but not status (handled above)
+        }
+
+        // Assignee transfer restrictions
+        if (assigneeId !== undefined && assigneeId !== existingTask.assigneeId) {
+          // Allow self-assignment if task has no assignee
+          const isSelfAssignment = !existingTask.assigneeId && assigneeId === member.id;
+
+          // Allow assignment if:
+          // 1. User is workspace admin
+          // 2. User is the current assignee (can unassign or reassign)
+          // 3. Task has no assignee and user is assigning to themselves
+          if (!isWorkspaceAdmin && !isCurrentAssignee && !isSelfAssignment) {
+            return c.json({ error: "Only the current assignee or workspace admin can transfer task assignment" }, 403);
+          }
         }
 
         const updateData: {

@@ -6,44 +6,44 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Member, MemberRole } from "@/features/members/types";
-import { EyeIcon, UserCheckIcon } from "@/lib/lucide-icons";
+import { UserIcon, UserPlusIcon } from "@/lib/lucide-icons";
 import { useCurrent } from "@/features/auth/api/use-current";
 
-interface ReviewerSelectionModalProps {
+interface AssigneeSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (reviewerId: string) => void;
+  onConfirm: (assigneeId: string) => void;
   members: Member[];
   taskName: string;
   isLoading?: boolean;
 }
 
-export const ReviewerSelectionModal = ({
+export const AssigneeSelectionModal = ({
   isOpen,
   onClose,
   onConfirm,
   members,
   taskName,
   isLoading = false
-}: ReviewerSelectionModalProps) => {
-  const [selectedReviewerId, setSelectedReviewerId] = React.useState<string>("");
+}: AssigneeSelectionModalProps) => {
+  const [selectedAssigneeId, setSelectedAssigneeId] = React.useState<string>("");
   const { data: currentUser } = useCurrent();
 
   const handleConfirm = () => {
-    if (selectedReviewerId) {
-      onConfirm(selectedReviewerId);
+    if (selectedAssigneeId) {
+      onConfirm(selectedAssigneeId);
     }
   };
 
-  const eligibleReviewers = members.filter(member => member.role !== MemberRole.VISITOR);
+  const eligibleAssignees = members.filter(member => member.role !== MemberRole.VISITOR);
 
   // Set current user as default when modal opens
   React.useEffect(() => {
     if (isOpen) {
-      const currentMember = eligibleReviewers.find(member => member.userId === currentUser?.id);
-      setSelectedReviewerId(currentMember?.id || "");
+      const currentMember = eligibleAssignees.find(member => member.userId === currentUser?.id);
+      setSelectedAssigneeId(currentMember?.id || "");
     }
-  }, [isOpen, eligibleReviewers, currentUser?.id]);
+  }, [isOpen, eligibleAssignees, currentUser?.id]);
 
   return (
     <ResponsiveModal
@@ -53,11 +53,11 @@ export const ReviewerSelectionModal = ({
       <Card className="w-full max-w-md border-none shadow-none">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <EyeIcon className="w-5 h-5 text-purple-600" />
-            Select Reviewer
+            <UserIcon className="w-5 h-5 text-amber-600" />
+            Assign Task
           </CardTitle>
           <p className="text-sm text-gray-600">
-            This task is being moved to &quot;In Review&quot; status. Please select a reviewer to continue.
+            This task is being moved to &quot;In Progress&quot; status. Please assign it to a team member to continue.
           </p>
         </CardHeader>
 
@@ -68,21 +68,21 @@ export const ReviewerSelectionModal = ({
             <p className="text-sm text-gray-900 line-clamp-2">{taskName}</p>
           </div>
 
-          {/* Reviewer Selection */}
+          {/* Assignee Selection */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <UserCheckIcon className="w-4 h-4 text-purple-600" />
-              Select Reviewer
+              <UserPlusIcon className="w-4 h-4 text-amber-600" />
+              Select Assignee
             </label>
             <Select
-              value={selectedReviewerId}
-              onValueChange={setSelectedReviewerId}
+              value={selectedAssigneeId}
+              onValueChange={setSelectedAssigneeId}
             >
               <SelectTrigger className="h-10">
-                <SelectValue placeholder="Choose a reviewer..." />
+                <SelectValue placeholder="Choose an assignee..." />
               </SelectTrigger>
               <SelectContent>
-                {eligibleReviewers.map((member) => (
+                {eligibleAssignees.map((member) => (
                   <SelectItem key={member.id} value={member.id}>
                     <div className="flex items-center gap-2">
                       <span className="text-sm">👤 {member.name}</span>
@@ -110,10 +110,10 @@ export const ReviewerSelectionModal = ({
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={!selectedReviewerId || isLoading}
-              className="flex-1 bg-purple-600 hover:bg-purple-700"
+              disabled={!selectedAssigneeId || isLoading}
+              className="flex-1 bg-amber-600 hover:bg-amber-700"
             >
-              {isLoading ? "Setting..." : "Set Reviewer"}
+              {isLoading ? "Assigning..." : "Assign Task"}
             </Button>
           </div>
         </CardContent>

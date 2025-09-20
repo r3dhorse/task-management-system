@@ -8,9 +8,11 @@ import { useUpdateTask } from "../api/use-update-task";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight } from "@/lib/lucide-icons";
 import { ReviewerSelectionModal } from "./reviewer-selection-modal";
+import { AssigneeSelectionModal } from "./assignee-selection-modal";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Member } from "@/features/members/types";
+import { useCurrent } from "@/features/auth/api/use-current";
 import './drag-animations.css';
 
 interface KanbanBoardProps {
@@ -244,6 +246,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask({ showSuccessToast: false });
   const workspaceId = useWorkspaceId();
   const { data: membersData } = useGetMembers({ workspaceId });
+  const { data: currentUser } = useCurrent();
 
   // Track expanded state for each column
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({
@@ -269,6 +272,19 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
 
   // Reviewer selection modal state
   const [reviewerModal, setReviewerModal] = useState<{
+    isOpen: boolean;
+    taskId: string | null;
+    taskName: string;
+    pendingOperation: DropResult | null;
+  }>({
+    isOpen: false,
+    taskId: null,
+    taskName: "",
+    pendingOperation: null,
+  });
+
+  // Assignee selection modal state
+  const [assigneeModal, setAssigneeModal] = useState<{
     isOpen: boolean;
     taskId: string | null;
     taskName: string;
@@ -348,6 +364,18 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         if (!taskToMove) {
           console.error("Task not found for ID:", taskId);
           return;
+        }
+
+        // Auto-assign current user when moving to IN_PROGRESS without assignee
+        if (destStatus === TaskStatus.IN_PROGRESS && !taskToMove.assigneeId) {
+          // Find the current user's member in this workspace
+          const currentMember = (membersData?.documents as Member[] || []).find(
+            (member) => member.userId === currentUser?.id
+          );
+
+          if (currentMember) {
+            taskToMove.assigneeId = currentMember.id;
+          }
         }
 
         // Check if moving to IN_REVIEW and no reviewer is assigned
@@ -436,8 +464,50 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         });
       }
     },
-    [data, onChange, updateTask]
+    [data, onChange, updateTask, currentUser?.id, membersData?.documents]
   );
+
+  // Handle assignee selection confirmation
+  const handleAssigneeConfirm = React.useCallback((assigneeId: string) => {
+    const { pendingOperation, taskId } = assigneeModal;
+
+    if (!pendingOperation || !taskId) return;
+
+    const taskToMove = data.find((task) => task.id === taskId);
+    if (!taskToMove) return;
+
+    // Update the task with both status change and assignee assignment
+    const updatedTask = { ...taskToMove, status: TaskStatus.IN_PROGRESS, assigneeId };
+
+    // Update local state
+    const tasksToUpdate = data.map(task =>
+      task.id === taskId ? updatedTask : task
+    );
+    onChange?.(tasksToUpdate);
+
+    // Update via API
+    updateTask({
+      param: { taskId },
+      json: {
+        name: taskToMove.name,
+        status: TaskStatus.IN_PROGRESS,
+        serviceId: taskToMove.serviceId,
+        dueDate: taskToMove.dueDate || undefined,
+        assigneeId: assigneeId,
+        reviewerId: taskToMove.reviewerId || undefined,
+        description: taskToMove.description || undefined,
+        attachmentId: taskToMove.attachmentId || undefined,
+      }
+    });
+
+    // Close modal
+    setAssigneeModal({
+      isOpen: false,
+      taskId: null,
+      taskName: "",
+      pendingOperation: null,
+    });
+  }, [assigneeModal, data, onChange, updateTask]);
 
   // Handle reviewer selection confirmation
   const handleReviewerConfirm = React.useCallback((reviewerId: string) => {
@@ -480,6 +550,16 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
       pendingOperation: null,
     });
   }, [reviewerModal, data, onChange, updateTask]);
+
+  // Handle assignee modal cancellation
+  const handleAssigneeCancel = React.useCallback(() => {
+    setAssigneeModal({
+      isOpen: false,
+      taskId: null,
+      taskName: "",
+      pendingOperation: null,
+    });
+  }, []);
 
   // Handle reviewer modal cancellation
   const handleReviewerCancel = React.useCallback(() => {
@@ -602,6 +682,16 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
           </div>
         </div>
       )}
+
+      {/* Assignee Selection Modal */}
+      <AssigneeSelectionModal
+        isOpen={assigneeModal.isOpen}
+        onClose={handleAssigneeCancel}
+        onConfirm={handleAssigneeConfirm}
+        members={(membersData?.documents || []) as Member[]}
+        taskName={assigneeModal.taskName}
+        isLoading={isUpdating}
+      />
 
       {/* Reviewer Selection Modal */}
       <ReviewerSelectionModal

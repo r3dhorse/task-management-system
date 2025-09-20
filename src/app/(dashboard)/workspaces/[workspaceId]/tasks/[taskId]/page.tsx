@@ -976,7 +976,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
           dueDate: task.dueDate ? String(task.dueDate) : null,
           description: task.description,
           attachmentId: task.attachmentId,
-          followedIds: JSON.stringify(task.followers?.map(f => f.id) || []),
+          followedIds: task.followedIds || "[]",
           creatorId: task.creatorId,
           isConfidential: task.isConfidential,
           createdAt: String(task.createdAt),
