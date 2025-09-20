@@ -542,6 +542,7 @@ const app = new Hono()
           isConfidential,
         } = c.req.valid("json");
 
+
         const { taskId } = c.req.param();
 
         // Validate taskId format
@@ -572,7 +573,6 @@ const app = new Hono()
 
         // Permission checks based on task status and user roles
         const isCurrentAssignee = existingTask.assigneeId === member.id;
-        const isCurrentReviewer = existingTask.reviewerId === member.id;
         const isFollower = existingTask.followers.some(f => f.id === member.id);
         const isWorkspaceAdmin = member.role === MemberRole.ADMIN;
         const isWorkspaceMember = member.role === MemberRole.MEMBER;
@@ -588,10 +588,8 @@ const app = new Hono()
           // TODO status: all workspace members and visitors can update (except status change for visitors, handled above)
           // No additional restrictions needed - everyone can update TODO tasks
         } else if (existingTask.status === TaskStatus.IN_REVIEW) {
-          // In Review status: only reviewer or workspace admin can update the task
-          if (!isCurrentReviewer && !isWorkspaceAdmin) {
-            return c.json({ error: "Only the assigned reviewer or workspace admin can update tasks in review status" }, 403);
-          }
+          // In Review status: all workspace members can update the task
+          // No additional restrictions needed
         } else if (existingTask.status === TaskStatus.IN_PROGRESS) {
           // In Progress status: only assignee and followers (with member role) can update
           // Workspace members who are followers can update
@@ -695,6 +693,7 @@ const app = new Hono()
           }
         }
 
+
         // Detect what changed for history tracking
         const updatePayload = c.req.valid("json");
         // Convert Prisma task to match the expected format
@@ -735,6 +734,17 @@ const app = new Hono()
                 }
               }
             },
+            reviewer: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  }
+                }
+              }
+            },
             followers: {
               include: {
                 user: {
@@ -748,6 +758,7 @@ const app = new Hono()
             }
           }
         });
+
 
         // Create task assignment notification if assignee changed
         const assigneeChange = changes.find(change => change.field === 'assigneeId');
@@ -852,7 +863,7 @@ const app = new Hono()
                   } else {
                     oldValue = "Unassigned";
                   }
-                  
+
                   if (change.newValue) {
                     try {
                       const newMember = await prisma.member.findUnique({
@@ -865,6 +876,37 @@ const app = new Hono()
                     }
                   } else {
                     newValue = "Unassigned";
+                  }
+                  break;
+                case "reviewerId":
+                  action = TaskHistoryAction.REVIEWER_CHANGED;
+                  // Resolve reviewer IDs to names
+                  if (change.oldValue) {
+                    try {
+                      const oldMember = await prisma.member.findUnique({
+                        where: { id: change.oldValue },
+                        include: { user: true }
+                      });
+                      oldValue = oldMember?.user.name || "Unknown User";
+                    } catch {
+                      oldValue = "Unknown User";
+                    }
+                  } else {
+                    oldValue = "No Reviewer";
+                  }
+
+                  if (change.newValue) {
+                    try {
+                      const newMember = await prisma.member.findUnique({
+                        where: { id: change.newValue },
+                        include: { user: true }
+                      });
+                      newValue = newMember?.user.name || "Unknown User";
+                    } catch {
+                      newValue = "Unknown User";
+                    }
+                  } else {
+                    newValue = "No Reviewer";
                   }
                   break;
                 case "serviceId":

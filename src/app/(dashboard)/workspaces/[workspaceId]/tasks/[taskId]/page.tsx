@@ -410,6 +410,10 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     (member) => member.id === task.assigneeId
   );
 
+  const reviewer = members?.documents.find(
+    (member) => member.id === task.reviewerId
+  );
+
   const service = services?.documents.find(
     (serv) => serv.id === task.serviceId
   );
@@ -747,6 +751,20 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   </p>
                 </div>
               </div>
+
+              {task.status === 'IN_REVIEW' && (
+                <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                  <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <UserIcon className="size-4 text-purple-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Reviewer</p>
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {reviewer?.name || "No Reviewer"}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
                 <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">

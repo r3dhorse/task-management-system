@@ -61,6 +61,15 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
     });
   }
 
+  // Reviewer change - handle empty strings vs null/undefined consistently
+  if (newTask.reviewerId !== undefined && normalizeValue(newTask.reviewerId) !== normalizeValue(oldTask.reviewerId)) {
+    changes.push({
+      field: "reviewerId",
+      oldValue: oldTask.reviewerId || undefined,
+      newValue: newTask.reviewerId || undefined,
+      displayName: "Reviewer"
+    });
+  }
 
   // Service change
   if (newTask.serviceId !== undefined && normalizeValue(newTask.serviceId) !== normalizeValue(oldTask.serviceId)) {
@@ -161,7 +170,10 @@ export function formatHistoryMessage(
     
     case TaskHistoryAction.ASSIGNEE_CHANGED:
       return `${userName} changed assignee from ${formatValue(oldValue, "Unassigned")} to ${formatValue(newValue, "Unassigned")}`;
-    
+
+    case TaskHistoryAction.REVIEWER_CHANGED:
+      return `${userName} changed reviewer from ${formatValue(oldValue, "No Reviewer")} to ${formatValue(newValue, "No Reviewer")}`;
+
     case TaskHistoryAction.SERVICE_CHANGED:
       return `${userName} moved task to service ${formatValue(newValue)}`;
     
@@ -282,6 +294,8 @@ export function getActionColor(action: TaskHistoryAction, field?: string): strin
       return "bg-blue-500";
     case TaskHistoryAction.ASSIGNEE_CHANGED:
       return "bg-purple-500";
+    case TaskHistoryAction.REVIEWER_CHANGED:
+      return "bg-purple-600";
     case TaskHistoryAction.SERVICE_CHANGED:
       return "bg-indigo-500";
     case TaskHistoryAction.DUE_DATE_CHANGED:

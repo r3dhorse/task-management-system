@@ -24,12 +24,17 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
   const { data: members } = useGetMembers({ workspaceId });
 
   // Find the single assignee (not multiple assignees)
-  const assignee = members?.documents?.find((member) => 
+  const assignee = members?.documents?.find((member) =>
     member.id === task.assigneeId
   );
 
+  // Find the reviewer
+  const reviewer = members?.documents?.find((member) =>
+    member.id === task.reviewerId
+  );
+
   // Find the creator from members using creatorId (which is a userId)
-  const creator = members?.documents?.find((member) => 
+  const creator = members?.documents?.find((member) =>
     (member as Member).userId === task.creatorId
   );
 
@@ -183,6 +188,24 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
                 )}
               </div>
             </div>
+
+            {/* Reviewer - only show when status is IN_REVIEW */}
+            {task.status === 'IN_REVIEW' && (
+              <div className="mb-2">
+                <div className="flex items-center gap-1 text-xs">
+                  <span className="text-gray-500 font-medium">Reviewer:</span>
+                  {reviewer ? (
+                    <span className="text-purple-600 font-medium break-words">
+                      {reviewer.name}
+                    </span>
+                  ) : (
+                    <span className="text-neutral-400 font-medium">
+                      No Reviewer
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Requested By */}
             {creator && (

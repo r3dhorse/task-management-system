@@ -19,7 +19,6 @@ const app = new Hono()
     "/:taskId",
     sessionMiddleware,
     async (c) => {
-      console.log("Task history GET request for taskId:", c.req.param().taskId);
       const prisma = c.get("prisma");
       const user = c.get("user");
       const { taskId } = c.req.param();
@@ -49,7 +48,6 @@ const app = new Hono()
       }
 
       // Get history entries
-      console.log("Fetching history from database for taskId:", taskId);
       const history = await prisma.taskHistory.findMany({
         where: { taskId },
         include: {
@@ -63,8 +61,6 @@ const app = new Hono()
         orderBy: { createdAt: 'desc' },
         take: 100
       });
-      
-      console.log("Found history entries:", history.length);
       
       // Transform to match expected format
       const transformedHistory = history.map(entry => ({

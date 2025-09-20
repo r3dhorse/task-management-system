@@ -7,7 +7,6 @@ import { KanbanCard } from "./kanban-card";
 import { useUpdateTask } from "../api/use-update-task";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight } from "@/lib/lucide-icons";
-import { ReviewerSelectionModal } from "./reviewer-selection-modal";
 import { AssigneeSelectionModal } from "./assignee-selection-modal";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -270,18 +269,6 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     targetColumnId: null,
   });
 
-  // Reviewer selection modal state
-  const [reviewerModal, setReviewerModal] = useState<{
-    isOpen: boolean;
-    taskId: string | null;
-    taskName: string;
-    pendingOperation: DropResult | null;
-  }>({
-    isOpen: false,
-    taskId: null,
-    taskName: "",
-    pendingOperation: null,
-  });
 
   // Assignee selection modal state
   const [assigneeModal, setAssigneeModal] = useState<{
@@ -378,16 +365,6 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
           }
         }
 
-        // Check if moving to IN_REVIEW and no reviewer is assigned
-        if (destStatus === TaskStatus.IN_REVIEW && !taskToMove.reviewerId) {
-          setReviewerModal({
-            isOpen: true,
-            taskId: taskToMove.id,
-            taskName: taskToMove.name,
-            pendingOperation: result,
-          });
-          return;
-        }
 
         taskToMove.status = destStatus;
 
@@ -509,47 +486,6 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     });
   }, [assigneeModal, data, onChange, updateTask]);
 
-  // Handle reviewer selection confirmation
-  const handleReviewerConfirm = React.useCallback((reviewerId: string) => {
-    const { pendingOperation, taskId } = reviewerModal;
-
-    if (!pendingOperation || !taskId) return;
-
-    const taskToMove = data.find((task) => task.id === taskId);
-    if (!taskToMove) return;
-
-    // Update the task with both status change and reviewer assignment
-    const updatedTask = { ...taskToMove, status: TaskStatus.IN_REVIEW, reviewerId };
-
-    // Update local state
-    const tasksToUpdate = data.map(task =>
-      task.id === taskId ? updatedTask : task
-    );
-    onChange?.(tasksToUpdate);
-
-    // Update via API
-    updateTask({
-      param: { taskId },
-      json: {
-        name: taskToMove.name,
-        status: TaskStatus.IN_REVIEW,
-        serviceId: taskToMove.serviceId,
-        dueDate: taskToMove.dueDate || undefined,
-        assigneeId: taskToMove.assigneeId || undefined,
-        reviewerId: reviewerId,
-        description: taskToMove.description || undefined,
-        attachmentId: taskToMove.attachmentId || undefined,
-      }
-    });
-
-    // Close modal
-    setReviewerModal({
-      isOpen: false,
-      taskId: null,
-      taskName: "",
-      pendingOperation: null,
-    });
-  }, [reviewerModal, data, onChange, updateTask]);
 
   // Handle assignee modal cancellation
   const handleAssigneeCancel = React.useCallback(() => {
@@ -561,15 +497,6 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     });
   }, []);
 
-  // Handle reviewer modal cancellation
-  const handleReviewerCancel = React.useCallback(() => {
-    setReviewerModal({
-      isOpen: false,
-      taskId: null,
-      taskName: "",
-      pendingOperation: null,
-    });
-  }, []);
 
   const tasks = React.useMemo(() => {
     const grouped: Record<string, Task[]> = {
@@ -693,15 +620,6 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         isLoading={isUpdating}
       />
 
-      {/* Reviewer Selection Modal */}
-      <ReviewerSelectionModal
-        isOpen={reviewerModal.isOpen}
-        onClose={handleReviewerCancel}
-        onConfirm={handleReviewerConfirm}
-        members={(membersData?.documents || []) as Member[]}
-        taskName={reviewerModal.taskName}
-        isLoading={isUpdating}
-      />
     </div>
   );
 };

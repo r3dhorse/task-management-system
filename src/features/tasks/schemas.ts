@@ -19,14 +19,10 @@ export const createTaskSchema = z.object({
   if (data.isConfidential && (!data.assigneeId || data.assigneeId === "unassigned" || data.assigneeId === "")) {
     return false;
   }
-  // If task status is IN_REVIEW, reviewer must be required and not "unassigned"
-  if (data.status === TaskStatus.IN_REVIEW && (!data.reviewerId || data.reviewerId === "unassigned" || data.reviewerId === "")) {
-    return false;
-  }
   return true;
 }, {
-  message: "Reviewer is required for tasks in review status",
-  path: ["reviewerId"], // This will show the error on the reviewerId field
+  message: "Assignee is required for confidential tasks",
+  path: ["assigneeId"],
 });
 
 // Schema for updating tasks (all fields optional except validation)
@@ -47,12 +43,8 @@ export const updateTaskSchema = z.object({
   if (data.isConfidential && (!data.assigneeId || data.assigneeId === "unassigned" || data.assigneeId === "")) {
     return false;
   }
-  // If task status is IN_REVIEW, reviewer must be required and not "unassigned"
-  if (data.status === TaskStatus.IN_REVIEW && (!data.reviewerId || data.reviewerId === "unassigned" || data.reviewerId === "")) {
-    return false;
-  }
   return true;
 }, {
-  message: "Reviewer is required for tasks in review status",
-  path: ["reviewerId"],
+  message: "Assignee is required for confidential tasks",
+  path: ["assigneeId"],
 });

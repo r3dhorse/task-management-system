@@ -21,6 +21,7 @@ import { useMarkNotificationsRead } from "../api/use-mark-notifications-read";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { NotificationsModal } from "./notifications-modal";
 
 interface Notification {
   id: string;
@@ -48,6 +49,7 @@ interface Notification {
 export const NotificationDropdown = () => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const { data: notifications, isLoading: isLoadingNotifications } = useGetNotifications();
   const { data: countData } = useGetNotificationCount();
   const { mutate: markAsRead } = useMarkNotificationsRead();
@@ -103,6 +105,7 @@ export const NotificationDropdown = () => {
   };
 
   return (
+    <>
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button 
@@ -244,7 +247,7 @@ export const NotificationDropdown = () => {
                 className="w-full text-sm text-gray-600 hover:text-gray-900"
                 onClick={() => {
                   setIsOpen(false);
-                  router.push("/notifications");
+                  setModalOpen(true);
                 }}
               >
                 View all notifications
@@ -254,5 +257,12 @@ export const NotificationDropdown = () => {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+
+    {/* Notifications Modal */}
+    <NotificationsModal
+      open={modalOpen}
+      onOpenChange={setModalOpen}
+    />
+  </>
   );
 };
