@@ -1,14 +1,16 @@
-import { useMemo, useState, useEffect } from "react";
-import { format, isToday, isTomorrow, addDays, isSameDay, isAfter, isBefore, startOfDay, endOfDay, eachDayOfInterval, startOfWeek, endOfWeek } from "date-fns";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { format, isToday, addDays, isSameDay, isBefore, startOfDay, eachDayOfInterval } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CalendarIcon, Clock3Icon, AlertTriangleIcon, CheckCircle2Icon, ChevronRight, Calendar, CalendarDays, Clock, ChevronLeft, Lock } from "@/lib/lucide-icons";
+import { CalendarIcon, AlertTriangleIcon, ChevronRight, ChevronLeft, Lock } from "@/lib/lucide-icons";
 import { TaskStatus, PopulatedTask } from "@/features/tasks/types";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useCurrent } from "@/features/auth/api/use-current";
+import { useGetMembers } from "@/features/members/api/use-get-members";
+import { Member } from "@/features/members/types";
 
 interface TaskDeadlineTimelineProps {
   tasks: PopulatedTask[];
@@ -28,7 +30,16 @@ interface TimelineDay {
 export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelineProps) => {
   const router = useRouter();
   const { data: currentUser } = useCurrent();
+  const { data: members } = useGetMembers({ workspaceId });
   const [dateOffset, setDateOffset] = useState(0); // Days to offset from today
+
+  // Get current user's member record
+  const currentMember = useMemo(() => {
+    if (!currentUser || !members?.documents) return null;
+    return members.documents.find(member =>
+      (member as Member).userId === currentUser.id
+    ) as Member | undefined;
+  }, [currentUser, members]);
 
   // Navigation limits: 4 weeks backward and forward
   const MAX_WEEKS_BACKWARD = 4;
@@ -36,27 +47,54 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
   const MIN_OFFSET = -MAX_WEEKS_BACKWARD * 7; // -28 days
   const MAX_OFFSET = MAX_WEEKS_FORWARD * 7;   // +28 days
 
-  // Helper function to check if user can access confidential task
-  const canAccessConfidentialTask = (task: PopulatedTask) => {
-    if (!task.isConfidential) return true;
-    if (!currentUser) return false;
+  // Helper function to check if user can access task
+  const canAccessTask = (task: PopulatedTask) => {
+    if (!currentUser || !currentMember) {
+      return false;
+    }
 
-    // Task creator can always access
-    if (task.creatorId === currentUser.id) return true;
+    // Always allow access for non-confidential tasks
+    if (!task.isConfidential) {
+      return true;
+    }
 
-    // Assignee can always access
-    if (task.assigneeId === currentUser.id) return true;
+    // For confidential tasks, check if user has access
+    // Check if user is the creator (creator ID is a user ID)
+    if (task.creatorId && task.creatorId === currentUser.id) {
+      return true;
+    }
 
-    // Followers can access
+    // Check if user is the assignee (assignee ID is a member ID)
+    if (task.assigneeId && task.assigneeId === currentMember.id) {
+      return true;
+    }
+
+    // Check if user is a follower (follower IDs are member IDs)
     if (task.followedIds) {
       try {
-        const followers = JSON.parse(task.followedIds) as string[];
-        if (followers.includes(currentUser.id)) return true;
+        // Handle both string and already parsed array
+        let followers: string[] = [];
+
+        if (typeof task.followedIds === 'string' && task.followedIds.trim() !== '') {
+          // Try to parse the JSON string
+          const parsed = JSON.parse(task.followedIds);
+          if (Array.isArray(parsed)) {
+            followers = parsed;
+          }
+        } else if (Array.isArray(task.followedIds)) {
+          followers = task.followedIds as string[];
+        }
+
+        // Check if current member is in the followers list (using member ID)
+        if (followers.length > 0 && followers.includes(currentMember.id)) {
+          return true;
+        }
       } catch {
-        // If parsing fails, treat as no followers
+        console.error('Error parsing task followers:', { taskId: task.id, followedIds: task.followedIds });
       }
     }
 
+    // Confidential task and user doesn't have access
     return false;
   };
 
@@ -103,17 +141,17 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
   }, [tasks]);
 
   // Navigation functions with limits
-  const goToPreviousWeek = () => {
+  const goToPreviousWeek = useCallback(() => {
     setDateOffset(prev => Math.max(prev - 7, MIN_OFFSET));
-  };
+  }, [MIN_OFFSET]);
 
-  const goToNextWeek = () => {
+  const goToNextWeek = useCallback(() => {
     setDateOffset(prev => Math.min(prev + 7, MAX_OFFSET));
-  };
+  }, [MAX_OFFSET]);
 
-  const goToToday = () => {
+  const goToToday = useCallback(() => {
     setDateOffset(0);
-  };
+  }, []);
 
   // Check if navigation buttons should be disabled
   const isPreviousDisabled = dateOffset <= MIN_OFFSET;
@@ -140,11 +178,11 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isPreviousDisabled, isNextDisabled]);
+  }, [isPreviousDisabled, isNextDisabled, goToNextWeek, goToPreviousWeek, goToToday]);
 
   const handleTaskClick = (task: PopulatedTask) => {
-    if (!canAccessConfidentialTask(task)) {
-      return; // Prevent navigation for unauthorized confidential tasks
+    if (!canAccessTask(task)) {
+      return; // Prevent navigation for unauthorized tasks
     }
     router.push(`/workspaces/${workspaceId}/tasks/${task.id}`);
   };
@@ -203,7 +241,7 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
             </div>
             <h3 className="font-medium text-gray-900 mb-2">No Upcoming Deadlines</h3>
             <p className="text-sm text-gray-500 max-w-sm mx-auto">
-              All tasks are either completed or don't have due dates set. Great work keeping up with deadlines!
+              All tasks are either completed or don&apos;t have due dates set. Great work keeping up with deadlines!
             </p>
           </div>
         </CardContent>
@@ -300,12 +338,12 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
           </div>
         </div>
 
-        <ScrollArea className="h-96">
+        <ScrollArea className="h-[500px]">
           {/* Timeline Container */}
           <div className="relative">
             {/* Date Headers */}
             <div className="flex gap-2 mb-4 pb-4 border-b">
-              {timelineData.map((day, index) => (
+              {timelineData.map((day, _index) => (
                 <div
                   key={day.date.toISOString()}
                   className={cn(
@@ -339,9 +377,9 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
             <div className="relative min-h-[200px]">
               {/* Grid Lines */}
               <div className="absolute inset-0 flex gap-2">
-                {timelineData.map((day, index) => (
+                {timelineData.map((day, idx) => (
                   <div
-                    key={`grid-${index}`}
+                    key={`grid-${idx}`}
                     className={cn(
                       "flex-1 border-l border-gray-100",
                       day.isToday && "border-blue-200 bg-blue-50/30"
@@ -354,8 +392,8 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
               <div className="relative flex gap-2">
                 {timelineData.map((day, dayIndex) => (
                   <div key={`tasks-${dayIndex}`} className="flex-1 min-w-[80px] space-y-2">
-                    {day.tasks.map((task, taskIndex) => {
-                      const canAccess = canAccessConfidentialTask(task);
+                    {day.tasks.map((task) => {
+                      const canAccess = canAccessTask(task);
                       const isConfidential = task.isConfidential;
 
                       return (
@@ -382,8 +420,8 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
                             minHeight: '40px'
                           }}
                           title={
-                            !canAccess && isConfidential
-                              ? "Confidential task - Access restricted"
+                            !canAccess
+                              ? "Access restricted"
                               : `${task.name} - ${formatStatusText(task.status)}${task.service ? ` (${task.service.name})` : ''}`
                           }
                         >

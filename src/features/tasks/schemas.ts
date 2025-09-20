@@ -8,6 +8,7 @@ export const createTaskSchema = z.object({
   serviceId: z.string().trim().min(1, "Service is required"),
   dueDate: z.string().optional(),
   assigneeId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
+  reviewerId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   description: z.string().optional(),
   attachmentId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   followedIds: z.string().optional(), // JSON string array of follower IDs
@@ -18,10 +19,14 @@ export const createTaskSchema = z.object({
   if (data.isConfidential && (!data.assigneeId || data.assigneeId === "unassigned" || data.assigneeId === "")) {
     return false;
   }
+  // If task status is IN_REVIEW, reviewer must be required and not "unassigned"
+  if (data.status === TaskStatus.IN_REVIEW && (!data.reviewerId || data.reviewerId === "unassigned" || data.reviewerId === "")) {
+    return false;
+  }
   return true;
 }, {
-  message: "Assignee is required for confidential tasks",
-  path: ["assigneeId"], // This will show the error on the assigneeId field
+  message: "Reviewer is required for tasks in review status",
+  path: ["reviewerId"], // This will show the error on the reviewerId field
 });
 
 // Schema for updating tasks (all fields optional except validation)
@@ -31,6 +36,7 @@ export const updateTaskSchema = z.object({
   serviceId: z.string().trim().min(1, "Service is required").optional(),
   dueDate: z.string().optional(),
   assigneeId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
+  reviewerId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   description: z.string().optional(),
   attachmentId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   followedIds: z.string().optional(),
@@ -41,8 +47,12 @@ export const updateTaskSchema = z.object({
   if (data.isConfidential && (!data.assigneeId || data.assigneeId === "unassigned" || data.assigneeId === "")) {
     return false;
   }
+  // If task status is IN_REVIEW, reviewer must be required and not "unassigned"
+  if (data.status === TaskStatus.IN_REVIEW && (!data.reviewerId || data.reviewerId === "unassigned" || data.reviewerId === "")) {
+    return false;
+  }
   return true;
 }, {
-  message: "Assignee is required for confidential tasks",
-  path: ["assigneeId"],
+  message: "Reviewer is required for tasks in review status",
+  path: ["reviewerId"],
 });

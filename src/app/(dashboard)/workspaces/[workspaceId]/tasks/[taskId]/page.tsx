@@ -46,6 +46,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     description: "",
     status: "" as TaskStatus,
     assigneeId: "unassigned",
+    reviewerId: "unassigned",
     serviceId: "",
     dueDate: new Date(),
     attachmentId: "",
@@ -453,6 +454,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         description: task.description || "",
         status: task.status as TaskStatus,
         assigneeId: task.assigneeId || "unassigned",
+        reviewerId: task.reviewerId || "unassigned",
         serviceId: task.serviceId,
         dueDate: task.dueDate ? new Date(task.dueDate) : new Date(),
         attachmentId: task.attachmentId || "",
@@ -470,6 +472,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       name: string;
       description: string;
       assigneeId: string;
+      reviewerId: string;
       serviceId: string;
       dueDate: string;
       attachmentId: string;
@@ -480,6 +483,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       name: editForm.name,
       description: editForm.description,
       assigneeId: editForm.assigneeId === "unassigned" ? "" : editForm.assigneeId,
+      reviewerId: editForm.reviewerId === "unassigned" ? "" : editForm.reviewerId,
       serviceId: editForm.serviceId,
       dueDate: editForm.dueDate.toISOString(),
       attachmentId: editForm.attachmentId,
@@ -966,6 +970,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
           status: task.status as TaskStatus,
           workspaceId: task.workspaceId,
           assigneeId: task.assigneeId,
+          reviewerId: task.reviewerId || null,
           serviceId: task.serviceId,
           position: task.position,
           dueDate: task.dueDate ? String(task.dueDate) : null,

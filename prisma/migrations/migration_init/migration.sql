@@ -5,10 +5,13 @@ CREATE TYPE "public"."MemberRole" AS ENUM ('ADMIN', 'MEMBER', 'VISITOR');
 CREATE TYPE "public"."TaskStatus" AS ENUM ('BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'ARCHIVED');
 
 -- CreateEnum
-CREATE TYPE "public"."TaskHistoryAction" AS ENUM ('CREATED', 'UPDATED', 'STATUS_CHANGED', 'ASSIGNEE_CHANGED', 'SERVICE_CHANGED', 'DUE_DATE_CHANGED', 'ATTACHMENT_ADDED', 'ATTACHMENT_REMOVED', 'ATTACHMENT_VIEWED', 'DESCRIPTION_UPDATED', 'NAME_CHANGED', 'FOLLOWERS_CHANGED', 'CONFIDENTIAL_CHANGED', 'ARCHIVED');
+CREATE TYPE "public"."TaskHistoryAction" AS ENUM ('CREATED', 'UPDATED', 'STATUS_CHANGED', 'ASSIGNEE_CHANGED', 'REVIEWER_CHANGED', 'SERVICE_CHANGED', 'DUE_DATE_CHANGED', 'ATTACHMENT_ADDED', 'ATTACHMENT_REMOVED', 'ATTACHMENT_VIEWED', 'DESCRIPTION_UPDATED', 'NAME_CHANGED', 'REVIEW_SUBMITTED', 'FOLLOWERS_CHANGED', 'CONFIDENTIAL_CHANGED', 'ARCHIVED');
 
 -- CreateEnum
 CREATE TYPE "public"."NotificationType" AS ENUM ('MENTION', 'NEW_MESSAGE', 'TASK_ASSIGNED', 'TASK_UPDATE', 'TASK_COMMENT');
+
+-- CreateEnum
+CREATE TYPE "public"."ReviewStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CHANGES_REQUESTED');
 
 -- CreateTable
 CREATE TABLE "public"."Account" (
@@ -113,6 +116,7 @@ CREATE TABLE "public"."tasks" (
     "assigneeId" TEXT,
     "serviceId" TEXT NOT NULL,
     "creatorId" TEXT,
+    "reviewerId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -124,6 +128,7 @@ CREATE TABLE "public"."task_history" (
     "id" TEXT NOT NULL,
     "taskId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "memberId" TEXT,
     "action" "public"."TaskHistoryAction" NOT NULL,
     "field" TEXT,
     "oldValue" TEXT,
@@ -139,6 +144,7 @@ CREATE TABLE "public"."task_messages" (
     "id" TEXT NOT NULL,
     "taskId" TEXT NOT NULL,
     "senderId" TEXT NOT NULL,
+    "senderMemberId" TEXT,
     "workspaceId" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "attachmentId" TEXT,
@@ -180,6 +186,19 @@ CREATE TABLE "public"."notifications" (
     "readAt" TIMESTAMP(3),
 
     CONSTRAINT "notifications_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "public"."task_reviews" (
+    "id" TEXT NOT NULL,
+    "taskId" TEXT NOT NULL,
+    "reviewerId" TEXT NOT NULL,
+    "status" "public"."ReviewStatus" NOT NULL DEFAULT 'PENDING',
+    "comment" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "task_reviews_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -254,6 +273,9 @@ CREATE INDEX "tasks_serviceId_idx" ON "public"."tasks"("serviceId");
 CREATE INDEX "tasks_assigneeId_idx" ON "public"."tasks"("assigneeId");
 
 -- CreateIndex
+CREATE INDEX "tasks_reviewerId_idx" ON "public"."tasks"("reviewerId");
+
+-- CreateIndex
 CREATE INDEX "tasks_status_idx" ON "public"."tasks"("status");
 
 -- CreateIndex
@@ -314,6 +336,18 @@ CREATE INDEX "notifications_createdAt_idx" ON "public"."notifications"("createdA
 CREATE INDEX "notifications_userId_isRead_createdAt_idx" ON "public"."notifications"("userId", "isRead", "createdAt");
 
 -- CreateIndex
+CREATE INDEX "task_reviews_taskId_idx" ON "public"."task_reviews"("taskId");
+
+-- CreateIndex
+CREATE INDEX "task_reviews_reviewerId_idx" ON "public"."task_reviews"("reviewerId");
+
+-- CreateIndex
+CREATE INDEX "task_reviews_status_idx" ON "public"."task_reviews"("status");
+
+-- CreateIndex
+CREATE INDEX "task_reviews_createdAt_idx" ON "public"."task_reviews"("createdAt");
+
+-- CreateIndex
 CREATE INDEX "_TaskFollowers_B_index" ON "public"."_TaskFollowers"("B");
 
 -- AddForeignKey
@@ -347,16 +381,25 @@ ALTER TABLE "public"."tasks" ADD CONSTRAINT "tasks_serviceId_fkey" FOREIGN KEY (
 ALTER TABLE "public"."tasks" ADD CONSTRAINT "tasks_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."tasks" ADD CONSTRAINT "tasks_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "public"."members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."task_history" ADD CONSTRAINT "task_history_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "public"."tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."task_history" ADD CONSTRAINT "task_history_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."task_history" ADD CONSTRAINT "task_history_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "public"."members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."task_messages" ADD CONSTRAINT "task_messages_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "public"."tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."task_messages" ADD CONSTRAINT "task_messages_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."task_messages" ADD CONSTRAINT "task_messages_senderMemberId_fkey" FOREIGN KEY ("senderMemberId") REFERENCES "public"."members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."task_messages" ADD CONSTRAINT "task_messages_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "public"."workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -378,6 +421,12 @@ ALTER TABLE "public"."notifications" ADD CONSTRAINT "notifications_messageId_fke
 
 -- AddForeignKey
 ALTER TABLE "public"."notifications" ADD CONSTRAINT "notifications_mentionedBy_fkey" FOREIGN KEY ("mentionedBy") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."task_reviews" ADD CONSTRAINT "task_reviews_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "public"."tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."task_reviews" ADD CONSTRAINT "task_reviews_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "public"."members"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."users" ADD CONSTRAINT "users_defaultWorkspaceId_fkey" FOREIGN KEY ("defaultWorkspaceId") REFERENCES "public"."workspaces"("id") ON DELETE SET NULL ON UPDATE CASCADE;

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { loginSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from "../schemas";
-import { deleteCookie, setCookie } from "hono/cookie"
+import { deleteCookie } from "hono/cookie"
 import { AUTH_COOKIE } from "../constants";
 import { sessionMiddleware } from "@/lib/session-middleware";
 import { forgotPasswordRateLimiter, formatRemainingTime } from "@/lib/rate-limiter";

@@ -71,7 +71,7 @@ const app = new Hono()
         id: entry.id,
         taskId: entry.taskId,
         userId: entry.userId,
-        userName: entry.user.name,
+        userName: entry.user?.name || 'Unknown User',
         action: entry.action,
         field: entry.field,
         oldValue: entry.oldValue,

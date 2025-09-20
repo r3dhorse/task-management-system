@@ -67,7 +67,7 @@ export const DefaultWorkspaceModal = ({ isOpen, onClose }: DefaultWorkspaceModal
         throw new Error(error.error || "Failed to update default workspace");
       }
 
-      const data = await response.json();
+      await response.json();
       toast.success("Default workspace updated successfully");
       setCurrentDefaultId(selectedWorkspaceId);
       onClose();

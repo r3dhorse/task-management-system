@@ -6,7 +6,7 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 # Update npm and install production dependencies + tsx for seeding
 RUN npm install -g npm@11.6.0 && npm ci --omit=dev --legacy-peer-deps && npm install tsx --legacy-peer-deps
 
@@ -15,7 +15,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 
 # Update npm and install all dependencies (including devDependencies)
 RUN npm install -g npm@11.6.0 && npm ci --legacy-peer-deps

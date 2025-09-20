@@ -261,6 +261,17 @@ const app = new Hono()
               }
             }
           },
+          reviewer: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
           followers: {
             include: {
               user: {
@@ -318,6 +329,7 @@ const app = new Hono()
           serviceId,
           dueDate,
           assigneeId,
+          reviewerId,
           description,
           attachmentId,
           followedIds,
@@ -331,6 +343,7 @@ const app = new Hono()
           serviceId,
           dueDate,
           assigneeId,
+          reviewerId,
           description,
           attachmentId,
           followedIds,
@@ -407,6 +420,7 @@ const app = new Hono()
             serviceId,
             dueDate: dueDate ? new Date(dueDate) : null,
             assigneeId: assigneeId === 'undefined' || !assigneeId ? null : assigneeId,
+            reviewerId: reviewerId === 'undefined' || !reviewerId ? null : reviewerId,
             description,
             position: newPosition,
             attachmentId: attachmentId === 'undefined' || !attachmentId ? null : attachmentId,
@@ -419,6 +433,17 @@ const app = new Hono()
           include: {
             service: true,
             assignee: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  }
+                }
+              }
+            },
+            reviewer: {
               include: {
                 user: {
                   select: {
@@ -510,6 +535,7 @@ const app = new Hono()
           serviceId,
           dueDate,
           assigneeId,
+          reviewerId,
           description,
           attachmentId,
           followedIds,
@@ -554,6 +580,7 @@ const app = new Hono()
           serviceId?: string;
           dueDate?: Date | null;
           assigneeId?: string | null;
+          reviewerId?: string | null;
           description?: string;
           attachmentId?: string | null;
           isConfidential?: boolean;
@@ -566,6 +593,7 @@ const app = new Hono()
         if (serviceId !== undefined) updateData.serviceId = serviceId;
         if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
         if (assigneeId !== undefined) updateData.assigneeId = assigneeId === 'undefined' || !assigneeId ? null : assigneeId;
+        if (reviewerId !== undefined) updateData.reviewerId = reviewerId === 'undefined' || !reviewerId ? null : reviewerId;
         if (description !== undefined) updateData.description = description;
         if (attachmentId !== undefined) updateData.attachmentId = attachmentId === 'undefined' || !attachmentId ? null : attachmentId;
         if (isConfidential !== undefined) updateData.isConfidential = isConfidential;
@@ -631,6 +659,7 @@ const app = new Hono()
           status: existingTask.status as TaskStatus,
           workspaceId: existingTask.workspaceId,
           assigneeId: existingTask.assigneeId,
+          reviewerId: existingTask.reviewerId,
           serviceId: existingTask.serviceId,
           position: existingTask.position,
           dueDate: existingTask.dueDate?.toISOString() || null,
@@ -878,6 +907,17 @@ const app = new Hono()
         include: {
           service: true,
           assignee: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
+          reviewer: {
             include: {
               user: {
                 select: {

@@ -7,6 +7,13 @@ export enum TaskStatus {
   ARCHIVED = "ARCHIVED" // For soft-deleted tasks, accessible by admins and members
 };
 
+export enum ReviewStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  CHANGES_REQUESTED = "CHANGES_REQUESTED"
+};
+
 export type Task = {
   id: string;
   taskNumber: string;
@@ -14,6 +21,7 @@ export type Task = {
   status: TaskStatus;
   workspaceId: string;
   assigneeId: string | null;
+  reviewerId: string | null;
   serviceId: string;
   position: number;
   dueDate: string | null;
@@ -37,4 +45,38 @@ export type PopulatedTask = Task & {
     name: string;
     email: string;
   }>;
+  reviewer?: {
+    id: string;
+    userId: string;
+    workspaceId: string;
+    role: string;
+    joinedAt: string;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+    };
+  };
+  followers?: Array<{
+    id: string;
+    userId: string;
+    workspaceId: string;
+    role: string;
+    joinedAt: string;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+    };
+  }>;
+}
+
+export type TaskReview = {
+  id: string;
+  taskId: string;
+  reviewerId: string;
+  status: ReviewStatus;
+  comment: string | null;
+  createdAt: string;
+  updatedAt: string;
 }

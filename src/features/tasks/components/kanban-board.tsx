@@ -7,6 +7,10 @@ import { KanbanCard } from "./kanban-card";
 import { useUpdateTask } from "../api/use-update-task";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight } from "@/lib/lucide-icons";
+import { ReviewerSelectionModal } from "./reviewer-selection-modal";
+import { useGetMembers } from "@/features/members/api/use-get-members";
+import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
+import { Member } from "@/features/members/types";
 import './drag-animations.css';
 
 interface KanbanBoardProps {
@@ -238,7 +242,9 @@ CollapsibleColumn.displayName = "CollapsibleColumn";
 
 export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLoadMore, isLoadingMore, hasMore }: KanbanBoardProps) => {
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask({ showSuccessToast: false });
-  
+  const workspaceId = useWorkspaceId();
+  const { data: membersData } = useGetMembers({ workspaceId });
+
   // Track expanded state for each column
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({
     [TaskStatus.TODO]: true,
@@ -247,7 +253,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     [TaskStatus.DONE]: true, // Expanded by default
     [TaskStatus.BACKLOG]: true, // Expanded by default
   });
-  
+
   // Track drag state for enhanced animations
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
@@ -259,6 +265,19 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     draggedTaskId: null,
     sourceColumnId: null,
     targetColumnId: null,
+  });
+
+  // Reviewer selection modal state
+  const [reviewerModal, setReviewerModal] = useState<{
+    isOpen: boolean;
+    taskId: string | null;
+    taskName: string;
+    pendingOperation: DropResult | null;
+  }>({
+    isOpen: false,
+    taskId: null,
+    taskName: "",
+    pendingOperation: null,
   });
 
   const toggleColumn = (columnKey: string) => {
@@ -325,14 +344,25 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
       if (sourceStatus !== destStatus) {
         const tasksToUpdate = [...data];
         const taskToMove = tasksToUpdate.find((task) => task.id === taskId);
-        
+
         if (!taskToMove) {
           console.error("Task not found for ID:", taskId);
           return;
         }
 
+        // Check if moving to IN_REVIEW and no reviewer is assigned
+        if (destStatus === TaskStatus.IN_REVIEW && !taskToMove.reviewerId) {
+          setReviewerModal({
+            isOpen: true,
+            taskId: taskToMove.id,
+            taskName: taskToMove.name,
+            pendingOperation: result,
+          });
+          return;
+        }
+
         taskToMove.status = destStatus;
-        
+
         updatesPayload.push({
           id: taskToMove.id,
           status: destStatus,
@@ -340,7 +370,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         });
 
         onChange?.(tasksToUpdate);
-        
+
         // Update task with correct API format
         const taskUpdate = updatesPayload[0];
         updateTask({
@@ -351,6 +381,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
             serviceId: taskToMove.serviceId,
             dueDate: taskToMove.dueDate || undefined,
             assigneeId: taskToMove.assigneeId || undefined,
+            reviewerId: taskToMove.reviewerId || undefined,
             description: taskToMove.description || undefined,
             attachmentId: taskToMove.attachmentId || undefined,
           }
@@ -407,6 +438,58 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     },
     [data, onChange, updateTask]
   );
+
+  // Handle reviewer selection confirmation
+  const handleReviewerConfirm = React.useCallback((reviewerId: string) => {
+    const { pendingOperation, taskId } = reviewerModal;
+
+    if (!pendingOperation || !taskId) return;
+
+    const taskToMove = data.find((task) => task.id === taskId);
+    if (!taskToMove) return;
+
+    // Update the task with both status change and reviewer assignment
+    const updatedTask = { ...taskToMove, status: TaskStatus.IN_REVIEW, reviewerId };
+
+    // Update local state
+    const tasksToUpdate = data.map(task =>
+      task.id === taskId ? updatedTask : task
+    );
+    onChange?.(tasksToUpdate);
+
+    // Update via API
+    updateTask({
+      param: { taskId },
+      json: {
+        name: taskToMove.name,
+        status: TaskStatus.IN_REVIEW,
+        serviceId: taskToMove.serviceId,
+        dueDate: taskToMove.dueDate || undefined,
+        assigneeId: taskToMove.assigneeId || undefined,
+        reviewerId: reviewerId,
+        description: taskToMove.description || undefined,
+        attachmentId: taskToMove.attachmentId || undefined,
+      }
+    });
+
+    // Close modal
+    setReviewerModal({
+      isOpen: false,
+      taskId: null,
+      taskName: "",
+      pendingOperation: null,
+    });
+  }, [reviewerModal, data, onChange, updateTask]);
+
+  // Handle reviewer modal cancellation
+  const handleReviewerCancel = React.useCallback(() => {
+    setReviewerModal({
+      isOpen: false,
+      taskId: null,
+      taskName: "",
+      pendingOperation: null,
+    });
+  }, []);
 
   const tasks = React.useMemo(() => {
     const grouped: Record<string, Task[]> = {
@@ -519,6 +602,16 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
           </div>
         </div>
       )}
+
+      {/* Reviewer Selection Modal */}
+      <ReviewerSelectionModal
+        isOpen={reviewerModal.isOpen}
+        onClose={handleReviewerCancel}
+        onConfirm={handleReviewerConfirm}
+        members={(membersData?.documents || []) as Member[]}
+        taskName={reviewerModal.taskName}
+        isLoading={isUpdating}
+      />
     </div>
   );
 };

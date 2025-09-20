@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
 import { useGetServices } from "@/features/services/api/use-get-services";
@@ -46,15 +46,30 @@ interface ServicePerformance {
   tasksInProgress: number;
   totalTasks: number;
   completionRate: number;
+  healthScore: number;
 }
 
 
 const WorkspaceIdPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const workspaceId = useWorkspaceId();
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
-  const [activeTab, setActiveTab] = useState("overview");
+
+  // Get initial tab from URL or default to 'overview'
+  const tabFromUrl = searchParams.get('tab');
+  const validTabs = useMemo(() => ['overview', 'deadlines', 'analytics'], []);
+  const initialTab = tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : 'overview';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Update URL when tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('tab', value);
+    router.push(newUrl.pathname + newUrl.search);
+  };
 
   // Initialize dates after component mounts to avoid SSR issues
   useEffect(() => {
@@ -65,6 +80,14 @@ const WorkspaceIdPage = () => {
       setDateTo(new Date());
     }
   }, [dateFrom, dateTo]);
+
+  // Update activeTab state when URL changes
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && validTabs.includes(tab) && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+  }, [searchParams, activeTab, validTabs]);
 
   const { data: currentUser } = useCurrent();
   const { workspace, isLoading: isLoadingWorkspace, isAuthorized } = useWorkspaceAuthorization({ workspaceId });
@@ -107,6 +130,8 @@ const WorkspaceIdPage = () => {
 
   // Calculate statistics
   const totalMembers = members?.documents.length || 0;
+  const memberCount = members?.documents.filter((member) => (member as Member).role === MemberRole.MEMBER || (member as Member).role === MemberRole.ADMIN).length || 0;
+  const visitorCount = members?.documents.filter((member) => (member as Member).role === MemberRole.VISITOR).length || 0;
   const totalTasks = filteredTasks.length;
   const completedTasks = filteredTasks.filter(task => task.status === TaskStatus.DONE).length;
   const inProgressTasks = filteredTasks.filter(task => task.status === TaskStatus.IN_PROGRESS).length;
@@ -148,8 +173,15 @@ const WorkspaceIdPage = () => {
     const serviceTasks = filteredTasks.filter(task => task.serviceId === service.id);
     const serviceCompletedTasks = serviceTasks.filter(task => task.status === TaskStatus.DONE).length;
     const serviceInProgressTasks = serviceTasks.filter(task => task.status === TaskStatus.IN_PROGRESS).length;
+    const serviceInReviewTasks = serviceTasks.filter(task => task.status === TaskStatus.IN_REVIEW).length;
     const serviceTotalTasks = serviceTasks.length;
+
+    // Calculate completion rate and progress rate
     const completionRate = serviceTotalTasks > 0 ? (serviceCompletedTasks / serviceTotalTasks) * 100 : 0;
+    const progressRate = serviceTotalTasks > 0 ? ((serviceCompletedTasks + serviceInProgressTasks + serviceInReviewTasks) / serviceTotalTasks) * 100 : 0;
+
+    // Calculate health score (same as Analytics tab) - prioritize completion but consider progress
+    const healthScore = Math.round((completionRate * 0.6) + (progressRate * 0.4));
 
     return {
       id: service.id,
@@ -157,10 +189,18 @@ const WorkspaceIdPage = () => {
       tasksCompleted: serviceCompletedTasks,
       tasksInProgress: serviceInProgressTasks,
       totalTasks: serviceTotalTasks,
-      completionRate
+      completionRate,
+      healthScore
     };
   })
-    .sort((a, b) => b.completionRate - a.completionRate) || [];
+    // Sort by health score first, then by total tasks as tiebreaker
+    .sort((a, b) => {
+      if (b.healthScore !== a.healthScore) {
+        return b.healthScore - a.healthScore;
+      }
+      // If health scores are equal, prioritize services with more tasks
+      return b.totalTasks - a.totalTasks;
+    }) || [];
 
   const topServices = servicePerformance.slice(0, 3);
 
@@ -204,7 +244,7 @@ const WorkspaceIdPage = () => {
       <DottedSeparator />
 
       {/* Tabs Navigation */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3Icon className="h-4 w-4" />
@@ -292,7 +332,7 @@ const WorkspaceIdPage = () => {
         <Card className="relative overflow-hidden border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white">
           <div className="absolute inset-0 bg-black/5" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-sm font-medium text-blue-100">Total Members</CardTitle>
+            <CardTitle className="text-sm font-medium text-blue-100">Total User</CardTitle>
             <div className="p-2 bg-white/20 rounded-full">
               <UsersIcon className="h-4 w-4 text-white" />
             </div>
@@ -300,7 +340,7 @@ const WorkspaceIdPage = () => {
           <CardContent className="relative z-10">
             <div className="text-3xl font-bold">{totalMembers}</div>
             <p className="text-xs text-blue-100 mt-1">
-              Active workspace members
+              Members: {memberCount} | Visitors: {visitorCount}
             </p>
           </CardContent>
         </Card>

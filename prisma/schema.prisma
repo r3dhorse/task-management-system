@@ -121,7 +121,11 @@ model Member {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   assignedTasks Task[] @relation("TaskAssignee")
+  reviewingTasks Task[] @relation("TaskReviewer")
   followedTasks Task[] @relation("TaskFollowers")
+  taskReviews TaskReview[]
+  taskHistory TaskHistory[]
+  taskMessages TaskMessage[]
 
   @@unique([userId, workspaceId])
   @@index([workspaceId])
@@ -168,6 +172,7 @@ model Task {
   attachmentId  String?
   workspaceId   String
   assigneeId    String?
+  reviewerId    String?
   serviceId     String
   creatorId     String?
   createdAt     DateTime   @default(now())
@@ -176,6 +181,7 @@ model Task {
   // Relations
   workspace     Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   assignee      Member?          @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  reviewer      Member?          @relation("TaskReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
   service       Service          @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   creator       User?            @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: SetNull)
   followers     Member[]         @relation("TaskFollowers")
@@ -183,10 +189,12 @@ model Task {
   messages      TaskMessage[]
   attachments   TaskAttachment[]
   notifications Notification[]
+  reviews       TaskReview[]
 
   @@index([workspaceId])
   @@index([serviceId])
   @@index([assigneeId])
+  @@index([reviewerId])
   @@index([status])
   @@index([createdAt])
   @@index([dueDate])
@@ -200,6 +208,7 @@ enum TaskHistoryAction {
   UPDATED
   STATUS_CHANGED
   ASSIGNEE_CHANGED
+  REVIEWER_CHANGED
   SERVICE_CHANGED
   DUE_DATE_CHANGED
   ATTACHMENT_ADDED
@@ -207,6 +216,7 @@ enum TaskHistoryAction {
   ATTACHMENT_VIEWED
   DESCRIPTION_UPDATED
   NAME_CHANGED
+  REVIEW_SUBMITTED
   FOLLOWERS_CHANGED
   CONFIDENTIAL_CHANGED
   ARCHIVED
@@ -216,6 +226,7 @@ model TaskHistory {
   id        String            @id @default(cuid())
   taskId    String
   userId    String
+  memberId  String?
   action    TaskHistoryAction
   field     String?
   oldValue  String?
@@ -226,6 +237,7 @@ model TaskHistory {
   // Relations
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
 
   @@index([taskId])
   @@index([userId])
@@ -238,6 +250,7 @@ model TaskMessage {
   id             String   @id @default(cuid())
   taskId         String
   senderId       String
+  senderMemberId String?
   workspaceId    String
   content        String
   attachmentId   String?
@@ -249,6 +262,7 @@ model TaskMessage {
   // Relations
   task          Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
   sender        User           @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderMember  Member?        @relation(fields: [senderMemberId], references: [id], onDelete: SetNull)
   workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   notifications Notification[]
 
@@ -312,4 +326,31 @@ model Notification {
   @@index([createdAt])
   @@index([userId, isRead, createdAt])
   @@map("notifications")
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+model TaskReview {
+  id          String       @id @default(cuid())
+  taskId      String
+  reviewerId  String
+  status      ReviewStatus @default(PENDING)
+  comment     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  task     Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  reviewer Member @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([reviewerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("task_reviews")
 }

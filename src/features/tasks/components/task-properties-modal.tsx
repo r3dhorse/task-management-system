@@ -31,6 +31,7 @@ interface EditForm {
   description: string;
   status: TaskStatus;
   assigneeId: string;
+  reviewerId: string;
   serviceId: string;
   dueDate: Date;
   attachmentId: string;
@@ -73,7 +74,13 @@ export const TaskPropertiesModal = ({
       toast.error("Assignee is required for confidential tasks");
       return;
     }
-    
+
+    // Validate that reviewer is required before changing to IN_REVIEW status
+    if (editForm.status === TaskStatus.IN_REVIEW && (!editForm.reviewerId || editForm.reviewerId === "" || editForm.reviewerId === "unassigned")) {
+      toast.error("Reviewer is required before changing status to In Review");
+      return;
+    }
+
     onSave();
     onClose();
   };
@@ -271,6 +278,41 @@ export const TaskPropertiesModal = ({
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Reviewer - Only show when status is IN_PROGRESS or IN_REVIEW */}
+              {(editForm.status === TaskStatus.IN_PROGRESS || editForm.status === TaskStatus.IN_REVIEW) && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
+                    Reviewer
+                    {editForm.status === TaskStatus.IN_REVIEW && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+                        Required
+                      </span>
+                    )}
+                  </label>
+                  <Select
+                    value={editForm.reviewerId}
+                    onValueChange={(value) => setEditForm(prev => ({ ...prev, reviewerId: value }))}
+                  >
+                    <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                      <SelectValue placeholder="Select reviewer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">
+                        <span className="text-sm">👁️ No reviewer</span>
+                      </SelectItem>
+                      {members?.documents
+                        .filter(member => (member as Member).role !== MemberRole.VISITOR)
+                        .map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          <span className="text-sm">👁️ {member.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Confidential */}
               <div className="space-y-1.5">
