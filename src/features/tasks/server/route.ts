@@ -13,6 +13,190 @@ import { generateTaskNumber } from "@/lib/task-number-generator";
 
 const app = new Hono()
 
+  .get(
+    "/created-by-user",
+    sessionMiddleware,
+    zValidator(
+      "query",
+      z.object({
+        search: z.string().nullish(),
+        status: z.nativeEnum(TaskStatus).nullish(),
+        serviceId: z.string().nullish(),
+        workspaceId: z.string().nullish(),
+        limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 20),
+        offset: z.string().optional().transform(val => val ? parseInt(val, 10) : 0),
+      })
+    ),
+    async (c) => {
+      const prisma = c.get("prisma");
+      const user = c.get("user");
+      const {
+        search,
+        status,
+        serviceId,
+        workspaceId,
+        limit,
+        offset
+      } = c.req.valid("query");
+
+      // Get all workspaces the user is a member of
+      const userMemberships = await prisma.member.findMany({
+        where: { userId: user.id },
+        select: { workspaceId: true }
+      });
+
+      const workspaceIds = userMemberships.map(m => m.workspaceId);
+
+      if (workspaceIds.length === 0) {
+        return c.json({
+          data: {
+            documents: [],
+            total: 0,
+          },
+        });
+      }
+
+      // Build the where clause for filtering
+      interface TaskWhereClause {
+        creatorId: string;
+        workspaceId: { in: string[] } | string;
+        serviceId?: string;
+        status?: TaskStatus | { not: TaskStatus };
+        AND?: Array<{
+          OR?: Array<{
+            name?: { contains: string; mode: 'insensitive' };
+            taskNumber?: { contains: string; mode: 'insensitive' };
+          }>;
+        }>;
+      }
+
+      const where: TaskWhereClause = {
+        creatorId: user.id,
+        workspaceId: workspaceId ? workspaceId : { in: workspaceIds },
+      };
+
+      if (serviceId) {
+        where.serviceId = serviceId;
+      }
+
+      if (status) {
+        where.status = status;
+      } else {
+        // Exclude archived tasks by default
+        where.status = { not: TaskStatus.ARCHIVED };
+      }
+
+      // Handle search - can search both task name and task number
+      if (search) {
+        // Check if search looks like a task number (contains only digits or "Task #" format)
+        const isTaskNumberSearch = /^\d+$/.test(search.trim()) || /^Task #\d+$/i.test(search.trim());
+
+        if (isTaskNumberSearch) {
+          // Extract digits from search
+          const digits = search.replace(/[^\d]/g, '');
+          if (digits) {
+            // Search for task numbers containing these digits in various formats
+            const searchPatterns = [
+              digits, // exact digits: 163
+              digits.padStart(4, '0'), // 4-digit format: 0163
+              digits.padStart(7, '0'), // 7-digit format: 0000163
+            ];
+
+            where.AND = [{
+              OR: searchPatterns.map(pattern => ({
+                taskNumber: { contains: pattern, mode: 'insensitive' as const }
+              }))
+            }];
+          }
+        } else {
+          // Regular text search in task name and task number
+          where.AND = [{
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { taskNumber: { contains: search, mode: 'insensitive' as const } }
+            ]
+          }];
+        }
+      }
+
+      const tasks = await prisma.task.findMany({
+        where,
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'desc' }
+        ],
+        take: limit,
+        skip: offset,
+        include: {
+          service: true,
+          workspace: {
+            select: {
+              id: true,
+              name: true,
+            }
+          },
+          assignee: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
+          reviewer: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
+          followers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Map tasks to the expected format
+      const populatedTasks = tasks.map((task) => ({
+        ...task,
+        dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+        createdAt: task.createdAt.toISOString(),
+        updatedAt: task.updatedAt.toISOString(),
+        assignees: task.assignee ? [{
+          ...task.assignee,
+          name: task.assignee.user.name,
+          email: task.assignee.user.email,
+        }] : [],
+        followedIds: JSON.stringify(task.followers.map(f => f.id)),
+      }));
+
+      // Get total count
+      const totalCount = await prisma.task.count({ where });
+
+      return c.json({
+        data: {
+          documents: populatedTasks,
+          total: totalCount,
+        },
+      });
+    }
+  )
+
   .delete(
     "/:taskId",
     sessionMiddleware,

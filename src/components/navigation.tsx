@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw } from "@/lib/lucide-icons";
+import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon } from "@/lib/lucide-icons";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -13,8 +13,19 @@ import { Member, MemberRole } from "@/features/members/types";
 import { UserManagementModal } from "@/components/user-management-modal";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useCreatedTasksModal } from "@/features/tasks/hooks/use-created-tasks-modal";
 
-const routes = [
+interface Route {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  activeIcon: React.ComponentType<{ className?: string }>;
+  serviceAware: boolean;
+  restrictedForVisitors: boolean;
+  isModal?: boolean;
+}
+
+const routes: Route[] = [
   {
     label: "Home",
     href: "",
@@ -38,6 +49,15 @@ const routes = [
     activeIcon: GoCheckCircleFill,
     serviceAware: true, // Can be service-specific
     restrictedForVisitors: true, // Visitors can't access My Tasks
+  },
+  {
+    label: "Created Tasks",
+    href: "#created-tasks", // Special href to indicate modal action
+    icon: FileTextIcon,
+    activeIcon: FileTextIcon,
+    serviceAware: false, // Not service-specific (system-wide)
+    restrictedForVisitors: true, // Visitors can't access Created Tasks
+    isModal: true, // Special flag to indicate this opens a modal
   },
   {
     label: "Members",
@@ -64,6 +84,7 @@ export const Navigation = () => {
   const [isRunningAudit, setIsRunningAudit] = useState(false);
   const queryClient = useQueryClient();
   const router = useRouter();
+  const { open: openCreatedTasks } = useCreatedTasksModal();
 
   // Get current user and member information
   const { data: currentUser } = useCurrent();
@@ -148,6 +169,29 @@ export const Navigation = () => {
                 )}
               >
                 <Icon className="size-5 flex-shrink-0 text-neutral-300" />
+                <span className="text-sm sm:text-base truncate">{item.label}</span>
+              </div>
+            </div>
+          );
+        }
+
+        // Handle modal items (like Created Tasks)
+        if (item.isModal) {
+          const handleModalClick = () => {
+            if (item.href === "#created-tasks") {
+              openCreatedTasks();
+            }
+          };
+
+          return (
+            <div key={item.href}>
+              <div
+                onClick={handleModalClick}
+                className={cn(
+                  "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50"
+                )}
+              >
+                <Icon className="size-5 flex-shrink-0 text-neutral-500" />
                 <span className="text-sm sm:text-base truncate">{item.label}</span>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { Navbar } from "@/components/navbar";
 import { CreateServiceModal } from "@/features/services/components/create-service-modal";
 import { CreateTaskModal } from "@/features/tasks/components/create-task-modal";
 import { EditTaskModal } from "@/features/tasks/components/edit-task-modal";
+import { CreatedTasksModal } from "@/features/tasks/components/created-tasks-modal";
 import { CreateWorkspaceModal } from "@/features/workspaces/components/create-workspace-modal";
 
 interface DashboardLayoutProps {
@@ -16,6 +17,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       <CreateServiceModal />
       <CreateTaskModal />
       <EditTaskModal />
+      <CreatedTasksModal />
       <div className="flex w-full h-full">
         <div className="fixed left-0 top-0 hidden lg:block lg:w-[264px] h-full overflow-auto">
           <Sidebar />
