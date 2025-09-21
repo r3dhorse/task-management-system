@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { TaskStatus } from '@/features/tasks/types';
 
 export interface ExportTask {
@@ -50,29 +50,54 @@ const formatStatus = (status: TaskStatus): string => {
   }
 };
 
-export const exportTasksToExcel = (
+export const exportTasksToExcel = async (
   tasks: ExportTask[],
-  workspaceName: string = 'Workspace',
+  _workspaceName: string = 'Workspace',
   userName: string = 'Unknown User'
-): void => {
-  // Prepare data for Excel export
-  const excelData = tasks.map(task => ({
-    'Task Number': task.taskNumber || `Task #${task.id.slice(-7)}`,
-    'Task Name': task.name,
-    'Description': task.description || '',
-    'Status': formatStatus(task.status),
-    'Service/Project': task.serviceName || '',
-    'Assignee': task.assigneeName || 'Unassigned',
-    'Creator': task.creatorName || '',
-    'Due Date': task.dueDate ? formatDate(task.dueDate) : '',
-    'Created Date': formatDate(task.createdAt),
-    'Updated Date': formatDate(task.updatedAt),
-    'Confidential': task.isConfidential ? 'Yes' : 'No'
-  }));
-
+): Promise<Buffer> => {
   // Create workbook and worksheet
-  const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.json_to_sheet(excelData);
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Tasks');
+
+  // Define columns
+  worksheet.columns = [
+    { header: 'Task Number', key: 'taskNumber', width: 15 },
+    { header: 'Task Name', key: 'taskName', width: 30 },
+    { header: 'Description', key: 'description', width: 40 },
+    { header: 'Status', key: 'status', width: 12 },
+    { header: 'Service/Project', key: 'service', width: 20 },
+    { header: 'Assignee', key: 'assignee', width: 20 },
+    { header: 'Creator', key: 'creator', width: 20 },
+    { header: 'Due Date', key: 'dueDate', width: 18 },
+    { header: 'Created Date', key: 'createdDate', width: 18 },
+    { header: 'Updated Date', key: 'updatedDate', width: 18 },
+    { header: 'Confidential', key: 'confidential', width: 12 }
+  ];
+
+  // Style header row
+  worksheet.getRow(1).font = { bold: true };
+  worksheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE0E0E0' }
+  };
+
+  // Add data
+  tasks.forEach(task => {
+    worksheet.addRow({
+      taskNumber: task.taskNumber || `Task #${task.id.slice(-7)}`,
+      taskName: task.name,
+      description: task.description || '',
+      status: formatStatus(task.status),
+      service: task.serviceName || '',
+      assignee: task.assigneeName || 'Unassigned',
+      creator: task.creatorName || '',
+      dueDate: task.dueDate ? formatDate(task.dueDate) : '',
+      createdDate: formatDate(task.createdAt),
+      updatedDate: formatDate(task.updatedAt),
+      confidential: task.isConfidential ? 'Yes' : 'No'
+    });
+  });
 
   // Add footer with extraction info
   const currentDate = new Date();
@@ -85,44 +110,23 @@ export const exportTasksToExcel = (
     hour12: true
   });
 
-  // Calculate the row where footer should be placed (after data + 2 empty rows)
-  const footerRow = excelData.length + 3;
+  // Add empty row before footer
+  worksheet.addRow({});
 
   // Add footer information
-  worksheet[`A${footerRow}`] = { t: 's', v: `Extracted on: ${extractionDate}` };
-  worksheet[`A${footerRow + 1}`] = { t: 's', v: `Extracted by: ${userName}` };
-  worksheet[`A${footerRow + 2}`] = { t: 's', v: `Total tasks: ${tasks.length}` };
+  const footerStartRow = tasks.length + 3;
+  worksheet.addRow([`Extracted on: ${extractionDate}`]);
+  worksheet.addRow([`Extracted by: ${userName}`]);
+  worksheet.addRow([`Total tasks: ${tasks.length}`]);
 
-  // Update the range to include footer
-  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-  range.e.r = Math.max(range.e.r, footerRow + 2);
-  worksheet['!ref'] = XLSX.utils.encode_range(range);
+  // Style footer
+  worksheet.getRow(footerStartRow).font = { italic: true };
+  worksheet.getRow(footerStartRow + 1).font = { italic: true };
+  worksheet.getRow(footerStartRow + 2).font = { italic: true };
 
-  // Set column widths for better readability
-  const columnWidths = [
-    { wch: 15 }, // Task Number
-    { wch: 30 }, // Task Name
-    { wch: 40 }, // Description
-    { wch: 12 }, // Status
-    { wch: 20 }, // Service/Project
-    { wch: 20 }, // Assignee
-    { wch: 20 }, // Creator
-    { wch: 18 }, // Due Date
-    { wch: 18 }, // Created Date
-    { wch: 18 }, // Updated Date
-    { wch: 12 }  // Confidential
-  ];
-  worksheet['!cols'] = columnWidths;
-
-  // Add worksheet to workbook
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Tasks');
-
-  // Generate filename with timestamp
-  const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-  const filename = `${workspaceName}_Tasks_${timestamp}.xlsx`;
-
-  // Write and download file
-  XLSX.writeFile(workbook, filename);
+  // Generate and return buffer
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 };
 
 // Note: The API endpoint handles the data transformation directly

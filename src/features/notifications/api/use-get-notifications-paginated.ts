@@ -9,7 +9,7 @@ interface UseGetNotificationsPaginatedProps {
 
 export const useGetNotificationsPaginated = ({
   page = 1,
-  limit = 20,
+  limit = 7,
   type,
 }: UseGetNotificationsPaginatedProps = {}) => {
   return useQuery({

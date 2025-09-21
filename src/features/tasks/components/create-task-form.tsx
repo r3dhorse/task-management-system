@@ -71,9 +71,9 @@ export const CreateTaskForm = ({
     status: z.nativeEnum(TaskStatus, { required_error: "Required" }),
     workspaceId: z.string().trim().min(1, "Required"),
     serviceId: z.string().trim().min(1, "Required"),
-    dueDate: z.date().optional(),
+    dueDate: z.date({ required_error: "Due date is required" }),
     assigneeId: z.string().optional(),
-    description: z.string().optional(),
+    description: z.string().min(1, "Description is required"),
     attachmentId: z.string().optional(),
     followedIds: z.string().optional(),
     creatorId: z.string().optional(),
@@ -143,6 +143,7 @@ export const CreateTaskForm = ({
     value: member.id,
     label: member.name,
     email: member.email,
+    role: member.role,
   })) || [];
 
   // Find current user's member record
@@ -175,7 +176,7 @@ export const CreateTaskForm = ({
     const formattedValues = {
       ...values,
       serviceId: values.serviceId || "", // Convert undefined to empty string
-      dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : "", // Convert date to ISO string
+      dueDate: new Date(values.dueDate).toISOString(), // Convert date to ISO string (always required now)
       attachmentId: "", // No attachment support in creation
       assigneeId: values.assigneeId === "unassigned" ? "" : values.assigneeId || "", // Send empty string if unassigned
       followedIds: JSON.stringify(selectedFollowers), // JSON string array of follower IDs
@@ -351,7 +352,26 @@ export const CreateTaskForm = ({
                 )}
               />
 
-              {/* 5. Assignee */}
+              {/* 5. Due Date */}
+              <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Due Date</FormLabel>
+                    <FormControl>
+                      <DatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={field.disabled}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* 6. Assignee */}
               <FormField
                 control={form.control}
                 name="assigneeId"
@@ -369,9 +389,9 @@ export const CreateTaskForm = ({
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={
-                            isLoadingMembers 
-                              ? "Loading members..." 
-                              : !selectedWorkspaceId 
+                            isLoadingMembers
+                              ? "Loading members..."
+                              : !selectedWorkspaceId
                                 ? "Select workspace first"
                                 : "Select assignee"
                           } />
@@ -411,8 +431,8 @@ export const CreateTaskForm = ({
                               </div>
                               <div className="flex-shrink-0">
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                  member.role === 'ADMIN' 
-                                    ? 'bg-red-100 text-red-700' 
+                                  member.role === 'ADMIN'
+                                    ? 'bg-red-100 text-red-700'
                                     : member.role === 'MEMBER'
                                     ? 'bg-blue-100 text-blue-700'
                                     : 'bg-gray-100 text-gray-700'
@@ -429,36 +449,17 @@ export const CreateTaskForm = ({
                 )}
               />
 
-
-              {/* 6. Due Date (optional) */}
-              <FormField
-                control={form.control}
-                name="dueDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Due Date (Optional)</FormLabel>
-                    <FormControl>
-                      <DatePicker 
-                        value={field.value} 
-                        onChange={field.onChange}
-                        disabled={field.disabled}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* 7. Followers (Workspace Members) */}
+              {/* 7. Collaborators (Workspace Members) */}
               <FormItem>
-                <FormLabel>Followers</FormLabel>
+                <FormLabel>Collaborators</FormLabel>
                 <FormControl>
                   <MultiSelect
                     options={followerOptions}
                     selected={selectedFollowers}
                     onChange={setSelectedFollowers}
-                    placeholder="Select members to follow this task..."
+                    placeholder="Select members to collaborate on this task..."
                     className="w-full"
+                    dropdownDirection="up"
                   />
                 </FormControl>
                 <div className="space-y-1 mt-2">
@@ -470,7 +471,7 @@ export const CreateTaskForm = ({
                     </div>
                   )}
                   <p className="text-sm text-muted-foreground">
-                    You will automatically follow any task you create. Selected users will receive notifications and updates about this task.
+                    You will automatically be a collaborator on any task you create. Selected users will receive notifications and updates about this task.
                   </p>
                 </div>
               </FormItem>

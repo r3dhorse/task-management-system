@@ -166,11 +166,16 @@ const app = new Hono()
   .get(
     "/",
     sessionMiddleware,
-    zValidator("query", z.object({ workspaceId: z.string() })),
+    zValidator("query", z.object({
+      workspaceId: z.string(),
+      page: z.coerce.number().min(1).default(1).optional(),
+      limit: z.coerce.number().min(1).max(100).default(6).optional(),
+      role: z.nativeEnum(MemberRole).optional(),
+    })),
     async (c) => {
       const prisma = c.get("prisma");
       const user = c.get("user");
-      const { workspaceId } = c.req.valid("query");
+      const { workspaceId, page = 1, limit = 6, role } = c.req.valid("query");
 
       // Check if user is a member of the workspace
       const member = await prisma.member.findUnique({
@@ -186,8 +191,23 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401);
       }
 
+      // Build where clause with optional role filter
+      const whereClause: { workspaceId: string; role?: MemberRole } = { workspaceId };
+      if (role) {
+        whereClause.role = role;
+      }
+
+      // Get total count for pagination
+      const totalCount = await prisma.member.count({
+        where: whereClause,
+      });
+
+      // Calculate pagination values
+      const skip = (page - 1) * limit;
+      const totalPages = Math.ceil(totalCount / limit);
+
       const members = await prisma.member.findMany({
-        where: { workspaceId },
+        where: whereClause,
         include: {
           user: {
             select: {
@@ -200,6 +220,8 @@ const app = new Hono()
         orderBy: {
           joinedAt: 'asc',
         },
+        skip,
+        take: limit,
       });
 
       const populatedMembers = members.map((member) => ({
@@ -215,7 +237,11 @@ const app = new Hono()
       return c.json({
         data: {
           documents: populatedMembers,
-          total: populatedMembers.length,
+          total: totalCount,
+          page,
+          limit,
+          totalPages,
+          hasMore: page < totalPages,
         },
       });
     }

@@ -6,10 +6,10 @@ export const createTaskSchema = z.object({
   status: z.nativeEnum(TaskStatus, { required_error: "Required" }),
   workspaceId: z.string().trim().min(1, "Required"),
   serviceId: z.string().trim().min(1, "Service is required"),
-  dueDate: z.string().optional(),
+  dueDate: z.string().min(1, "Due date is required"),
   assigneeId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   reviewerId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
-  description: z.string().optional(),
+  description: z.string().min(1, "Description is required"),
   attachmentId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   followedIds: z.string().optional(), // JSON string array of follower IDs
   creatorId: z.string().optional(), // User ID of the task creator

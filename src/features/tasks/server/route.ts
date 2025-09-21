@@ -607,7 +607,7 @@ const app = new Hono()
             status,
             workspaceId,
             serviceId,
-            dueDate: dueDate ? new Date(dueDate) : null,
+            dueDate: new Date(dueDate), // dueDate is now required
             assigneeId: assigneeId === 'undefined' || !assigneeId ? null : assigneeId,
             reviewerId: reviewerId === 'undefined' || !reviewerId ? null : reviewerId,
             description,

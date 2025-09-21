@@ -11,7 +11,6 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogOverlay,
   DialogPortal,
@@ -70,14 +69,14 @@ export function NotificationsModal({ open, onOpenChange }: NotificationsModalPro
     error
   } = useGetNotificationsPaginated({
     page: currentPage,
-    limit: 15,
+    limit: 7,
     type: selectedType || undefined,
   });
 
   const { mutate: markAsRead } = useMarkNotificationsRead();
 
   const paginationData = data?.data as PaginationData | undefined;
-  const notifications = paginationData?.documents || [];
+  const notificationsList = useMemo(() => paginationData?.documents || [], [paginationData]);
   const totalCount = paginationData?.total || 0;
   const totalPages = paginationData?.totalPages || 1;
   const hasNext = paginationData?.hasNext || false;
@@ -161,15 +160,15 @@ export function NotificationsModal({ open, onOpenChange }: NotificationsModalPro
   }, []);
 
   const unreadCount = useMemo(() =>
-    notifications.filter(n => !n.isRead).length
-  , [notifications]);
+    notificationsList.filter(n => !n.isRead).length
+  , [notificationsList]);
 
   // Memoized pagination info to prevent recalculation
   const paginationInfo = useMemo(() => {
     if (!paginationData) return null;
 
-    const startItem = ((currentPage - 1) * 15) + 1;
-    const endItem = Math.min(currentPage * 15, totalCount);
+    const startItem = ((currentPage - 1) * 7) + 1;
+    const endItem = Math.min(currentPage * 7, totalCount);
 
     return {
       startItem,
@@ -299,7 +298,7 @@ export function NotificationsModal({ open, onOpenChange }: NotificationsModalPro
                   <div className="flex items-center justify-center py-12">
                     <LoadingSpinner size="md" />
                   </div>
-                ) : notifications.length === 0 ? (
+                ) : notificationsList.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                     <MessageCircle className="w-12 h-12 mb-4 text-gray-300" />
                     <h3 className="text-lg font-medium mb-2">No notifications found</h3>
@@ -312,7 +311,7 @@ export function NotificationsModal({ open, onOpenChange }: NotificationsModalPro
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100">
-                    {notifications.map((notification) => (
+                    {notificationsList.map((notification) => (
                       <div
                         key={notification.id}
                         onClick={() => handleNotificationClick(notification)}

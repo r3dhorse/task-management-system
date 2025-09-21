@@ -28,33 +28,6 @@ import { useCreatedTasksModal } from "../hooks/use-created-tasks-modal";
 import { useGetCreatedTasks } from "../api/use-get-created-tasks";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
-interface TaskDocument {
-  id: string;
-  name: string;
-  taskNumber: string;
-  status: TaskStatus;
-  workspaceId: string;
-  serviceId: string;
-  dueDate: string | null;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-  service?: {
-    id: string;
-    name: string;
-  };
-  workspace?: {
-    id: string;
-    name: string;
-  };
-  assignee?: {
-    id: string;
-    user: {
-      name: string;
-      email: string;
-    };
-  };
-}
 
 export const CreatedTasksModal = () => {
   const router = useRouter();
@@ -74,7 +47,7 @@ export const CreatedTasksModal = () => {
     page: currentPage,
   });
 
-  const tasks = data?.documents || [];
+  const tasksList = useMemo(() => data?.documents || [], [data]);
   const totalTasks = data?.total || 0;
   const totalPages = Math.ceil(totalTasks / 20);
   const hasNextPage = currentPage < totalPages;
@@ -82,24 +55,24 @@ export const CreatedTasksModal = () => {
 
   // Extract unique workspaces and services for filters
   const uniqueWorkspaces = useMemo(() => {
-    const workspaces = tasks.reduce((acc: { id: string; name: string }[], task) => {
+    const workspaces = tasksList.reduce((acc: { id: string; name: string }[], task) => {
       if (task.workspace && !acc.find(w => w.id === task.workspace!.id)) {
         acc.push(task.workspace);
       }
       return acc;
     }, []);
     return workspaces.sort((a, b) => a.name.localeCompare(b.name));
-  }, [tasks]);
+  }, [tasksList]);
 
   const uniqueServices = useMemo(() => {
-    const services = tasks.reduce((acc: { id: string; name: string }[], task) => {
+    const services = tasksList.reduce((acc: { id: string; name: string }[], task) => {
       if (task.service && !acc.find(s => s.id === task.service!.id)) {
         acc.push(task.service);
       }
       return acc;
     }, []);
     return services.sort((a, b) => a.name.localeCompare(b.name));
-  }, [tasks]);
+  }, [tasksList]);
 
   const getStatusColor = (status: TaskStatus) => {
     switch (status) {
@@ -152,7 +125,7 @@ export const CreatedTasksModal = () => {
     return `Due in ${daysUntilDue} days`;
   };
 
-  const handleTaskClick = (task: any) => {
+  const handleTaskClick = (task: { workspaceId: string; id: string }) => {
     router.push(`/workspaces/${task.workspaceId}/tasks/${task.id}`);
     close();
   };
@@ -166,8 +139,23 @@ export const CreatedTasksModal = () => {
   };
 
   // Reset to page 1 when filters change
-  const handleFilterChange = (setter: (value: any) => void, value: any) => {
-    setter(value);
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilterChange = (value: TaskStatus | "all") => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleWorkspaceFilterChange = (value: string) => {
+    setWorkspaceFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleServiceFilterChange = (value: string) => {
+    setServiceFilter(value);
     setCurrentPage(1);
   };
 
@@ -194,7 +182,7 @@ export const CreatedTasksModal = () => {
               <Input
                 placeholder="Search by task name or number..."
                 value={search}
-                onChange={(e) => handleFilterChange(setSearch, e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -211,7 +199,7 @@ export const CreatedTasksModal = () => {
 
           <div className="flex items-center gap-2 flex-wrap">
             <FilterX className="h-4 w-4 text-gray-500" />
-            <Select value={statusFilter} onValueChange={(value) => handleFilterChange(setStatusFilter, value as TaskStatus | "all")}>
+            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -226,7 +214,7 @@ export const CreatedTasksModal = () => {
               </SelectContent>
             </Select>
 
-            <Select value={workspaceFilter} onValueChange={(value) => handleFilterChange(setWorkspaceFilter, value)}>
+            <Select value={workspaceFilter} onValueChange={handleWorkspaceFilterChange}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Workspace" />
               </SelectTrigger>
@@ -240,7 +228,7 @@ export const CreatedTasksModal = () => {
               </SelectContent>
             </Select>
 
-            <Select value={serviceFilter} onValueChange={(value) => handleFilterChange(setServiceFilter, value)}>
+            <Select value={serviceFilter} onValueChange={handleServiceFilterChange}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="Service" />
               </SelectTrigger>
@@ -274,7 +262,7 @@ export const CreatedTasksModal = () => {
             <div className="flex items-center justify-center py-12">
               <LoadingSpinner />
             </div>
-          ) : tasks.length === 0 ? (
+          ) : tasksList.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <FileTextIcon className="h-8 w-8 text-gray-400" />
@@ -286,7 +274,7 @@ export const CreatedTasksModal = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {tasks.map((task) => {
+              {tasksList.map((task) => {
                 const daysUntilDue = getDaysUntilDue(task.dueDate);
                 return (
                   <div
@@ -367,7 +355,7 @@ export const CreatedTasksModal = () => {
         </div>
 
         {/* Pagination Controls */}
-        {!isLoading && tasks.length > 0 && (
+        {!isLoading && tasksList.length > 0 && (
           <div className="border-t pt-4 flex items-center justify-between">
             <div className="text-sm text-gray-500">
               Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, totalTasks)} of {totalTasks} tasks

@@ -21,7 +21,6 @@ import { UserWelcomeBadge } from "@/components/user-welcome-badge";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberRole } from "@/features/members/types";
-import { exportTasksToExcel } from "@/lib/excel-export";
 import { toast } from "sonner";
 
 export const WorkspaceTasksClient = () => {
@@ -138,21 +137,38 @@ export const WorkspaceTasksClient = () => {
       const response = await fetch(`/api/workspaces/${workspaceId}/tasks/export?${params.toString()}`);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Export failed');
+        if (response.headers.get('content-type')?.includes('application/json')) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Export failed');
+        } else {
+          throw new Error('Export failed');
+        }
       }
 
-      const { tasks, total } = await response.json();
+      // Get the file blob and download it
+      const blob = await response.blob();
 
-      if (tasks.length === 0) {
+      if (blob.size === 0) {
         toast.info("No tasks found to export");
         return;
       }
 
-      // Export to Excel
-      const userDisplayName = user?.name || user?.email || 'Unknown User';
-      exportTasksToExcel(tasks, `Workspace_${workspaceId}`, userDisplayName);
-      toast.success(`Successfully exported ${total} tasks to Excel`);
+      // Extract filename from Content-Disposition header or create default
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="([^"]+)"/);
+      const filename = filenameMatch?.[1] || `Workspace_${workspaceId}_Tasks_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Create download link and trigger download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("Tasks exported successfully");
 
     } catch (error) {
       console.error('Export error:', error);
@@ -160,7 +176,7 @@ export const WorkspaceTasksClient = () => {
     } finally {
       setIsExporting(false);
     }
-  }, [workspaceId, serviceId, assigneeId, status, search, dueDate, hasExportPermission, user]);
+  }, [workspaceId, serviceId, assigneeId, status, search, dueDate, hasExportPermission]);
 
   // Don't render anything if not authorized (redirection will happen)
   if (!isAuthorized) {

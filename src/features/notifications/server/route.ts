@@ -12,7 +12,7 @@ const app = new Hono()
       "query",
       z.object({
         page: z.string().optional().transform(val => val ? parseInt(val) : 1),
-        limit: z.string().optional().transform(val => val ? parseInt(val) : 20),
+        limit: z.string().optional().transform(val => val ? parseInt(val) : 7),
         type: z.enum(["MENTION", "NEW_MESSAGE", "TASK_ASSIGNED", "TASK_UPDATE", "TASK_COMMENT"]).optional(),
       })
     ),

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 export interface MultiSelectOption {
   value: string;
   label: string;
+  role?: string;
 }
 
 interface MultiSelectProps {
@@ -18,6 +19,7 @@ interface MultiSelectProps {
   onChange: (selected: string[]) => void;
   placeholder?: string;
   className?: string;
+  dropdownDirection?: 'up' | 'down';
 }
 
 export function MultiSelect({
@@ -26,6 +28,7 @@ export function MultiSelect({
   onChange,
   placeholder = "Select items...",
   className,
+  dropdownDirection = 'down',
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -166,7 +169,10 @@ export function MultiSelect({
       {mounted && open && (
         <div
           ref={dropdownRef}
-          className="absolute z-[99999] mt-2 w-full bg-popover rounded-md border shadow-lg"
+          className={cn(
+            "absolute z-[99999] w-full bg-popover rounded-md border shadow-lg",
+            dropdownDirection === 'up' ? "bottom-full mb-2" : "mt-2"
+          )}
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -201,11 +207,23 @@ export function MultiSelect({
                   >
                     <Check
                       className={cn(
-                        "mr-2 h-4 w-4",
+                        "mr-2 h-4 w-4 flex-shrink-0",
                         selected.includes(option.value) ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    {option.label}
+                    <span className="flex-1">{option.label}</span>
+                    {option.role && (
+                      <span className={cn(
+                        "ml-2 text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0",
+                        option.role === 'ADMIN'
+                          ? 'bg-red-100 text-red-700'
+                          : option.role === 'MEMBER'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-700'
+                      )}>
+                        {option.role}
+                      </span>
+                    )}
                   </div>
                 ))
               )}

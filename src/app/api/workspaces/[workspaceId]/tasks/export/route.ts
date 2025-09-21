@@ -3,6 +3,7 @@ import { getCurrent } from "@/features/auth/queries";
 import { MemberRole } from "@/features/members/types";
 import { TaskStatus } from "@/features/tasks/types";
 import { prisma } from "@/lib/prisma";
+import { exportTasksToExcel } from "@/lib/excel-export";
 
 export async function GET(
   request: NextRequest,
@@ -142,20 +143,42 @@ export async function GET(
       id: task.id,
       taskNumber: task.taskNumber,
       name: task.name,
-      description: task.description,
+      description: task.description || undefined,
       status: task.status as TaskStatus,
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString(),
       dueDate: task.dueDate?.toISOString(),
-      serviceName: task.service?.name,
-      assigneeName: task.assignee?.user?.name,
-      creatorName: task.creator?.name,
+      serviceName: task.service?.name || undefined,
+      assigneeName: task.assignee?.user?.name || undefined,
+      creatorName: task.creator?.name || undefined,
       isConfidential: task.isConfidential || false
     }));
 
-    return NextResponse.json({
-      tasks: exportTasks,
-      total: exportTasks.length
+    // Get workspace name for the export
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true }
+    });
+
+    // Generate Excel file
+    const buffer = await exportTasksToExcel(
+      exportTasks,
+      workspace?.name || 'Workspace',
+      user.name || user.email || 'Unknown User'
+    );
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const filename = `${workspace?.name || 'Workspace'}_Tasks_${timestamp}.xlsx`;
+
+    // Return the Excel file
+    return new NextResponse(buffer as BodyInit, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': buffer.length.toString(),
+      },
     });
 
   } catch (error) {
