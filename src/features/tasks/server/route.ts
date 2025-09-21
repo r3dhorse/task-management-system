@@ -908,6 +908,9 @@ const app = new Hono()
           // Auto-register followers as visitors to the target workspace if they're not already members
           const targetFollowerMembershipIds = [];
 
+          console.log(`🔄 Workspace transfer initiated: ${existingTask.workspaceId} → ${workspaceId}`);
+          console.log(`📋 Processing ${existingTask.followers.length} followers for auto-registration`);
+
           for (const follower of existingTask.followers) {
             // Get the user ID for this follower
             const followerMember = await prisma.member.findUnique({
@@ -915,7 +918,10 @@ const app = new Hono()
               include: { user: true },
             });
 
-            if (!followerMember) continue;
+            if (!followerMember) {
+              console.log(`⚠️ Follower member ${follower.id} not found, skipping`);
+              continue;
+            }
 
             // Check if this user is already a member of the target workspace
             const existingTargetMembership = await prisma.member.findFirst({
@@ -928,6 +934,7 @@ const app = new Hono()
             if (existingTargetMembership) {
               // User is already a member of target workspace, use existing membership
               targetFollowerMembershipIds.push(existingTargetMembership.id);
+              console.log(`✓ ${followerMember.user.name} already member of target workspace (${existingTargetMembership.role})`);
             } else {
               // User is not a member, register them as a visitor
               try {
@@ -939,10 +946,10 @@ const app = new Hono()
                   },
                 });
                 targetFollowerMembershipIds.push(newVisitorMembership.id);
-                console.log(`✅ Auto-registered ${followerMember.user.name} as visitor to target workspace`);
+                console.log(`✅ Auto-registered ${followerMember.user.name} as VISITOR to target workspace`);
               } catch (error) {
                 // Handle case where user might have been added concurrently
-                console.error(`Failed to register ${followerMember.user.name} as visitor:`, error);
+                console.error(`⚠️ Failed to register ${followerMember.user.name} as visitor:`, error);
                 // Try to find if they were added by another process
                 const retryMembership = await prisma.member.findFirst({
                   where: {
@@ -952,11 +959,15 @@ const app = new Hono()
                 });
                 if (retryMembership) {
                   targetFollowerMembershipIds.push(retryMembership.id);
+                  console.log(`✓ Found ${followerMember.user.name} after retry (concurrent add)`);
+                } else {
+                  console.log(`❌ Skipping ${followerMember.user.name} - could not add to target workspace`);
                 }
-                // If still not found, this follower will be skipped
               }
             }
           }
+
+          console.log(`📊 Workspace transfer followers: ${targetFollowerMembershipIds.length} of ${existingTask.followers.length} preserved`);
 
           // Set the followers to the new membership IDs in the target workspace
           updateData.followers = {
@@ -989,30 +1000,35 @@ const app = new Hono()
           updateData.status = status;
         }
 
-        // Handle followers update
-        if (followedIds !== undefined) {
+        // Handle followers update (skip if workspace is being transferred as it's already handled above)
+        const isWorkspaceTransfer = workspaceId !== undefined && workspaceId !== existingTask.workspaceId;
+
+        if (followedIds !== undefined && !isWorkspaceTransfer) {
           try {
             const parsedIds = JSON.parse(followedIds);
             if (Array.isArray(parsedIds)) {
               // Filter out null, undefined, empty strings, and non-string values
-              const validIds = parsedIds.filter((id: unknown) => 
+              const validIds = parsedIds.filter((id: unknown) =>
                 id && typeof id === 'string' && id.trim().length > 0
               ) as string[];
-              
+
               // Ensure assignee is included in followers (if assignee is being updated)
               if (updateData.assigneeId && updateData.assigneeId !== null && !validIds.includes(updateData.assigneeId)) {
                 validIds.push(updateData.assigneeId);
                 console.log(`✅ Auto-added assignee ${updateData.assigneeId} as follower during update`);
               }
-              
+
+              // Use the target workspace ID if provided, otherwise use existing
+              const targetWorkspaceId = updateData.workspaceId || existingTask.workspaceId;
+
               // Verify that these member IDs exist in the workspace
               const existingMembers = await prisma.member.findMany({
                 where: {
                   id: { in: validIds },
-                  workspaceId: existingTask.workspaceId
+                  workspaceId: targetWorkspaceId
                 }
               });
-              
+
               const existingMemberIds = existingMembers.map(m => m.id);
               updateData.followers = {
                 set: existingMemberIds.map((id: string) => ({ id }))
@@ -1022,7 +1038,7 @@ const app = new Hono()
             console.error("Error processing followers:", error);
             // Invalid JSON, ignore followers update
           }
-        } else if (updateData.assigneeId && updateData.assigneeId !== null) {
+        } else if (updateData.assigneeId && updateData.assigneeId !== null && !isWorkspaceTransfer) {
           // If followers are not being explicitly updated but assignee is changing,
           // add the new assignee to the existing followers
           const currentFollowerIds = existingTask.followers.map(f => f.id);

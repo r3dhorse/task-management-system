@@ -63,10 +63,18 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     taskId: params.taskId 
   });
   
+  // Always get members from the current workspace (not the target workspace)
+  // This ensures followers are preserved during workspace transfer
   const { data: members, isLoading: isLoadingMembers } = useGetMembers({
-    workspaceId: editForm.workspaceId || workspaceId
+    workspaceId: workspaceId  // Always use current workspace, not editForm.workspaceId
   });
-  
+
+  // Get members from target workspace for assignee/reviewer selection when transferring
+  const { data: targetMembers } = useGetMembers({
+    workspaceId: editForm.workspaceId !== workspaceId ? editForm.workspaceId : undefined
+  });
+
+  // Get services from the target workspace if changing workspaces
   const { data: services, isLoading: isLoadingServices } = useGetServices({
     workspaceId: editForm.workspaceId || workspaceId
   });
@@ -1020,7 +1028,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         setEditForm={setEditForm}
         onSave={handleSaveChanges}
         isLoading={isUpdating}
-        members={members as { documents: Member[] } | undefined}
+        members={editForm.workspaceId !== workspaceId && targetMembers ? targetMembers as { documents: Member[] } | undefined : members as { documents: Member[] } | undefined}
         services={services as { documents: Service[] } | undefined}
         workspaces={workspaces}
         followers={followers as Member[]}
