@@ -905,9 +905,63 @@ const app = new Hono()
             updateData.assigneeId = null;
           }
 
-          // Preserve all followers when transferring between workspaces
-          // Chat history and follower relationships are maintained regardless of workspace membership
-          // Access control will be handled at the UI level for displaying appropriate content
+          // Auto-register followers as visitors to the target workspace if they're not already members
+          const targetFollowerMembershipIds = [];
+
+          for (const follower of existingTask.followers) {
+            // Get the user ID for this follower
+            const followerMember = await prisma.member.findUnique({
+              where: { id: follower.id },
+              include: { user: true },
+            });
+
+            if (!followerMember) continue;
+
+            // Check if this user is already a member of the target workspace
+            const existingTargetMembership = await prisma.member.findFirst({
+              where: {
+                userId: followerMember.userId,
+                workspaceId: workspaceId,
+              },
+            });
+
+            if (existingTargetMembership) {
+              // User is already a member of target workspace, use existing membership
+              targetFollowerMembershipIds.push(existingTargetMembership.id);
+            } else {
+              // User is not a member, register them as a visitor
+              try {
+                const newVisitorMembership = await prisma.member.create({
+                  data: {
+                    userId: followerMember.userId,
+                    workspaceId: workspaceId,
+                    role: MemberRole.VISITOR,
+                  },
+                });
+                targetFollowerMembershipIds.push(newVisitorMembership.id);
+                console.log(`✅ Auto-registered ${followerMember.user.name} as visitor to target workspace`);
+              } catch (error) {
+                // Handle case where user might have been added concurrently
+                console.error(`Failed to register ${followerMember.user.name} as visitor:`, error);
+                // Try to find if they were added by another process
+                const retryMembership = await prisma.member.findFirst({
+                  where: {
+                    userId: followerMember.userId,
+                    workspaceId: workspaceId,
+                  },
+                });
+                if (retryMembership) {
+                  targetFollowerMembershipIds.push(retryMembership.id);
+                }
+                // If still not found, this follower will be skipped
+              }
+            }
+          }
+
+          // Set the followers to the new membership IDs in the target workspace
+          updateData.followers = {
+            set: targetFollowerMembershipIds.map(id => ({ id }))
+          };
 
           // Update all task messages to the new workspace to preserve team chat
           await prisma.taskMessage.updateMany({
