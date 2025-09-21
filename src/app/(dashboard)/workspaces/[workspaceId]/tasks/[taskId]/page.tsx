@@ -74,7 +74,9 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   const { data: workspaces, isLoading: isLoadingWorkspaces } = useGetWorkspaces();
 
 
-  const { mutate: updateTask, isPending: isUpdating } = useUpdateTask();
+  const { mutate: updateTask, isPending: isUpdating } = useUpdateTask({
+    originalWorkspaceId: task?.workspaceId
+  });
   const { mutate: createHistory } = useCreateTaskHistory();
   const { mutate: deleteTask, isPending: isDeleting } = useDeleteTask();
   const { data: currentUser } = useCurrent();
