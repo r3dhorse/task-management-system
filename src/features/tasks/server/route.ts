@@ -1228,6 +1228,31 @@ const app = new Hono()
                     }
                   }
                   break;
+                case "workspaceId":
+                  action = TaskHistoryAction.WORKSPACE_CHANGED;
+                  // Resolve workspace IDs to names
+                  if (change.oldValue) {
+                    try {
+                      const oldWorkspace = await prisma.workspace.findUnique({
+                        where: { id: change.oldValue }
+                      });
+                      oldValue = oldWorkspace?.name || "Unknown Workspace";
+                    } catch {
+                      oldValue = "Unknown Workspace";
+                    }
+                  }
+
+                  if (change.newValue) {
+                    try {
+                      const newWorkspace = await prisma.workspace.findUnique({
+                        where: { id: change.newValue }
+                      });
+                      newValue = newWorkspace?.name || "Unknown Workspace";
+                    } catch {
+                      newValue = "Unknown Workspace";
+                    }
+                  }
+                  break;
                 case "dueDate":
                   action = TaskHistoryAction.DUE_DATE_CHANGED;
                   break;

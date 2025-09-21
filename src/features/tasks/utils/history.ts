@@ -163,7 +163,7 @@ export function formatHistoryMessage(
 
   // Handle workspace changes even when action is UPDATED
   if (field === "workspaceId") {
-    return `${userName} transferred task to workspace ${formatValue(newValue)}`;
+    return `${userName} transferred task from ${formatValue(oldValue, "Unknown Workspace")} to ${formatValue(newValue)}`;
   }
 
   // Handle confidential changes even when action is UPDATED
@@ -193,7 +193,7 @@ export function formatHistoryMessage(
       return `${userName} moved task to service ${formatValue(newValue)}`;
 
     case TaskHistoryAction.WORKSPACE_CHANGED:
-      return `${userName} transferred task to workspace ${formatValue(newValue)}`;
+      return `${userName} transferred task from ${formatValue(oldValue, "Unknown Workspace")} to ${formatValue(newValue)}`;
 
     case TaskHistoryAction.DUE_DATE_CHANGED:
       return `${userName} changed due date from ${formatDate(oldValue)} to ${formatDate(newValue)}`;
