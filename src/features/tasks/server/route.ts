@@ -722,6 +722,7 @@ const app = new Hono()
           name,
           status,
           serviceId,
+          workspaceId,
           dueDate,
           assigneeId,
           reviewerId,
@@ -820,9 +821,46 @@ const app = new Hono()
           }
         }
 
+        // Workspace change validation
+        if (workspaceId !== undefined && workspaceId !== existingTask.workspaceId) {
+          // Check if user is a member of the target workspace
+          const targetMember = await getMember({
+            prisma,
+            workspaceId: workspaceId,
+            userId: user.id,
+          });
+
+          if (!targetMember) {
+            return c.json({ error: "You must be a member of the target workspace to move tasks" }, 403);
+          }
+
+          // Validate that the service is public if moving between workspaces
+          if (serviceId) {
+            const service = await prisma.service.findUnique({
+              where: { id: serviceId },
+            });
+
+            if (!service) {
+              return c.json({ error: "Selected service not found" }, 404);
+            }
+
+            if (service.workspaceId !== workspaceId) {
+              return c.json({ error: "Service must belong to the target workspace" }, 400);
+            }
+
+            if (!service.isPublic) {
+              return c.json({ error: "Only public services can be used when moving tasks between workspaces" }, 400);
+            }
+          } else {
+            return c.json({ error: "Service selection is required when moving tasks between workspaces" }, 400);
+          }
+
+        }
+
         const updateData: {
           name?: string;
           serviceId?: string;
+          workspaceId?: string;
           dueDate?: Date | null;
           assigneeId?: string | null;
           reviewerId?: string | null;
@@ -834,8 +872,64 @@ const app = new Hono()
           followers?: { set: { id: string }[] };
         } = {};
 
+        // Handle workspace change - filter followers who don't have access to target workspace
+        if (workspaceId !== undefined && workspaceId !== existingTask.workspaceId) {
+          updateData.workspaceId = workspaceId;
+          updateData.reviewerId = null; // Always reset reviewer
+
+          // Set default status to TODO when transferring to new workspace
+          updateData.status = TaskStatus.TODO;
+
+          // Handle assignee based on task confidentiality
+          const isConfidentialTask = isConfidential !== undefined ? isConfidential : existingTask.isConfidential;
+
+          if (isConfidentialTask) {
+            // For confidential tasks, assignee must remain required
+            // If no assignee is provided in the update, return error
+            if (!assigneeId || assigneeId === 'undefined' || assigneeId === '') {
+              return c.json({ error: "Assignee is required when transferring confidential tasks to another workspace" }, 400);
+            }
+
+            // Validate that the assignee is a member of the target workspace
+            const targetAssignee = await prisma.member.findUnique({
+              where: {
+                id: assigneeId,
+              },
+            });
+
+            if (!targetAssignee || targetAssignee.workspaceId !== workspaceId || targetAssignee.role === MemberRole.VISITOR) {
+              return c.json({ error: "Assignee must be a member (not visitor) of the target workspace for confidential tasks" }, 400);
+            }
+          } else {
+            // For non-confidential tasks, reset assignee to null (unassigned)
+            updateData.assigneeId = null;
+          }
+
+          // Filter followers to keep only those who are members/visitors of the target workspace
+          const targetWorkspaceMembers = await prisma.member.findMany({
+            where: {
+              workspaceId: workspaceId,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          const targetWorkspaceMemberIds = new Set(targetWorkspaceMembers.map(m => m.id));
+
+          // Keep only followers who are members of the target workspace
+          const validFollowers = existingTask.followers.filter(follower =>
+            targetWorkspaceMemberIds.has(follower.id)
+          );
+
+          updateData.followers = {
+            set: validFollowers.map(f => ({ id: f.id }))
+          };
+        }
+
         if (name !== undefined) updateData.name = name;
         if (serviceId !== undefined) updateData.serviceId = serviceId;
+        if (workspaceId !== undefined && workspaceId === existingTask.workspaceId) updateData.workspaceId = workspaceId;
         if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
         if (assigneeId !== undefined) updateData.assigneeId = assigneeId === 'undefined' || !assigneeId ? null : assigneeId;
         if (reviewerId !== undefined) updateData.reviewerId = reviewerId === 'undefined' || !reviewerId ? null : reviewerId;

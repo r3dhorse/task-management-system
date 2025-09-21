@@ -30,6 +30,7 @@ export const updateTaskSchema = z.object({
   name: z.string().trim().min(1, "Required").optional(),
   status: z.nativeEnum(TaskStatus, { required_error: "Required" }).optional(),
   serviceId: z.string().trim().min(1, "Service is required").optional(),
+  workspaceId: z.string().trim().min(1, "Workspace is required").optional(),
   dueDate: z.string().optional(),
   assigneeId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   reviewerId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),

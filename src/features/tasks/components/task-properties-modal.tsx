@@ -25,6 +25,7 @@ import { TaskStatus } from "../types";
 import { Member, MemberRole } from "@/features/members/types";
 import { Service } from "@/features/services/types";
 import { Task } from "@/features/tasks/types";
+import { Workspace } from "@/features/workspaces/types";
 
 interface EditForm {
   name: string;
@@ -33,6 +34,7 @@ interface EditForm {
   assigneeId: string;
   reviewerId: string;
   serviceId: string;
+  workspaceId: string;
   dueDate: Date;
   attachmentId: string;
   isConfidential: boolean;
@@ -48,14 +50,16 @@ interface TaskPropertiesModalProps {
   isLoading?: boolean;
   members?: { documents: Member[] };
   services?: { documents: Service[] };
+  workspaces?: { documents: Workspace[] };
   followers: Member[];
   canEditStatus: boolean;
   onManageFollowers: () => void;
+  onWorkspaceChange?: (workspaceId: string) => void;
 }
 
-export const TaskPropertiesModal = ({ 
-  isOpen, 
-  onClose, 
+export const TaskPropertiesModal = ({
+  isOpen,
+  onClose,
   task,
   editForm,
   setEditForm,
@@ -63,9 +67,11 @@ export const TaskPropertiesModal = ({
   isLoading = false,
   members,
   services,
+  workspaces,
   followers,
   canEditStatus,
-  onManageFollowers
+  onManageFollowers,
+  onWorkspaceChange
 }: TaskPropertiesModalProps) => {
   
   const handleSave = () => {
@@ -75,10 +81,32 @@ export const TaskPropertiesModal = ({
       return;
     }
 
+    // Additional validation for confidential tasks when changing workspace
+    const isChangingWorkspace = editForm.workspaceId !== task.workspaceId;
+    if (isChangingWorkspace && editForm.isConfidential && (!editForm.assigneeId || editForm.assigneeId === "" || editForm.assigneeId === "unassigned")) {
+      toast.error("Assignee is required when transferring confidential tasks to another workspace");
+      return;
+    }
+
     // Validate that reviewer is required before changing to IN_REVIEW status
     if (editForm.status === TaskStatus.IN_REVIEW && (!editForm.reviewerId || editForm.reviewerId === "" || editForm.reviewerId === "unassigned")) {
       toast.error("Reviewer is required before changing status to In Review");
       return;
+    }
+
+    // Validate that service is selected when changing workspace
+    if (editForm.workspaceId !== task.workspaceId && (!editForm.serviceId || editForm.serviceId === "")) {
+      toast.error("Service selection is required when moving task to another workspace");
+      return;
+    }
+
+    // Validate that service is public when moving to different workspace
+    if (editForm.workspaceId !== task.workspaceId && services) {
+      const selectedService = services.documents.find(s => s.id === editForm.serviceId);
+      if (selectedService && !selectedService.isPublic) {
+        toast.error("Only public services can be selected when moving tasks between workspaces");
+        return;
+      }
     }
 
     onSave();
@@ -205,27 +233,59 @@ export const TaskPropertiesModal = ({
                 )}
               </div>
 
-              {/* Service */}
+              {/* Workspace */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                  Service
+                  <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
+                  Workspace
                 </label>
                 <Select
-                  value={editForm.serviceId}
-                  onValueChange={(value) => setEditForm(prev => ({ ...prev, serviceId: value }))}
+                  value={editForm.workspaceId}
+                  onValueChange={(value) => {
+                    const isChangingWorkspace = value !== task.workspaceId;
+                    setEditForm(prev => ({
+                      ...prev,
+                      workspaceId: value,
+                      serviceId: "", // Reset service when workspace changes
+                      status: isChangingWorkspace ? TaskStatus.TODO : prev.status, // Set to TODO when changing workspace
+                      assigneeId: isChangingWorkspace && !prev.isConfidential ? "unassigned" : prev.assigneeId, // Reset assignee for non-confidential tasks
+                      reviewerId: isChangingWorkspace ? "unassigned" : prev.reviewerId, // Reset reviewer when changing workspace
+                    }));
+                    onWorkspaceChange?.(value);
+                  }}
                 >
                   <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                    <SelectValue placeholder="Select service" />
+                    <SelectValue placeholder="Select workspace" />
                   </SelectTrigger>
                   <SelectContent>
-                    {services?.documents.map((serv) => (
-                      <SelectItem key={serv.id} value={serv.id}>
-                        <span className="text-sm">📁 {serv.name}</span>
+                    {workspaces?.documents.map((workspace) => (
+                      <SelectItem key={workspace.id} value={workspace.id}>
+                        <span className="text-sm">🏢 {workspace.name}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Confidential */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                  Confidential
+                </label>
+                <div className="flex items-center justify-between p-2 bg-gray-50/80 rounded-lg border border-gray-200/60">
+                  <div className="flex items-center gap-1.5">
+                    <EyeOffIcon className="w-3.5 h-3.5 text-gray-500" />
+                    <span className="text-xs text-gray-700">
+                      Restricted visibility
+                    </span>
+                  </div>
+                  <Switch
+                    checked={editForm.isConfidential}
+                    onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, isConfidential: checked }))}
+                    className="scale-90"
+                  />
+                </div>
               </div>
 
               {/* Due Date */}
@@ -314,25 +374,48 @@ export const TaskPropertiesModal = ({
                 </div>
               )}
 
-              {/* Confidential */}
+              {/* Service */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                  Confidential
-                </label>
-                <div className="flex items-center justify-between p-2 bg-gray-50/80 rounded-lg border border-gray-200/60">
-                  <div className="flex items-center gap-1.5">
-                    <EyeOffIcon className="w-3.5 h-3.5 text-gray-500" />
-                    <span className="text-xs text-gray-700">
-                      Restricted visibility
+                  Service
+                  {editForm.workspaceId !== task.workspaceId && (
+                    <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
+                      Required (Public only)
                     </span>
-                  </div>
-                  <Switch
-                    checked={editForm.isConfidential}
-                    onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, isConfidential: checked }))}
-                    className="scale-90"
-                  />
-                </div>
+                  )}
+                </label>
+                <Select
+                  value={editForm.serviceId}
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, serviceId: value }))}
+                >
+                  <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                    <SelectValue placeholder="Select service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services?.documents
+                      .filter(serv => {
+                        // If changing workspace, only show public services
+                        if (editForm.workspaceId !== task.workspaceId) {
+                          return serv.isPublic;
+                        }
+                        // If staying in same workspace, show all services
+                        return true;
+                      })
+                      .map((serv) => (
+                      <SelectItem key={serv.id} value={serv.id}>
+                        <span className="text-sm flex items-center gap-1">
+                          📁 {serv.name}
+                          {serv.isPublic && editForm.workspaceId !== task.workspaceId && (
+                            <span className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded">
+                              Public
+                            </span>
+                          )}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Followers */}

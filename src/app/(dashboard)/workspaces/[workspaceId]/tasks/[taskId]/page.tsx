@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useGetTask } from "@/features/tasks/api/use-get-task";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useGetServices } from "@/features/services/api/use-get-services";
+import { useGetWorkspaces } from "@/features/workspaces/api/use-get-workspaces";
 import { useUpdateTask } from "@/features/tasks/api/use-update-task";
 import { useCreateTaskHistory } from "@/features/tasks/api/use-create-task-history";
 import { TaskHistoryAction } from "@/features/tasks/types/history";
@@ -48,6 +49,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     assigneeId: "unassigned",
     reviewerId: "unassigned",
     serviceId: "",
+    workspaceId: "",
     dueDate: new Date(),
     attachmentId: "",
     isConfidential: false,
@@ -61,13 +63,15 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     taskId: params.taskId 
   });
   
-  const { data: members, isLoading: isLoadingMembers } = useGetMembers({ 
-    workspaceId 
+  const { data: members, isLoading: isLoadingMembers } = useGetMembers({
+    workspaceId: editForm.workspaceId || workspaceId
   });
   
-  const { data: services, isLoading: isLoadingServices } = useGetServices({ 
-    workspaceId 
+  const { data: services, isLoading: isLoadingServices } = useGetServices({
+    workspaceId: editForm.workspaceId || workspaceId
   });
+
+  const { data: workspaces, isLoading: isLoadingWorkspaces } = useGetWorkspaces();
 
 
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask();
@@ -167,7 +171,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     );
   }
 
-  const isLoading = isLoadingTask || isLoadingMembers || isLoadingServices;
+  const isLoading = isLoadingTask || isLoadingMembers || isLoadingServices || isLoadingWorkspaces;
 
   if (isLoading) {
     return (
@@ -467,6 +471,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         assigneeId: task.assigneeId || "unassigned",
         reviewerId: task.reviewerId || "unassigned",
         serviceId: task.serviceId,
+        workspaceId: task.workspaceId,
         dueDate: task.dueDate ? new Date(task.dueDate) : new Date(),
         attachmentId: task.attachmentId || "",
         isConfidential: task.isConfidential || false,
@@ -485,6 +490,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       assigneeId: string;
       reviewerId: string;
       serviceId: string;
+      workspaceId: string;
       dueDate: string;
       attachmentId: string;
       followedIds: string;
@@ -496,6 +502,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       assigneeId: editForm.assigneeId === "unassigned" ? "" : editForm.assigneeId,
       reviewerId: editForm.reviewerId === "unassigned" ? "" : editForm.reviewerId,
       serviceId: editForm.serviceId,
+      workspaceId: editForm.workspaceId,
       dueDate: editForm.dueDate.toISOString(),
       attachmentId: editForm.attachmentId,
       followedIds: JSON.stringify(selectedFollowers),
@@ -1013,9 +1020,14 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         isLoading={isUpdating}
         members={members as { documents: Member[] } | undefined}
         services={services as { documents: Service[] } | undefined}
+        workspaces={workspaces}
         followers={followers as Member[]}
         canEditStatus={canEditStatus}
         onManageFollowers={() => setIsFollowersModalOpen(true)}
+        onWorkspaceChange={(_workspaceId) => {
+          // When workspace changes, we need to refresh services for the new workspace
+          // The useGetServices hook will automatically refetch when workspaceId changes
+        }}
       />
     </div>
   );
