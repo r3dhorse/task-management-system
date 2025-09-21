@@ -10,8 +10,9 @@ import { ChevronDown, ChevronRight } from "@/lib/lucide-icons";
 import { AssigneeSelectionModal } from "./assignee-selection-modal";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
-import { Member } from "@/features/members/types";
+import { Member, MemberRole } from "@/features/members/types";
 import { useCurrent } from "@/features/auth/api/use-current";
+import { toast } from "sonner";
 import './drag-animations.css';
 
 interface KanbanBoardProps {
@@ -25,6 +26,13 @@ interface KanbanBoardProps {
 }
 
 const boards = [
+  {
+    key: TaskStatus.BACKLOG,
+    label: "Backlog",
+    color: "border-l-gray-500",
+    bgColor: "bg-gray-500",
+    emoji: "📋"
+  },
   {
     key: TaskStatus.TODO,
     label: "To Do",
@@ -53,13 +61,6 @@ const boards = [
     bgColor: "bg-emerald-500",
     emoji: "✅"
   },
-  {
-    key: TaskStatus.BACKLOG,
-    label: "Backlog",
-    color: "border-l-gray-500",
-    bgColor: "bg-gray-500",
-    emoji: "📋"
-  },
 ];
 
 interface CollapsibleColumnProps {
@@ -80,10 +81,12 @@ interface CollapsibleColumnProps {
     sourceColumnId: string | null;
     targetColumnId: string | null;
   };
+  isWorkspaceAdmin?: boolean;
 }
 
-const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, taskCount, dragState }: CollapsibleColumnProps) => {
+const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, taskCount, dragState, isWorkspaceAdmin = false }: CollapsibleColumnProps) => {
   const isArchived = board.key === TaskStatus.ARCHIVED;
+  const isDoneColumn = board.key === TaskStatus.DONE;
   
   // Determine if this column is highlighted during drag
   const isDropTarget = dragState.isDragging && dragState.targetColumnId === board.key;
@@ -200,11 +203,11 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
                 }}
               >
                 {tasks.map((task, index) => (
-                  <KanbanCard 
-                    key={task.id} 
-                    task={task} 
-                    index={index} 
-                    isDragDisabled={isArchived} // Disable dragging for archived tasks
+                  <KanbanCard
+                    key={task.id}
+                    task={task}
+                    index={index}
+                    isDragDisabled={isArchived || (isDoneColumn && !isWorkspaceAdmin)} // Disable dragging for archived tasks and dragging FROM DONE for non-admins
                     isBeingDragged={dragState.draggedTaskId === task.id}
                   />
                 ))}
@@ -247,13 +250,19 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
   const { data: membersData } = useGetMembers({ workspaceId });
   const { data: currentUser } = useCurrent();
 
+  // Check if current user is a workspace admin
+  const currentMember = (membersData?.documents as Member[] || []).find(
+    (member) => member.userId === currentUser?.id
+  );
+  const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
+
   // Track expanded state for each column
   const [expandedColumns, setExpandedColumns] = useState<Record<string, boolean>>({
+    [TaskStatus.BACKLOG]: true,
     [TaskStatus.TODO]: true,
     [TaskStatus.IN_PROGRESS]: true,
     [TaskStatus.IN_REVIEW]: true,
-    [TaskStatus.DONE]: true, // Expanded by default
-    [TaskStatus.BACKLOG]: true, // Expanded by default
+    [TaskStatus.DONE]: false, // Collapsed by default
   });
 
   // Track drag state for enhanced animations
@@ -334,6 +343,20 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
       const { source, destination } = result;
       const sourceStatus = source.droppableId as TaskStatus;
       const destStatus = destination.droppableId as TaskStatus;
+
+      // Check if current user is a workspace admin
+      const currentMember = (membersData?.documents as Member[] || []).find(
+        (member) => member.userId === currentUser?.id
+      );
+      const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
+
+      // Check if moving FROM DONE status and user is not admin
+      // Allow moving TO DONE from IN_REVIEW (no restriction)
+      if (sourceStatus === TaskStatus.DONE && !isWorkspaceAdmin) {
+        // Show error toast and prevent the move
+        toast.error("Only workspace administrators can move tasks from Done status");
+        return;
+      }
 
       // Archived tasks are not shown in Kanban view, so no need to prevent drag to/from ARCHIVED
       
@@ -566,6 +589,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
                   onToggle={() => toggleColumn(board.key)}
                   taskCount={taskCounts[board.key]}
                   dragState={dragState}
+                  isWorkspaceAdmin={isWorkspaceAdmin}
                 />
               </div>
             );

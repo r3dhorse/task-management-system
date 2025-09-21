@@ -15,27 +15,36 @@ interface TaskActionsProps {
   serviceId: string;
   children: React.ReactNode;
   deleteOnly?: boolean;
-  creatorId?: string; // Task creator's user ID (kept for prop compatibility)
-  assigneeId?: string; // Task assignee's member ID (kept for prop compatibility)
-  status?: string; // Task status to determine if already archived
+  creatorId?: string; // Task creator's user ID
+  assigneeId?: string; // Task assignee's member ID
+  status?: string; // Task status to determine if already archived or done
 };
 
-export const TaskActions = ({ id, serviceId, children, deleteOnly = false, status }: TaskActionsProps) => {
+export const TaskActions = ({ id, serviceId, children, deleteOnly = false, status, creatorId, assigneeId }: TaskActionsProps) => {
   const workspaceId = useWorkspaceId();
   const router = useRouter();
-  
+
   // Get current user and member information
   const { data: currentUser } = useCurrent();
   const { data: members } = useGetMembers({ workspaceId });
-  
+
   // Find current user's member record to check role
-  const currentMember = members?.documents.find(member => 
+  const currentMember = members?.documents.find(member =>
     (member as Member).userId === currentUser?.id
   ) as Member;
-  
-  // Only workspace admins can archive tasks
+
+  // Check permissions
   const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
-  const canArchive = isWorkspaceAdmin;
+  const isCreator = currentUser?.id === creatorId;
+  const isAssignee = currentMember?.id === assigneeId;
+  const isSuperAdmin = currentUser?.isSuperAdmin || false;
+
+  // For DONE tasks, only admins can archive
+  // For other tasks, creator, assignee, or admin can archive (matching the task details page logic)
+  const isDoneStatus = status === "DONE";
+  const canArchive = isDoneStatus
+    ? (isWorkspaceAdmin || isSuperAdmin)
+    : (isCreator || isAssignee || isWorkspaceAdmin || isSuperAdmin);
   const isAlreadyArchived = status === "ARCHIVED";
 
   const [ConfirmDialog, confirm] = useConfirm(

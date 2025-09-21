@@ -438,14 +438,21 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     (member as Member).userId === currentUser?.id
   ) as Member;
   
+  // Visitors can edit tasks but cannot change status
+  // DONE tasks can only be edited by workspace admins
+  const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
+
   const isCreator = currentUser && task?.creatorId ? currentUser.id === task.creatorId : false;
   const isAssignee = currentMember && task?.assigneeId ? currentMember.id === task.assigneeId : false;
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
-  const canDelete = isCreator || isAssignee || isSuperAdmin;
+  // For DONE tasks, only admins can archive
+  const canDelete = task?.status === TaskStatus.DONE
+    ? (isWorkspaceAdmin || isSuperAdmin)
+    : (isCreator || isAssignee || isSuperAdmin);
   const isAlreadyArchived = task?.status === "ARCHIVED";
-  
-  // Visitors can edit tasks but cannot change status
-  const canEdit = currentMember?.role !== undefined; // All members (including visitors) can edit
+  const canEdit = task?.status === TaskStatus.DONE
+    ? isWorkspaceAdmin
+    : currentMember?.role !== undefined; // All members (including visitors) can edit non-DONE tasks
   const canEditStatus = currentMember?.role !== MemberRole.VISITOR; // Only non-visitors can edit status
 
 

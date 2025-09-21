@@ -212,6 +212,9 @@ const app = new Hono()
 
       const task = await prisma.task.findUnique({
         where: { id: taskId },
+        include: {
+          assignee: true,
+        }
       });
 
       if (!task) {
@@ -228,9 +231,24 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401)
       }
 
-      // Only workspace admins can archive tasks
-      if (member.role !== MemberRole.ADMIN) {
-        return c.json({ error: "Only workspace administrators can archive tasks" }, 403);
+      // Check archive permissions based on task status
+      const isWorkspaceAdmin = member.role === MemberRole.ADMIN;
+      const isCreator = task.creatorId === user.id;
+      const isAssignee = task.assigneeId === member.id;
+      const isSuperAdmin = user.isAdmin || false;
+
+      // For DONE tasks, only admins can archive
+      // For other tasks, creator, assignee, or admin can archive
+      const canArchive = task.status === TaskStatus.DONE
+        ? (isWorkspaceAdmin || isSuperAdmin)
+        : (isCreator || isAssignee || isWorkspaceAdmin || isSuperAdmin);
+
+      if (!canArchive) {
+        if (task.status === TaskStatus.DONE) {
+          return c.json({ error: "Only workspace administrators can archive completed tasks" }, 403);
+        } else {
+          return c.json({ error: "Only the task creator, assignee, or workspace administrator can archive this task" }, 403);
+        }
       }
 
       // Archive the task by setting status to ARCHIVED for audit purposes
@@ -763,16 +781,28 @@ const app = new Hono()
           // No additional restrictions needed
         } else if (existingTask.status === TaskStatus.IN_PROGRESS) {
           // In Progress status: only assignee and followers (with member role) can update
-          // Workspace members who are followers can update
-          const canUpdate = isCurrentAssignee ||
-                           (isFollower && (isWorkspaceMember || isWorkspaceAdmin)) ||
-                           isWorkspaceAdmin;
+          // Exception: Allow anyone to move task from IN_PROGRESS to IN_REVIEW
+          const isMovingToReview = status === TaskStatus.IN_REVIEW && existingTask.status === TaskStatus.IN_PROGRESS;
 
-          if (!canUpdate) {
-            return c.json({ error: "Only the assignee and followers (with member role) can update tasks in progress" }, 403);
+          if (!isMovingToReview) {
+            // For other updates, only assignee and followers can update
+            const canUpdate = isCurrentAssignee ||
+                             (isFollower && (isWorkspaceMember || isWorkspaceAdmin)) ||
+                             isWorkspaceAdmin;
+
+            if (!canUpdate) {
+              return c.json({ error: "Only the assignee and followers (with member role) can update tasks in progress" }, 403);
+            }
+          }
+        } else if (existingTask.status === TaskStatus.DONE) {
+          // DONE status: only workspace admins can update tasks already in DONE
+          // Exception: Allow moving FROM other statuses TO DONE (e.g., from IN_REVIEW to DONE)
+          const isMovingToDone = status === TaskStatus.DONE && existingTask.status !== TaskStatus.DONE;
+          if (!isMovingToDone && !isWorkspaceAdmin) {
+            return c.json({ error: "Only workspace administrators can update completed tasks" }, 403);
           }
         } else {
-          // For other statuses (BACKLOG, DONE, ARCHIVED), no special restrictions
+          // For other statuses (BACKLOG, ARCHIVED), no special restrictions
           // All members can update, visitors can update fields but not status (handled above)
         }
 
