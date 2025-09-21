@@ -265,6 +265,13 @@ export const TaskPropertiesModal = ({
                     ))}
                   </SelectContent>
                 </Select>
+                {editForm.workspaceId !== task.workspaceId && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-xs text-green-700">
+                      ✅ All followers and chat history will be preserved when transferring to the new workspace.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Confidential */}

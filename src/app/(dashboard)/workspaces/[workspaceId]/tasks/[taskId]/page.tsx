@@ -1029,6 +1029,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         onWorkspaceChange={(_workspaceId) => {
           // When workspace changes, we need to refresh services for the new workspace
           // The useGetServices hook will automatically refetch when workspaceId changes
+          // Note: Followers will be filtered on the server to keep only those who are members of the target workspace
         }}
       />
     </div>

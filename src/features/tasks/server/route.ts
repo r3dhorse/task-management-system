@@ -905,26 +905,9 @@ const app = new Hono()
             updateData.assigneeId = null;
           }
 
-          // Filter followers to keep only those who are members/visitors of the target workspace
-          const targetWorkspaceMembers = await prisma.member.findMany({
-            where: {
-              workspaceId: workspaceId,
-            },
-            select: {
-              id: true,
-            },
-          });
-
-          const targetWorkspaceMemberIds = new Set(targetWorkspaceMembers.map(m => m.id));
-
-          // Keep only followers who are members of the target workspace
-          const validFollowers = existingTask.followers.filter(follower =>
-            targetWorkspaceMemberIds.has(follower.id)
-          );
-
-          updateData.followers = {
-            set: validFollowers.map(f => ({ id: f.id }))
-          };
+          // Preserve all followers when transferring between workspaces
+          // Chat history and follower relationships are maintained regardless of workspace membership
+          // Access control will be handled at the UI level for displaying appropriate content
 
           // Update all task messages to the new workspace to preserve team chat
           await prisma.taskMessage.updateMany({
