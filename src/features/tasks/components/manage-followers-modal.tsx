@@ -52,6 +52,7 @@ export const ManageFollowersModal = ({
     .map(member => ({
       value: member.id || member.$id || '',
       label: `${member.name}`,
+      email: member.email,
       role: member.role
     }));
 

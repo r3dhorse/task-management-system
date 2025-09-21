@@ -33,7 +33,8 @@ import { DatePicker } from "@/components/date-picker";
 import { TaskStatus, Task } from "../types";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Textarea } from "@/components/ui/textarea";
-import { MultiSelect } from "@/components/ui/multi-select-simple";
+import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select-simple";
+import { AssigneeSelect } from "@/components/ui/assignee-select";
 import { useState, useEffect } from "react";
 import { MemberRole } from "@/features/members/types";
 import { Switch } from "@/components/ui/switch";
@@ -43,7 +44,7 @@ interface EditTaskFormProps {
   onCancel?: () => void;
   serviceOptions: { id: string; name: string }[];
   membertOptions: { id: string; name: string; role: MemberRole }[];
-  followerOptions: { id: string; name: string }[];
+  followerOptions: MultiSelectOption[];
   initialValues: Task;
 }
 
@@ -56,6 +57,15 @@ export const EditTaskForm = ({
 }: EditTaskFormProps) => {
   const workspaceId = useWorkspaceId();
   const { mutate, isPending } = useUpdateTask();
+
+  // Create assignee options for the AssigneeSelect component
+  const assigneeOptions = membertOptions
+    .filter(member => member.role !== MemberRole.VISITOR)
+    .map((member) => ({
+      value: member.id,
+      label: member.name,
+      role: member.role,
+    }));
   const [selectedFollowers, setSelectedFollowers] = useState<string[]>(() => {
     try {
       return initialValues.followedIds ? JSON.parse(initialValues.followedIds) : [];
@@ -218,28 +228,16 @@ export const EditTaskForm = ({
                         </span>
                       )}
                     </FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select assignee" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <FormMessage />
-                      <SelectContent>
-                        {!isConfidentialValue && (
-                          <SelectItem value="unassigned">
-                            Unassigned
-                          </SelectItem>
-                        )}
-                        {membertOptions
-                          .filter(member => member.role !== MemberRole.VISITOR)
-                          .map((member) => (
-                          <SelectItem key={member.id} value={String(member.id)}>
-                            {member.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <AssigneeSelect
+                        options={assigneeOptions}
+                        selected={field.value || "unassigned"}
+                        onChange={field.onChange}
+                        allowUnassigned={!isConfidentialValue}
+                        placeholder="Select assignee"
+                      />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -328,10 +326,7 @@ export const EditTaskForm = ({
                 <FormLabel>Followers</FormLabel>
                 <FormControl>
                   <MultiSelect
-                    options={followerOptions.map(member => ({
-                      value: member.id,
-                      label: member.name
-                    }))}
+                    options={followerOptions}
                     selected={selectedFollowers}
                     onChange={setSelectedFollowers}
                     placeholder="Select members to follow this task..."

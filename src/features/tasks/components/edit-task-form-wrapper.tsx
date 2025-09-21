@@ -41,8 +41,10 @@ export const EditTaskFormWrapper = ({
   }));
 
   const followerOptions = members?.documents.map((member) => ({
-    id: member.id,
-    name: member.name,
+    value: member.id,
+    label: member.name,
+    email: member.email,
+    role: (member as Member).role,
   }));
 
   const isLoading = isLoadingServices || isLoadingMembers || isLoadingTask;

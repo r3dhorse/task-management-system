@@ -16,6 +16,7 @@ import { DatePicker } from "@/components/date-picker";
 import { TaskStatus } from "../types";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelect } from "@/components/ui/multi-select-simple";
+import { AssigneeSelect } from "@/components/ui/assignee-select";
 import { useGetServices } from "@/features/services/api/use-get-services";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberRole } from "@/features/members/types";
@@ -137,6 +138,16 @@ export const CreateTaskForm = ({
     email: member.email,
     role: member.role as MemberRole,
   })) || [];
+
+  // Create assignee options for the AssigneeSelect component
+  const assigneeOptions = memberOptions
+    .filter((member: MemberOption) => member.role !== MemberRole.VISITOR)
+    .map((member: MemberOption) => ({
+      value: member.id,
+      label: member.name,
+      email: member.email,
+      role: member.role,
+    }));
 
   // Create follower options from workspace members
   const followerOptions = members?.documents?.map((member: MemberDocument) => ({
@@ -385,66 +396,23 @@ export const CreateTaskForm = ({
                         </span>
                       )}
                     </FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange} disabled={isLoadingMembers || !selectedWorkspaceId}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={
-                            isLoadingMembers
-                              ? "Loading members..."
-                              : !selectedWorkspaceId
-                                ? "Select workspace first"
-                                : "Select assignee"
-                          } />
-                        </SelectTrigger>
-                      </FormControl>
-                      <FormMessage />
-                      <SelectContent>
-                        {!isConfidentialValue && (
-                          <SelectItem value="unassigned">
-                            <div className="flex items-center gap-x-2 w-full">
-                              <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium text-gray-600 flex-shrink-0">
-                                ?
-                              </div>
-                              <div className="flex flex-col min-w-0 flex-1">
-                                <span className="text-sm font-medium">Unassigned</span>
-                                <span className="text-xs text-muted-foreground">No assignee selected</span>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        )}
-                        {memberOptions.filter(member => member.role !== MemberRole.VISITOR).length === 0 && !isLoadingMembers && selectedWorkspaceId && (
-                          <div className="px-2 py-3 text-center text-sm text-muted-foreground">
-                            No assignable members found in this workspace
-                          </div>
-                        )}
-                        {memberOptions
-                          .filter((member: MemberOption) => member.role !== MemberRole.VISITOR)
-                          .map((member: MemberOption) => (
-                          <SelectItem key={member.id} value={String(member.id)}>
-                            <div className="flex items-center gap-x-2 w-full">
-                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-sm font-medium text-white flex-shrink-0">
-                                {member.name.charAt(0).toUpperCase()}
-                              </div>
-                              <div className="flex flex-col min-w-0 flex-1">
-                                <span className="text-sm font-medium truncate">{member.name}</span>
-                                <span className="text-xs text-muted-foreground truncate">{member.email}</span>
-                              </div>
-                              <div className="flex-shrink-0">
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                  member.role === 'ADMIN'
-                                    ? 'bg-red-100 text-red-700'
-                                    : member.role === 'MEMBER'
-                                    ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-gray-100 text-gray-700'
-                                }`}>
-                                  {member.role}
-                                </span>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <AssigneeSelect
+                        options={assigneeOptions}
+                        selected={field.value || "unassigned"}
+                        onChange={field.onChange}
+                        disabled={isLoadingMembers || !selectedWorkspaceId}
+                        allowUnassigned={!isConfidentialValue}
+                        placeholder={
+                          isLoadingMembers
+                            ? "Loading members..."
+                            : !selectedWorkspaceId
+                              ? "Select workspace first"
+                              : "Select assignee"
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
