@@ -81,6 +81,16 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
     });
   }
 
+  // Workspace change
+  if (newTask.workspaceId !== undefined && normalizeValue(newTask.workspaceId) !== normalizeValue(oldTask.workspaceId)) {
+    changes.push({
+      field: "workspaceId",
+      oldValue: oldTask.workspaceId,
+      newValue: newTask.workspaceId,
+      displayName: "Workspace"
+    });
+  }
+
   // Due date change - use proper date comparison
   if (newTask.dueDate !== undefined && normalizeDateForComparison(newTask.dueDate) !== normalizeDateForComparison(oldTask.dueDate)) {
     changes.push({
@@ -151,6 +161,11 @@ export function formatHistoryMessage(
     return `${userName} moved task to service ${formatValue(newValue)}`;
   }
 
+  // Handle workspace changes even when action is UPDATED
+  if (field === "workspaceId") {
+    return `${userName} transferred task to workspace ${formatValue(newValue)}`;
+  }
+
   // Handle confidential changes even when action is UPDATED
   if (field === "isConfidential") {
     const isConfidential = newValue === "true";
@@ -176,7 +191,10 @@ export function formatHistoryMessage(
 
     case TaskHistoryAction.SERVICE_CHANGED:
       return `${userName} moved task to service ${formatValue(newValue)}`;
-    
+
+    case TaskHistoryAction.WORKSPACE_CHANGED:
+      return `${userName} transferred task to workspace ${formatValue(newValue)}`;
+
     case TaskHistoryAction.DUE_DATE_CHANGED:
       return `${userName} changed due date from ${formatDate(oldValue)} to ${formatDate(newValue)}`;
     
@@ -282,6 +300,11 @@ export function getActionColor(action: TaskHistoryAction, field?: string): strin
     return "bg-indigo-500";
   }
 
+  // Handle workspace changes even when action is UPDATED
+  if (field === "workspaceId") {
+    return "bg-violet-500";
+  }
+
   // Handle confidential changes even when action is UPDATED
   if (field === "isConfidential") {
     return "bg-amber-500";
@@ -298,6 +321,8 @@ export function getActionColor(action: TaskHistoryAction, field?: string): strin
       return "bg-purple-600";
     case TaskHistoryAction.SERVICE_CHANGED:
       return "bg-indigo-500";
+    case TaskHistoryAction.WORKSPACE_CHANGED:
+      return "bg-violet-500";
     case TaskHistoryAction.DUE_DATE_CHANGED:
       return "bg-yellow-500";
     case TaskHistoryAction.ATTACHMENT_ADDED:

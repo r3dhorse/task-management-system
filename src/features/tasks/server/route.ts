@@ -925,6 +925,16 @@ const app = new Hono()
           updateData.followers = {
             set: validFollowers.map(f => ({ id: f.id }))
           };
+
+          // Update all task messages to the new workspace to preserve team chat
+          await prisma.taskMessage.updateMany({
+            where: {
+              taskId: taskId,
+            },
+            data: {
+              workspaceId: workspaceId,
+            },
+          });
         }
 
         if (name !== undefined) updateData.name = name;
