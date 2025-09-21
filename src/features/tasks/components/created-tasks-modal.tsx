@@ -11,11 +11,6 @@ import { format, differenceInDays } from "date-fns";
 import {
   Search,
   FilterX,
-  Calendar,
-  Clock,
-  FolderOpen,
-  User,
-  Building2,
   RefreshCw,
   FileTextIcon,
   X,
@@ -23,14 +18,12 @@ import {
   ChevronRight
 } from "@/lib/lucide-icons";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
 import { useCreatedTasksModal } from "../hooks/use-created-tasks-modal";
 import { useGetCreatedTasks } from "../api/use-get-created-tasks";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 
 export const CreatedTasksModal = () => {
-  const router = useRouter();
   const { isOpen, close } = useCreatedTasksModal();
 
   const [search, setSearch] = useState("");
@@ -49,7 +42,7 @@ export const CreatedTasksModal = () => {
 
   const tasksList = useMemo(() => data?.documents || [], [data]);
   const totalTasks = data?.total || 0;
-  const totalPages = Math.ceil(totalTasks / 20);
+  const totalPages = Math.ceil(totalTasks / 10);
   const hasNextPage = currentPage < totalPages;
   const hasPrevPage = currentPage > 1;
 
@@ -117,18 +110,6 @@ export const CreatedTasksModal = () => {
     return "text-gray-500";
   };
 
-  const formatDueDate = (daysUntilDue: number | null) => {
-    if (daysUntilDue === null) return null;
-    if (daysUntilDue < 0) return `${Math.abs(daysUntilDue)} days overdue`;
-    if (daysUntilDue === 0) return "Due today";
-    if (daysUntilDue === 1) return "Due tomorrow";
-    return `Due in ${daysUntilDue} days`;
-  };
-
-  const handleTaskClick = (task: { workspaceId: string; id: string }) => {
-    router.push(`/workspaces/${task.workspaceId}/tasks/${task.id}`);
-    close();
-  };
 
   const clearFilters = () => {
     setSearch("");
@@ -257,7 +238,7 @@ export const CreatedTasksModal = () => {
         </div>
 
         {/* Table */}
-        <div className="overflow-y-auto max-h-[50vh]">
+        <div className="overflow-x-auto border rounded-lg">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <LoadingSpinner />
@@ -273,84 +254,90 @@ export const CreatedTasksModal = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {tasksList.map((task) => {
-                const daysUntilDue = getDaysUntilDue(task.dueDate);
-                return (
-                  <div
-                    key={task.id}
-                    onClick={() => handleTaskClick(task)}
-                    className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 bg-white cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        {/* Task Header */}
-                        <div className="flex items-start gap-3 mb-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                                {task.taskNumber}
-                              </span>
-                              <h3 className="font-medium text-gray-900 truncate">
-                                {task.name}
-                              </h3>
-                            </div>
-
-                            {/* Task Metadata */}
-                            <div className="flex flex-wrap items-center gap-3 text-xs">
-                              <Badge className={cn("text-xs", getStatusColor(task.status as TaskStatus))}>
-                                {getStatusLabel(task.status as TaskStatus)}
-                              </Badge>
-
-                              {task.workspace && (
-                                <div className="flex items-center gap-1 text-gray-500">
-                                  <Building2 className="h-3 w-3" />
-                                  <span className="truncate max-w-[120px]">{task.workspace.name}</span>
-                                </div>
-                              )}
-
-                              {task.service && (
-                                <div className="flex items-center gap-1 text-gray-500">
-                                  <FolderOpen className="h-3 w-3" />
-                                  <span className="truncate max-w-[120px]">{task.service.name}</span>
-                                </div>
-                              )}
-
-                              {task.assignee && (
-                                <div className="flex items-center gap-1 text-gray-500">
-                                  <User className="h-3 w-3" />
-                                  <span className="truncate max-w-[120px]">{task.assignee.user.name}</span>
-                                </div>
-                              )}
-
-                              {task.dueDate && (
-                                <div className={cn("flex items-center gap-1", getDueDateColor(daysUntilDue))}>
-                                  <Calendar className="h-3 w-3" />
-                                  <span>
-                                    {formatDueDate(daysUntilDue) || format(new Date(task.dueDate), 'MMM d, yyyy')}
-                                  </span>
-                                </div>
-                              )}
-
-                              <div className="flex items-center gap-1 text-gray-400">
-                                <Clock className="h-3 w-3" />
-                                <span>Created {format(new Date(task.createdAt), 'MMM d, yyyy')}</span>
-                              </div>
-                            </div>
-
-                            {task.description && (
-                              <p className="text-sm text-gray-600 mt-2 line-clamp-2">
-                                {task.description}
-                              </p>
-                            )}
-                          </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-gray-50">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Task Number
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Workspace
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Service
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Due Date
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Assignee
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {tasksList.map((task) => {
+                  const daysUntilDue = getDaysUntilDue(task.dueDate);
+                  return (
+                    <tr
+                      key={task.id}
+                      className="border-b border-gray-100"
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                            {task.taskNumber}
+                          </span>
+                          <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]" title={task.name}>
+                            {task.name}
+                          </span>
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm text-gray-600 truncate max-w-[150px]" title={task.workspace?.name || undefined}>
+                          {task.workspace?.name || '-'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm text-gray-600 truncate max-w-[150px]" title={task.service?.name || undefined}>
+                          {task.service?.name || '-'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {task.dueDate ? (
+                          <span className={cn("text-sm", getDueDateColor(daysUntilDue))}>
+                            {format(new Date(task.dueDate), 'MMM d, yyyy')}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <Badge className={cn("text-xs", getStatusColor(task.status as TaskStatus))}>
+                          {getStatusLabel(task.status as TaskStatus)}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm text-gray-600 truncate max-w-[120px]" title={task.assignee?.user?.name || undefined}>
+                          {task.assignee?.user?.name || '-'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">
+                          <div>{format(new Date(task.createdAt), 'MMM d, yyyy')}</div>
+                          <div className="text-xs text-gray-400">{format(new Date(task.createdAt), 'h:mm a')}</div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           )}
         </div>
 
@@ -358,7 +345,7 @@ export const CreatedTasksModal = () => {
         {!isLoading && tasksList.length > 0 && (
           <div className="border-t pt-4 flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing {((currentPage - 1) * 20) + 1} to {Math.min(currentPage * 20, totalTasks)} of {totalTasks} tasks
+              Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, totalTasks)} of {totalTasks} tasks
             </div>
             <div className="flex items-center gap-2">
               <Button

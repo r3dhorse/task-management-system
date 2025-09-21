@@ -17,7 +17,7 @@ export const useGetCreatedTasks = ({
   serviceId,
   workspaceId,
   page = 1,
-  limit = 20,
+  limit = 10,
 }: UseGetCreatedTasksProps) => {
   const query = useQuery({
     queryKey: [

@@ -23,7 +23,7 @@ const app = new Hono()
         status: z.nativeEnum(TaskStatus).nullish(),
         serviceId: z.string().nullish(),
         workspaceId: z.string().nullish(),
-        limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 20),
+        limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 10),
         offset: z.string().optional().transform(val => val ? parseInt(val, 10) : 0),
       })
     ),
