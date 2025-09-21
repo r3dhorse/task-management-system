@@ -33,9 +33,20 @@ interface TaskStatusCount {
 interface MemberPerformance {
   id: string;
   name: string;
+  tasksAssigned: number;
   tasksCompleted: number;
   tasksInProgress: number;
-  totalTasks: number;
+  tasksOverdue: number;
+  tasksFollowing: number;
+  tasksFollowingCompleted: number;
+  tasksReviewingCompleted: number;
+  contributionScore: number;
+  contributionBreakdown: {
+    assigned: number;
+    collaborator: number;
+    reviewer: number;
+  };
+  productivityScore: number;
   completionRate: number;
 }
 
@@ -109,6 +120,100 @@ const WorkspaceIdPage = () => {
     (member as Member).userId === currentUser?.id
   ) as Member | undefined;
 
+  // Filter tasks by date range
+  const filteredTasks = useMemo(() => {
+    return (tasks?.documents.filter((task) => {
+      if (!dateFrom || !dateTo) return true;
+      const taskDate = new Date(task.createdAt);
+      return isAfter(taskDate, dateFrom) && isBefore(taskDate, dateTo);
+    }) || []) as PopulatedTask[];
+  }, [tasks?.documents, dateFrom, dateTo]);
+
+  // Calculate member performance using same analytics logic
+  const memberPerformance: MemberPerformance[] = useMemo(() => {
+    const memberStats = members?.documents
+      .filter((member) => (member as Member).role !== MemberRole.VISITOR) // Exclude visitors
+      .map((member) => {
+        // Assigned tasks
+        const memberTasks = filteredTasks.filter(task => task.assigneeId === member.id);
+        const completedTasks = memberTasks.filter(task => task.status === TaskStatus.DONE);
+        // Active tasks: all tasks NOT in TODO, DONE, or ARCHIVED status
+        const activeTasks = memberTasks.filter(task =>
+          task.status !== TaskStatus.TODO &&
+          task.status !== TaskStatus.DONE &&
+          task.status !== TaskStatus.ARCHIVED
+        );
+        const overdueTasks = memberTasks.filter(task => {
+          if (!task.dueDate || task.status === TaskStatus.DONE) return false;
+          return new Date(task.dueDate) < new Date();
+        });
+
+        // Tasks where member is a follower/collaborator (excluding where they are assignee)
+        const followingTasks = filteredTasks.filter(task => {
+          if (task.assigneeId === member.id) return false;
+          if (task.followers && Array.isArray(task.followers)) {
+            return task.followers.some((follower: { id: string }) => follower.id === member.id);
+          }
+          return false;
+        });
+        const followingTasksCompleted = followingTasks.filter(task => task.status === TaskStatus.DONE);
+
+        // Count completed tasks where member was the reviewer
+        const reviewingTasksCompleted = filteredTasks.filter(task => {
+          return task.reviewerId === member.id && task.status === TaskStatus.DONE;
+        }).length;
+
+        // Formula 1: Completion Rate = (Completed Tasks / Assigned Tasks) × 100
+        const completionRate = memberTasks.length > 0
+          ? (completedTasks.length / memberTasks.length) * 100
+          : 0;
+
+        // Formula 2: Contribution Score
+        // Assigned & Completed Task → 1.0 point each
+        // Collaborator on Completed Task → 0.5 points
+        // Reviewer of Completed Task → 0.3 points
+        const assignedPoints = completedTasks.length * 1.0;
+        const collaboratorPoints = followingTasksCompleted.length * 0.5;
+        const reviewerPoints = reviewingTasksCompleted * 0.3;
+        const contributionScore = assignedPoints + collaboratorPoints + reviewerPoints;
+
+        const contributionBreakdown = {
+          assigned: assignedPoints,
+          collaborator: collaboratorPoints,
+          reviewer: reviewerPoints,
+        };
+
+        return {
+          id: member.id,
+          name: member.name,
+          tasksAssigned: memberTasks.length,
+          tasksCompleted: completedTasks.length,
+          tasksInProgress: activeTasks.length, // Using active tasks (not in TODO, DONE, ARCHIVED)
+          tasksOverdue: overdueTasks.length,
+          tasksFollowing: followingTasks.length,
+          tasksFollowingCompleted: followingTasksCompleted.length,
+          tasksReviewingCompleted: reviewingTasksCompleted,
+          contributionScore,
+          contributionBreakdown,
+          productivityScore: 0, // Will be calculated after finding max
+          completionRate
+        };
+      }) || [];
+
+    // Find the maximum contribution score in the team
+    const maxContributionScore = Math.max(...memberStats.map(m => m.contributionScore), 1);
+
+    // Formula 3: Productivity Score = (Contribution Score / Max Contribution Score) × 100 - (Overdue Tasks × 2)
+    // Normalize and calculate final productivity score
+    return memberStats.map(member => ({
+      ...member,
+      productivityScore: Math.max(0, Math.round(
+        ((member.contributionScore / maxContributionScore) * 100) - (member.tasksOverdue * 2)
+      ))
+    }))
+    .sort((a, b) => b.productivityScore - a.productivityScore);
+  }, [filteredTasks, members?.documents]);
+
   // Redirect visitors to workspace tasks page automatically
   useEffect(() => {
     if (currentMember && currentMember.role === MemberRole.VISITOR) {
@@ -120,13 +225,6 @@ const WorkspaceIdPage = () => {
   if (!isAuthorized) {
     return null;
   }
-
-  // Filter tasks by date range
-  const filteredTasks = (tasks?.documents.filter((task) => {
-    if (!dateFrom || !dateTo) return true;
-    const taskDate = new Date(task.createdAt);
-    return isAfter(taskDate, dateFrom) && isBefore(taskDate, dateTo);
-  }) || []) as PopulatedTask[];
 
   // Calculate statistics
   const totalMembers = members?.documents.length || 0;
@@ -145,40 +243,23 @@ const WorkspaceIdPage = () => {
     [TaskStatus.DONE]: completedTasks
   };
 
-  // Calculate member performance
-  const memberPerformance: MemberPerformance[] = members?.documents
-    .filter((member) => (member as Member).role !== MemberRole.VISITOR) // Exclude visitors
-    .map((member) => {
-      const memberTasks = filteredTasks.filter(task => task.assigneeId === member.id);
-      const memberCompletedTasks = memberTasks.filter(task => task.status === TaskStatus.DONE).length;
-      const memberInProgressTasks = memberTasks.filter(task => task.status === TaskStatus.IN_PROGRESS).length;
-      const memberTotalTasks = memberTasks.length;
-      const completionRate = memberTotalTasks > 0 ? (memberCompletedTasks / memberTotalTasks) * 100 : 0;
-
-      return {
-        id: member.id,
-        name: member.name,
-        tasksCompleted: memberCompletedTasks,
-        tasksInProgress: memberInProgressTasks,
-        totalTasks: memberTotalTasks,
-        completionRate
-      };
-    })
-    .sort((a, b) => b.completionRate - a.completionRate) || [];
-
   const topPerformers = memberPerformance.slice(0, 3);
 
   // Calculate service performance
   const servicePerformance: ServicePerformance[] = services?.documents.map((service) => {
     const serviceTasks = filteredTasks.filter(task => task.serviceId === service.id);
     const serviceCompletedTasks = serviceTasks.filter(task => task.status === TaskStatus.DONE).length;
-    const serviceInProgressTasks = serviceTasks.filter(task => task.status === TaskStatus.IN_PROGRESS).length;
-    const serviceInReviewTasks = serviceTasks.filter(task => task.status === TaskStatus.IN_REVIEW).length;
+    // Active tasks: all tasks NOT in TODO, DONE, or ARCHIVED status
+    const serviceActiveTasks = serviceTasks.filter(task =>
+      task.status !== TaskStatus.TODO &&
+      task.status !== TaskStatus.DONE &&
+      task.status !== TaskStatus.ARCHIVED
+    ).length;
     const serviceTotalTasks = serviceTasks.length;
 
     // Calculate completion rate and progress rate
     const completionRate = serviceTotalTasks > 0 ? (serviceCompletedTasks / serviceTotalTasks) * 100 : 0;
-    const progressRate = serviceTotalTasks > 0 ? ((serviceCompletedTasks + serviceInProgressTasks + serviceInReviewTasks) / serviceTotalTasks) * 100 : 0;
+    const progressRate = serviceTotalTasks > 0 ? ((serviceCompletedTasks + serviceActiveTasks) / serviceTotalTasks) * 100 : 0;
 
     // Calculate health score (same as Analytics tab) - prioritize completion but consider progress
     const healthScore = Math.round((completionRate * 0.6) + (progressRate * 0.4));
@@ -187,7 +268,7 @@ const WorkspaceIdPage = () => {
       id: service.id,
       name: service.name,
       tasksCompleted: serviceCompletedTasks,
-      tasksInProgress: serviceInProgressTasks,
+      tasksInProgress: serviceActiveTasks, // Using active tasks (not in TODO, DONE, ARCHIVED)
       totalTasks: serviceTotalTasks,
       completionRate,
       healthScore
@@ -523,21 +604,21 @@ const WorkspaceIdPage = () => {
                           <div className="flex items-center gap-1 mb-1">
                             <Target className="w-3 h-3 text-green-600" />
                             <span className="text-xl font-bold text-green-600">
-                              {member.completionRate.toFixed(1)}%
+                              {member.productivityScore}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-600">
-                            {member.totalTasks} total tasks
+                          <p className="text-xs text-gray-600" title={`Formula: ${member.contributionBreakdown.assigned.toFixed(1)} + ${member.contributionBreakdown.collaborator.toFixed(1)} + ${member.contributionBreakdown.reviewer.toFixed(1)} = ${member.contributionScore.toFixed(1)}`}>
+                            Score: {member.contributionScore.toFixed(1)}
                           </p>
                         </div>
                       </div>
                       
-                      {/* Progress bar */}
+                      {/* Progress bar showing productivity score */}
                       <div className="px-3 pb-3">
                         <div className="w-full bg-white/60 rounded-full h-2 overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-500 ease-out"
-                            style={{ width: `${member.completionRate}%` }}
+                            style={{ width: `${member.productivityScore}%` }}
                           />
                         </div>
                       </div>

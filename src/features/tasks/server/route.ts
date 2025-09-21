@@ -277,6 +277,7 @@ const app = new Hono()
         offset
       } = c.req.valid("query");
 
+
       const member = await getMember({
         prisma,
         workspaceId,
@@ -519,20 +520,6 @@ const app = new Hono()
           followedIds,
           isConfidential,
         } = c.req.valid("json");
-
-        console.log("Creating task with data:", {
-          name,
-          status,
-          workspaceId,
-          serviceId,
-          dueDate,
-          assigneeId,
-          reviewerId,
-          description,
-          attachmentId,
-          followedIds,
-          isConfidential,
-        });
 
         const member = await getMember({
           prisma,

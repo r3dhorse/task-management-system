@@ -112,25 +112,17 @@ export const useCreateTask = () => {
 
       toast.success(
         taskNumber
-          ? `🎉 Success! ${taskNumber} has been created. Redirecting you to the task...`
+          ? `Success! ${taskNumber} has been created. Redirecting you to the task...`
           : "Task created successfully! Redirecting you to the task...",
         {
-          duration: 3000, // Auto-close after 3 seconds
-          dismissible: true,  // Enable close button (X)
-          action: taskNumber ? {
-            label: "Copy",
-            onClick: () => {
-              navigator.clipboard.writeText(taskNumber);
-              toast.success("Task number copied to clipboard!", { duration: 2000 });
-            }
-          } : undefined,
+          duration: 1000,
         }
       );
 
       // Navigate after a short delay to allow users to see the success toast
       setTimeout(() => {
         navigateToTask();
-      }, 3500);
+      }, 500);
       queryClient.invalidateQueries();
     },
 

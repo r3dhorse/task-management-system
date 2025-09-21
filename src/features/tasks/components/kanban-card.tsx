@@ -189,13 +189,13 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
               </div>
             </div>
 
-            {/* Reviewer - only show when status is IN_REVIEW */}
-            {task.status === 'IN_REVIEW' && (
+            {/* Reviewer - show when status is IN_REVIEW or DONE */}
+            {(task.status === 'IN_REVIEW' || task.status === 'DONE') && (
               <div className="mb-2">
                 <div className="flex items-center gap-1 text-xs">
                   <span className="text-gray-500 font-medium">Reviewer:</span>
                   {reviewer ? (
-                    <span className="text-purple-600 font-medium break-words">
+                    <span className="text-neutral-600 font-medium break-words">
                       {reviewer.name}
                     </span>
                   ) : (

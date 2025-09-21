@@ -5,6 +5,7 @@ import { DatePicker } from "@/components/date-picker";
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Package, UserIcon, ListChecksIcon, FilterX } from "@/lib/lucide-icons";
+import { useState } from "react";
 import { TaskStatus } from "../types";
 import { useTaskFilters } from "../hooks/use-task-filters";
 import { Member, MemberRole } from "@/features/members/types";
@@ -38,6 +39,8 @@ export const DataFilters = () => {
     search
   }, setFilters] = useTaskFilters();
 
+  const [showFilters, setShowFilters] = useState(true);
+
   const onStatusChange = (value: string) => { setFilters({ status: value === "all" ? null : (value as TaskStatus), }); };
   const onAssigneeChange = (value: string) => { setFilters({ assigneeId: value === "all" ? null : (value as string), }); };
   const onServiceChange = (value: string) => { setFilters({ serviceId: value === "all" ? null : (value as string), }); };
@@ -56,9 +59,27 @@ export const DataFilters = () => {
 
   if (isLoading) return null;
   return (
-    <div className="flex flex-col lg:flex-row gap-2">
-      {/* Task Number Search */}
-      <TaskNumberSearch />
+    <div className="flex flex-col gap-2">
+      {/* Filter Toggle and Search */}
+      <div className="flex items-center gap-2">
+        <TaskNumberSearch />
+        <Button
+          onClick={() => setShowFilters(!showFilters)}
+          variant="outline"
+          size="sm"
+          className={`h-8 px-3 transition-all duration-200 ${
+            showFilters
+              ? 'bg-gray-700 hover:bg-gray-800 text-white border-gray-700'
+              : 'bg-white hover:bg-gray-50 text-gray-700 border-gray-200'
+          }`}
+        >
+          Filter
+        </Button>
+      </div>
+
+      {/* Filters Section */}
+      {showFilters && (
+        <div className="flex flex-col lg:flex-row gap-2">
 
       <Select
         value={status || "all"}
@@ -180,6 +201,8 @@ export const DataFilters = () => {
           <FilterX className="h-4 w-4 mr-0 lg:mr-2 group-hover:rotate-12 transition-transform duration-200" />
           <span className="hidden lg:inline">Clear filters</span>
         </Button>
+      )}
+        </div>
       )}
     </div>
   );
