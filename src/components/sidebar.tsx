@@ -58,7 +58,7 @@ export const Sidebar = () => {
         < Navigation />
         <DottedSeparator className="my-3 sm:my-4" />
         <Button
-          onClick={open}
+          onClick={() => open()}
           className="w-full bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all duration-200"
         >
           <Plus className="w-4 h-4 mr-2" />

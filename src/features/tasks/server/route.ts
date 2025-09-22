@@ -167,6 +167,11 @@ const app = new Hono()
                 }
               }
             }
+          },
+          _count: {
+            select: {
+              subTasks: true
+            }
           }
         }
       });
@@ -183,6 +188,7 @@ const app = new Hono()
           email: task.assignee.user.email,
         }] : [],
         followedIds: JSON.stringify(task.followers.map(f => f.id)),
+        subTaskCount: task._count.subTasks,
       }));
 
       // Get total count
@@ -214,6 +220,7 @@ const app = new Hono()
         where: { id: taskId },
         include: {
           assignee: true,
+          followers: true,
         }
       });
 
@@ -229,6 +236,19 @@ const app = new Hono()
 
       if (!member) {
         return c.json({ error: "Unauthorized" }, 401)
+      }
+
+      // Check access to confidential tasks
+      if (task.isConfidential) {
+        const hasConfidentialAccess =
+          task.creatorId === user.id || // User created the task
+          task.assigneeId === member.id || // User is assigned to the task
+          task.reviewerId === member.id || // User is the reviewer of the task
+          task.followers.some(f => f.id === member.id); // User is following the task
+
+        if (!hasConfidentialAccess) {
+          return c.json({ error: "You don't have access to this confidential task" }, 403);
+        }
       }
 
       // Check archive permissions based on task status
@@ -421,11 +441,12 @@ const app = new Hono()
       }
 
       // Add confidential task filtering to the where clause
-      // Users can see confidential tasks if they are the creator, assignee, or follower
+      // Users can see confidential tasks if they are the creator, assignee, reviewer, or follower
       const confidentialFilter = [
         { isConfidential: false }, // Non-confidential tasks are visible to everyone
         { isConfidential: true, creatorId: user.id }, // User created the task
         { isConfidential: true, assigneeId: member.id }, // User is assigned to the task
+        { isConfidential: true, reviewerId: member.id }, // User is the reviewer of the task
         { isConfidential: true, followers: { some: { id: member.id } } }, // User is following the task
       ];
 
@@ -485,6 +506,11 @@ const app = new Hono()
                 }
               }
             }
+          },
+          _count: {
+            select: {
+              subTasks: true
+            }
           }
         }
       });
@@ -501,6 +527,7 @@ const app = new Hono()
           email: task.assignee.user.email,
         }] : [],
         followedIds: JSON.stringify(task.followers.map(f => f.id)),
+        subTaskCount: task._count.subTasks,
       }));
 
       // Get the actual total count AFTER loading to ensure consistency
@@ -761,6 +788,19 @@ const app = new Hono()
           return c.json({ error: "Unauthorized" }, 401);
         }
 
+        // Check access to confidential tasks
+        if (existingTask.isConfidential) {
+          const hasConfidentialAccess =
+            existingTask.creatorId === user.id || // User created the task
+            existingTask.assigneeId === member.id || // User is assigned to the task
+            existingTask.reviewerId === member.id || // User is the reviewer of the task
+            existingTask.followers.some(f => f.id === member.id); // User is following the task
+
+          if (!hasConfidentialAccess) {
+            return c.json({ error: "You don't have access to this confidential task" }, 403);
+          }
+        }
+
         // Permission checks based on task status and user roles
         const isCurrentAssignee = existingTask.assigneeId === member.id;
         const isFollower = existingTask.followers.some(f => f.id === member.id);
@@ -771,6 +811,24 @@ const app = new Hono()
         // Global restriction: Visitors cannot change task status at all
         if (isVisitor && status !== undefined && status !== existingTask.status) {
           return c.json({ error: "Visitors cannot change task status" }, 403);
+        }
+
+        // Check if trying to mark task as DONE when it has incomplete sub-tasks
+        if (status === TaskStatus.DONE && status !== existingTask.status) {
+          const incompleteSubTasks = await prisma.task.count({
+            where: {
+              parentTaskId: taskId,
+              status: {
+                not: TaskStatus.DONE
+              }
+            }
+          });
+
+          if (incompleteSubTasks > 0) {
+            return c.json({
+              error: `Cannot mark task as done. There are ${incompleteSubTasks} incomplete sub-task(s) that must be completed first.`
+            }, 400);
+          }
         }
 
         // Check if user can update task based on current status
@@ -1409,6 +1467,11 @@ const app = new Hono()
                 }
               }
             }
+          },
+          _count: {
+            select: {
+              subTasks: true
+            }
           }
         }
       });
@@ -1433,6 +1496,19 @@ const app = new Hono()
         return c.json({ error: "Task not found" }, 404);
       }
 
+      // Check access to confidential tasks
+      if (task.isConfidential) {
+        const hasConfidentialAccess =
+          task.creatorId === currentUser.id || // User created the task
+          task.assigneeId === currentMember.id || // User is assigned to the task
+          task.reviewerId === currentMember.id || // User is the reviewer of the task
+          task.followers.some(f => f.id === currentMember.id); // User is following the task
+
+        if (!hasConfidentialAccess) {
+          return c.json({ error: "You don't have access to this confidential task" }, 403);
+        }
+      }
+
       // If user is a visitor, only allow access to tasks they are following
       if (currentMember.role === MemberRole.VISITOR) {
         const isFollowing = task.followers.some(follower => follower.id === currentMember.id);
@@ -1455,7 +1531,218 @@ const app = new Hono()
           updatedAt: task.updatedAt.toISOString(),
           assignees,
           followedIds: JSON.stringify(task.followers.map(f => f.id)),
+          subTaskCount: task._count.subTasks,
         },
+      });
+    }
+  )
+
+  // Get sub-tasks for a task
+  .get(
+    "/:taskId/sub-tasks",
+    sessionMiddleware,
+    zValidator("param", z.object({ taskId: z.string() })),
+    async (c) => {
+      const user = c.get("user");
+      const prisma = c.get("prisma");
+      const { taskId } = c.req.valid("param");
+
+      // Check if parent task exists and user has access to it
+      const parentTask = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: {
+          workspace: {
+            include: {
+              members: {
+                where: { userId: user.id }
+              }
+            }
+          }
+        }
+      });
+
+      if (!parentTask) {
+        return c.json({ error: "Task not found" }, 404);
+      }
+
+      if (parentTask.workspace.members.length === 0) {
+        return c.json({ error: "You must be a member of the parent task's workspace to view sub-tasks" }, 403);
+      }
+
+      // Get all sub-tasks (across all workspaces where user has access)
+      const subTasks = await prisma.task.findMany({
+        where: {
+          parentTaskId: taskId,
+          workspace: {
+            members: {
+              some: {
+                userId: user.id
+              }
+            }
+          }
+        },
+        include: {
+          assignee: {
+            include: { user: true }
+          },
+          service: true,
+          workspace: true,
+        },
+        orderBy: { createdAt: 'asc' }
+      });
+
+      return c.json({
+        data: subTasks.map(task => ({
+          ...task,
+          dueDate: task.dueDate?.toISOString() || null,
+          createdAt: task.createdAt.toISOString(),
+          updatedAt: task.updatedAt.toISOString(),
+        }))
+      });
+    }
+  )
+
+  // Create a sub-task
+  .post(
+    "/:taskId/sub-tasks",
+    sessionMiddleware,
+    zValidator("param", z.object({ taskId: z.string() })),
+    zValidator("json", createTaskSchema),
+    async (c) => {
+      try {
+        const user = c.get("user");
+        const prisma = c.get("prisma");
+        const { taskId } = c.req.valid("param");
+        const values = c.req.valid("json");
+
+        console.log("Creating sub-task:", { taskId, values });
+
+      // Check if parent task exists and user has access to it
+      const parentTask = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: {
+          workspace: {
+            include: {
+              members: {
+                where: { userId: user.id }
+              }
+            }
+          },
+          service: true
+        }
+      });
+
+      if (!parentTask) {
+        return c.json({ error: "Parent task not found" }, 404);
+      }
+
+      const parentTaskMember = parentTask.workspace.members[0];
+      if (!parentTaskMember) {
+        return c.json({ error: "You must be a member of the parent task's workspace to create sub-tasks" }, 403);
+      }
+
+      // For sub-tasks, the workspace can be different from parent task
+      // Check if user has permissions in the target workspace
+      const targetMember = await prisma.member.findUnique({
+        where: {
+          userId_workspaceId: {
+            userId: user.id,
+            workspaceId: values.workspaceId,
+          },
+        },
+      });
+
+      if (!targetMember || targetMember.role === MemberRole.VISITOR) {
+        return c.json({ error: "Insufficient permissions to create tasks in the target workspace" }, 403);
+      }
+
+      // Generate task number
+      const taskNumber = await generateTaskNumber(prisma);
+
+      // Create the sub-task (can be in a different workspace)
+      const subTask = await prisma.task.create({
+        data: {
+          name: values.name,
+          description: values.description,
+          status: values.status,
+          dueDate: new Date(values.dueDate),
+          isConfidential: values.isConfidential || false,
+          taskNumber,
+          workspaceId: values.workspaceId,
+          serviceId: values.serviceId,
+          assigneeId: values.assigneeId === "unassigned" || !values.assigneeId ? null : values.assigneeId,
+          parentTaskId: taskId,
+          creatorId: user.id,
+          position: 9999,
+        },
+        include: {
+          assignee: {
+            include: { user: true }
+          },
+          service: true,
+          workspace: true,
+        }
+      });
+
+      // Create history entry
+      await prisma.taskHistory.create({
+        data: {
+          taskId: subTask.id,
+          userId: user.id,
+          action: TaskHistoryAction.CREATED,
+          details: `Sub-task created under parent task ${parentTask.taskNumber}: ${parentTask.name}`
+        }
+      });
+
+      // Also add history to parent task
+      await prisma.taskHistory.create({
+        data: {
+          taskId: taskId,
+          userId: user.id,
+          action: TaskHistoryAction.SUB_TASK_ADDED,
+          details: `Sub-task ${subTask.taskNumber}: ${subTask.name} was added`
+        }
+      });
+
+      return c.json({
+        data: {
+          ...subTask,
+          dueDate: subTask.dueDate?.toISOString() || null,
+          createdAt: subTask.createdAt.toISOString(),
+          updatedAt: subTask.updatedAt.toISOString(),
+        }
+      }, 201);
+      } catch (error) {
+        console.error("Error creating sub-task:", error);
+        return c.json({ error: "Failed to create sub-task" }, 500);
+      }
+    }
+  )
+
+  // Update parent task to check for sub-task completion when status changes to DONE
+  .patch(
+    "/:taskId/validate-completion",
+    sessionMiddleware,
+    zValidator("param", z.object({ taskId: z.string() })),
+    async (c) => {
+      const prisma = c.get("prisma");
+      const { taskId } = c.req.valid("param");
+
+      // Check if task has incomplete sub-tasks
+      const incompleteSubTasks = await prisma.task.count({
+        where: {
+          parentTaskId: taskId,
+          status: {
+            not: TaskStatus.DONE
+          }
+        }
+      });
+
+      return c.json({
+        data: {
+          canComplete: incompleteSubTasks === 0,
+          incompleteSubTasksCount: incompleteSubTasks
+        }
       });
     }
   )

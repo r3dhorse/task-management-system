@@ -238,33 +238,44 @@ export const TaskPropertiesModal = ({
                 <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
                   Workspace
+                  {task.status !== TaskStatus.TODO && (
+                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full ml-auto">
+                      Read-only
+                    </span>
+                  )}
                 </label>
-                <Select
-                  value={editForm.workspaceId}
-                  onValueChange={(value) => {
-                    const isChangingWorkspace = value !== task.workspaceId;
-                    setEditForm(prev => ({
-                      ...prev,
-                      workspaceId: value,
-                      serviceId: "", // Reset service when workspace changes
-                      status: isChangingWorkspace ? TaskStatus.TODO : prev.status, // Set to TODO when changing workspace
-                      assigneeId: isChangingWorkspace && !prev.isConfidential ? "unassigned" : prev.assigneeId, // Reset assignee for non-confidential tasks
-                      reviewerId: isChangingWorkspace ? "unassigned" : prev.reviewerId, // Reset reviewer when changing workspace
-                    }));
-                    onWorkspaceChange?.(value);
-                  }}
-                >
-                  <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                    <SelectValue placeholder="Select workspace" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {workspaces?.documents.map((workspace) => (
-                      <SelectItem key={workspace.id} value={workspace.id}>
-                        <span className="text-sm">🏢 {workspace.name}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {task.status === TaskStatus.TODO ? (
+                  <Select
+                    value={editForm.workspaceId}
+                    onValueChange={(value) => {
+                      const isChangingWorkspace = value !== task.workspaceId;
+                      setEditForm(prev => ({
+                        ...prev,
+                        workspaceId: value,
+                        serviceId: "", // Reset service when workspace changes
+                        status: isChangingWorkspace ? TaskStatus.TODO : prev.status, // Set to TODO when changing workspace
+                        assigneeId: isChangingWorkspace && !prev.isConfidential ? "unassigned" : prev.assigneeId, // Reset assignee for non-confidential tasks
+                        reviewerId: isChangingWorkspace ? "unassigned" : prev.reviewerId, // Reset reviewer when changing workspace
+                      }));
+                      onWorkspaceChange?.(value);
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                      <SelectValue placeholder="Select workspace" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {workspaces?.documents.map((workspace) => (
+                        <SelectItem key={workspace.id} value={workspace.id}>
+                          <span className="text-sm">🏢 {workspace.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <div className="h-9 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-600 flex items-center">
+                    🏢 {workspaces?.documents.find(w => w.id === editForm.workspaceId)?.name || 'Unknown Workspace'}
+                  </div>
+                )}
               </div>
 
               {/* Confidential */}
@@ -339,41 +350,6 @@ export const TaskPropertiesModal = ({
                 </Select>
               </div>
 
-              {/* Reviewer - Only show when status is IN_PROGRESS or IN_REVIEW */}
-              {(editForm.status === TaskStatus.IN_PROGRESS || editForm.status === TaskStatus.IN_REVIEW) && (
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
-                    Reviewer
-                    {editForm.status === TaskStatus.IN_REVIEW && (
-                      <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
-                        Required
-                      </span>
-                    )}
-                  </label>
-                  <Select
-                    value={editForm.reviewerId}
-                    onValueChange={(value) => setEditForm(prev => ({ ...prev, reviewerId: value }))}
-                  >
-                    <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                      <SelectValue placeholder="Select reviewer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">
-                        <span className="text-sm">👁️ No reviewer</span>
-                      </SelectItem>
-                      {members?.documents
-                        .filter(member => (member as Member).role !== MemberRole.VISITOR)
-                        .map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          <span className="text-sm">👁️ {member.name}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-
               {/* Service */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
@@ -417,6 +393,41 @@ export const TaskPropertiesModal = ({
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Reviewer - Only show when status is IN_PROGRESS or IN_REVIEW */}
+              {(editForm.status === TaskStatus.IN_PROGRESS || editForm.status === TaskStatus.IN_REVIEW) && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
+                    Reviewer
+                    {editForm.status === TaskStatus.IN_REVIEW && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
+                        Required
+                      </span>
+                    )}
+                  </label>
+                  <Select
+                    value={editForm.reviewerId}
+                    onValueChange={(value) => setEditForm(prev => ({ ...prev, reviewerId: value }))}
+                  >
+                    <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                      <SelectValue placeholder="Select reviewer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">
+                        <span className="text-sm">👁️ No reviewer</span>
+                      </SelectItem>
+                      {members?.documents
+                        .filter(member => (member as Member).role !== MemberRole.VISITOR)
+                        .map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          <span className="text-sm">👁️ {member.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Followers */}
               <div className="space-y-1.5">

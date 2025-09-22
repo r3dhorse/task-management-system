@@ -1,4 +1,12 @@
-import { useQueryState, parseAsBoolean } from "nuqs";
+import { useQueryState, parseAsBoolean, parseAsString } from "nuqs";
+import { useState } from "react";
+
+interface CreateTaskOptions {
+  workspaceId?: string;
+  serviceId?: string;
+  parentTaskId?: string;
+  onSuccess?: (task: unknown) => void;
+}
 
 export const useCreateTaskModal = () => {
   const [isOpen, setIsOpen] = useQueryState(
@@ -6,13 +14,35 @@ export const useCreateTaskModal = () => {
     parseAsBoolean.withDefault(false).withOptions({ clearOnDefault: true })
   );
 
-  const open = () => setIsOpen(true);
-  const close = () => setIsOpen(false);
+  const [parentTaskId, setParentTaskId] = useQueryState(
+    "parent-task",
+    parseAsString.withDefault("").withOptions({ clearOnDefault: true })
+  );
+
+  const [options, setOptions] = useState<CreateTaskOptions>({});
+
+  const open = (opts?: CreateTaskOptions) => {
+    if (opts) {
+      setOptions(opts);
+      if (opts.parentTaskId) {
+        setParentTaskId(opts.parentTaskId);
+      }
+    }
+    setIsOpen(true);
+  };
+
+  const close = () => {
+    setIsOpen(false);
+    setParentTaskId("");
+    setOptions({});
+  };
 
   return {
     isOpen,
     open,
     close,
     setIsOpen,
+    parentTaskId,
+    options,
   };
 };

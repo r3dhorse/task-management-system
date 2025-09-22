@@ -207,11 +207,21 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
               </div>
             )}
 
+            {/* Sub-tasks count */}
+            {task.subTaskCount !== undefined && task.subTaskCount > 0 && (
+              <div className="mb-2">
+                <div className="flex items-center gap-1 text-xs">
+                  <span className="text-gray-500 font-medium">Sub Tasks:</span>
+                  <span className="text-neutral-600 font-medium">{task.subTaskCount}</span>
+                </div>
+              </div>
+            )}
+
             {/* Requested By */}
             {creator && (
               <div className="mb-3">
                 <div className="flex items-center gap-1 text-xs">
-                  <span className="text-gray-500 font-medium">Requested by:</span>
+                  <span className="text-gray-500 font-medium">Created by:</span>
                   <span className="text-neutral-600 font-medium break-words">
                     {creator.name}
                   </span>

@@ -69,6 +69,7 @@ export type PopulatedTask = Task & {
       email: string;
     };
   }>;
+  subTaskCount?: number;
 }
 
 export type TaskReview = {

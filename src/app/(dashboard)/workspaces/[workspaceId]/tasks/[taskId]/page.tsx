@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useGetTask } from "@/features/tasks/api/use-get-task";
@@ -29,6 +30,7 @@ import { TaskStatus } from "@/features/tasks/types";
 import { ManageFollowersModal } from "@/features/tasks/components/manage-followers-modal";
 import { TaskPropertiesModal } from "@/features/tasks/components/task-properties-modal";
 import { EnhancedStageIndicator } from "@/features/tasks/components/enhanced-stage-indicator";
+import { SubTasksTable } from "@/features/tasks/components/sub-tasks-table";
 
 interface TaskDetailsPageProps {
   params: {
@@ -889,21 +891,37 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
               </CardContent>
             </Card>
 
-            {/* Enhanced Activity History */}
+            {/* Enhanced Activity History and Sub Tasks */}
             <Card className="bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                  <div className="w-2 h-8 bg-gradient-to-b from-green-500 to-green-600 rounded-full shadow-sm" />
-                  <span>Activity Timeline</span>
-                </CardTitle>
-              </CardHeader>
               <CardContent className="p-0">
-                {/* Fixed height to align with chat */}
-                <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                  <div className="px-6 pb-6">
-                    <TaskHistory taskId={task.id} />
-                  </div>
-                </div>
+                <Tabs defaultValue="timeline" className="w-full">
+                  <TabsList className="w-full justify-start rounded-none border-b bg-gray-50/50">
+                    <TabsTrigger value="timeline" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                      Activity Timeline
+                    </TabsTrigger>
+                    <TabsTrigger value="subtasks" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                      Sub Tasks
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="timeline" className="m-0">
+                    {/* Fixed height to align with chat */}
+                    <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      <div className="px-6 py-6">
+                        <TaskHistory taskId={task.id} />
+                      </div>
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="subtasks" className="m-0">
+                    {/* Fixed height to align with chat */}
+                    <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      <div className="px-6 py-6">
+                        <SubTasksTable
+                          parentTaskId={task.id}
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
           </div>

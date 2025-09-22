@@ -9,10 +9,18 @@ import { Workspace } from "@/features/workspaces/types";
 
 interface CreateTaskFormWrapperProps {
   onCancel: () => void;
+  parentTaskId?: string;
+  initialWorkspaceId?: string;
+  initialServiceId?: string;
+  onSuccess?: (task: unknown) => void;
 };
 
 export const CreateTaskFormWrapper = ({
-  onCancel
+  onCancel,
+  parentTaskId: _parentTaskId,
+  initialWorkspaceId,
+  initialServiceId: _initialServiceId,
+  onSuccess: _onSuccess
 }: CreateTaskFormWrapperProps) => {
   const workspaceId = useWorkspaceId();
 
@@ -37,7 +45,10 @@ export const CreateTaskFormWrapper = ({
     <CreateTaskForm
       onCancel={onCancel}
       workspaceOptions={workspaceOptions ?? []}
-      workspaceId={workspaceId}
+      workspaceId={initialWorkspaceId || workspaceId}
+      parentTaskId={_parentTaskId}
+      initialServiceId={_initialServiceId}
+      onSuccess={_onSuccess}
     />
   );
 };

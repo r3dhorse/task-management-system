@@ -191,6 +191,11 @@ model Task {
   notifications Notification[]
   reviews       TaskReview[]
 
+  // Parent-Child relationship for sub-tasks
+  parentTaskId  String?
+  parentTask    Task?            @relation("TaskSubTasks", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subTasks      Task[]           @relation("TaskSubTasks")
+
   @@index([workspaceId])
   @@index([serviceId])
   @@index([assigneeId])
@@ -199,6 +204,7 @@ model Task {
   @@index([createdAt])
   @@index([dueDate])
   @@index([isConfidential])
+  @@index([parentTaskId])
   @@index([workspaceId, status, createdAt])
   @@map("tasks")
 }
@@ -221,6 +227,9 @@ enum TaskHistoryAction {
   FOLLOWERS_CHANGED
   CONFIDENTIAL_CHANGED
   ARCHIVED
+  SUB_TASK_ADDED
+  SUB_TASK_REMOVED
+  PARENT_TASK_CHANGED
 }
 
 model TaskHistory {

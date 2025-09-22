@@ -5,7 +5,7 @@ import { useCreateTaskModal } from "../hooks/use-create-task-modal";
 import { CreateTaskFormWrapper } from "./create-task-form-wrapper";
 
 export const CreateTaskModal = () => {
-  const { isOpen, setIsOpen, close } = useCreateTaskModal();
+  const { isOpen, setIsOpen, close, parentTaskId, options } = useCreateTaskModal();
 
   // Allow closing via X button, escape key, or programmatic closing
   const handleOpenChange = (open: boolean) => {
@@ -17,12 +17,18 @@ export const CreateTaskModal = () => {
   };
 
   return (
-    <ResponsiveModal 
-      open={isOpen} 
+    <ResponsiveModal
+      open={isOpen}
       onOpenChange={handleOpenChange}
       disableOutsideClick={true}
     >
-      <CreateTaskFormWrapper onCancel={close}/>
+      <CreateTaskFormWrapper
+        onCancel={close}
+        parentTaskId={parentTaskId || options.parentTaskId}
+        initialWorkspaceId={options.workspaceId}
+        initialServiceId={options.serviceId}
+        onSuccess={options.onSuccess}
+      />
     </ResponsiveModal>
   );
 };

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useCreateTask } from "../api/use-create-task";
+import { useCreateSubTask } from "../api/use-create-sub-task";
 import { DatePicker } from "@/components/date-picker";
 import { TaskStatus } from "../types";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,6 +56,9 @@ interface CreateTaskFormProps {
     name: string;
   }[];
   workspaceId: string;
+  parentTaskId?: string;
+  initialServiceId?: string;
+  onSuccess?: (task: unknown) => void;
 }
 
 export const CreateTaskForm = ({
@@ -62,10 +66,18 @@ export const CreateTaskForm = ({
   workspaceOptions,
   userOptions: _userOptions,
   workspaceId,
+  parentTaskId,
+  initialServiceId,
+  onSuccess,
 }: CreateTaskFormProps) => {
-  const { mutate, isPending } = useCreateTask();
+  const { mutate: createTask, isPending: isCreatingTask } = useCreateTask();
+  const { mutate: createSubTask, isPending: isCreatingSubTask } = useCreateSubTask({
+    taskId: parentTaskId || ""
+  });
   const [selectedFollowers, setSelectedFollowers] = useState<string[]>([]);
   const { data: currentUser } = useCurrent();
+
+  const isPending = isCreatingTask || isCreatingSubTask;
 
   const formSchema = z.object({
     name: z.string().trim().min(1, "Required"),
@@ -94,7 +106,7 @@ export const CreateTaskForm = ({
     resolver: zodResolver(formSchema),
     defaultValues: {
       workspaceId: workspaceId, // Set current workspace as default
-      serviceId: "", // Initialize as empty string
+      serviceId: initialServiceId || "", // Use initial service ID if provided
       assigneeId: "", // Initialize as empty string
       status: TaskStatus.TODO, // Set default status to TODO
       isConfidential: false, // Default to not confidential
@@ -197,20 +209,33 @@ export const CreateTaskForm = ({
     console.log("Frontend: Form values before submission:", values);
     console.log("Frontend: Formatted values being sent:", formattedValues);
 
-    mutate({ json: formattedValues }, {
-      onSuccess: () => {
-        form.reset({
-          workspaceId: workspaceId,
-          status: TaskStatus.TODO,
-          isConfidential: false,
-        });
-        setSelectedFollowers([]);
-        onCancel?.();
-      },
-      onError: (_error) => {
-        // The error is already handled by the useCreateTask hook
-      },
-    });
+    const successCallback = () => {
+      form.reset({
+        workspaceId: workspaceId,
+        status: TaskStatus.TODO,
+        isConfidential: false,
+      });
+      setSelectedFollowers([]);
+      onCancel?.();
+      onSuccess?.(formattedValues);
+    };
+
+    const errorCallback = (_error: Error) => {
+      // Error handling is done in the mutation hook
+    };
+
+    // Use sub-task API if parentTaskId is provided
+    if (parentTaskId) {
+      createSubTask(formattedValues, {
+        onSuccess: successCallback,
+        onError: errorCallback,
+      });
+    } else {
+      createTask({ json: formattedValues }, {
+        onSuccess: successCallback,
+        onError: errorCallback,
+      });
+    }
   };
 
   return (
