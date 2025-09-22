@@ -9,6 +9,7 @@ import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { Member, MemberRole } from "@/features/members/types";
+import { toast } from "sonner";
 
 interface TaskActionsProps {
   id: string;
@@ -17,10 +18,12 @@ interface TaskActionsProps {
   deleteOnly?: boolean;
   creatorId?: string; // Task creator's user ID
   assigneeId?: string; // Task assignee's member ID
+  reviewerId?: string; // Task reviewer's member ID
   status?: string; // Task status to determine if already archived or done
+  followedIds?: string; // JSON string of follower IDs
 };
 
-export const TaskActions = ({ id, serviceId, children, deleteOnly = false, status, creatorId, assigneeId }: TaskActionsProps) => {
+export const TaskActions = ({ id, serviceId, children, deleteOnly = false, status, creatorId, assigneeId, reviewerId, followedIds }: TaskActionsProps) => {
   const workspaceId = useWorkspaceId();
   const router = useRouter();
 
@@ -37,6 +40,7 @@ export const TaskActions = ({ id, serviceId, children, deleteOnly = false, statu
   const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
   const isCreator = currentUser?.id === creatorId;
   const isAssignee = currentMember?.id === assigneeId;
+  const isReviewer = currentMember?.id === reviewerId;
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
 
   // For DONE tasks, only admins can archive
@@ -78,6 +82,35 @@ export const TaskActions = ({ id, serviceId, children, deleteOnly = false, statu
   }
 
   const onOpenTask = () => {
+    // Parse followers
+    const parsedFollowedIds = followedIds ? (() => {
+      try {
+        return JSON.parse(followedIds);
+      } catch {
+        return [];
+      }
+    })() : [];
+
+    // Check if user has permission to view task details
+    const isFollower = parsedFollowedIds.includes(currentMember?.id || '');
+    // Exception: All workspace members can view TO DO tasks (since this is where they get their tasks)
+    const canViewTaskDetails = status === 'TODO'
+      ? currentMember?.role !== undefined // All workspace members can view TO DO tasks
+      : (isCreator || isAssignee || isReviewer || isFollower || isWorkspaceAdmin || isSuperAdmin);
+
+    if (!canViewTaskDetails) {
+      toast.error("Access restricted", {
+        description: "You can only view tasks you're assigned to, created, reviewing, or following",
+        style: {
+          background: '#ffffff',
+          borderColor: '#6b7280',
+          color: '#000000'
+        },
+        descriptionClassName: 'text-black'
+      });
+      return;
+    }
+
     router.push(`/workspaces/${workspaceId}/tasks/${id}`);
   };
 

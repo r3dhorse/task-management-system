@@ -803,6 +803,7 @@ const app = new Hono()
 
         // Permission checks based on task status and user roles
         const isCurrentAssignee = existingTask.assigneeId === member.id;
+        const isCurrentReviewer = existingTask.reviewerId === member.id;
         const isFollower = existingTask.followers.some(f => f.id === member.id);
         const isWorkspaceAdmin = member.role === MemberRole.ADMIN;
         const isWorkspaceMember = member.role === MemberRole.MEMBER;
@@ -836,8 +837,14 @@ const app = new Hono()
           // TODO status: all workspace members and visitors can update (except status change for visitors, handled above)
           // No additional restrictions needed - everyone can update TODO tasks
         } else if (existingTask.status === TaskStatus.IN_REVIEW) {
-          // In Review status: all workspace members can update the task
-          // No additional restrictions needed
+          // In Review status: reviewers have full edit permissions, other workspace members can also update
+          // This allows reviewers to perform their review duties
+          if (isCurrentReviewer) {
+            // Reviewer has full permissions to edit IN_REVIEW tasks
+          } else if (!isWorkspaceAdmin && !isWorkspaceMember && !isCurrentAssignee && !isFollower) {
+            // Only allow workspace members, assignee, followers, or admin to edit if not the reviewer
+            return c.json({ error: "Only the reviewer, assignee, followers, or workspace members can update tasks in review" }, 403);
+          }
         } else if (existingTask.status === TaskStatus.IN_PROGRESS) {
           // In Progress status: only assignee and followers (with member role) can update
           // Exception: Allow anyone to move task from IN_PROGRESS to IN_REVIEW
@@ -1509,10 +1516,18 @@ const app = new Hono()
         }
       }
 
-      // If user is a visitor, only allow access to tasks they are following
-      if (currentMember.role === MemberRole.VISITOR) {
-        const isFollowing = task.followers.some(follower => follower.id === currentMember.id);
-        if (!isFollowing) {
+      // Check general access permissions for non-confidential tasks
+      // TODO tasks can be viewed by all workspace members
+      if (task.status !== TaskStatus.TODO) {
+        const isCreator = task.creatorId === currentUser.id;
+        const isAssignee = task.assigneeId === currentMember.id;
+        const isReviewer = task.reviewerId === currentMember.id;
+        const isFollower = task.followers.some(follower => follower.id === currentMember.id);
+        const isWorkspaceAdmin = currentMember.role === MemberRole.ADMIN;
+        const isSuperAdmin = currentUser.isAdmin || currentUser.isSuperAdmin || false;
+
+        // Check if user has permission to view this task
+        if (!isCreator && !isAssignee && !isReviewer && !isFollower && !isWorkspaceAdmin && !isSuperAdmin) {
           return c.json({ error: "Unauthorized" }, 401);
         }
       }

@@ -460,16 +460,108 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
   const isCreator = currentUser && task?.creatorId ? currentUser.id === task.creatorId : false;
   const isAssignee = currentMember && task?.assigneeId ? currentMember.id === task.assigneeId : false;
+  const isReviewer = currentMember && task?.reviewerId ? currentMember.id === task.reviewerId : false;
+  const isFollower = followedIds.includes(currentMember?.id || '');
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
+
   // For DONE tasks, only admins can archive
   const canDelete = task?.status === TaskStatus.DONE
     ? (isWorkspaceAdmin || isSuperAdmin)
     : (isCreator || isAssignee || isSuperAdmin);
   const isAlreadyArchived = task?.status === "ARCHIVED";
+
+  // Update permission: Allow creators/visitors to edit details, exclude TO DO stage from restrictions
+  // Reviewers can edit tasks in IN_REVIEW status
   const canEdit = task?.status === TaskStatus.DONE
     ? isWorkspaceAdmin
-    : currentMember?.role !== undefined; // All members (including visitors) can edit non-DONE tasks
-  const canEditStatus = currentMember?.role !== MemberRole.VISITOR; // Only non-visitors can edit status
+    : task?.status === TaskStatus.TODO
+      ? true // All workspace members can edit TO DO tasks (since this is where they get their tasks)
+      : task?.status === TaskStatus.IN_REVIEW && isReviewer
+        ? true // Reviewers can edit tasks in IN_REVIEW status
+      : currentMember?.role === MemberRole.VISITOR
+        ? false // Visitors cannot edit tasks that are not in TO DO status
+        : (isCreator || isAssignee || (isFollower && currentMember?.role === MemberRole.MEMBER) || isWorkspaceAdmin || isSuperAdmin);
+
+  const canEditStatus = task?.status === TaskStatus.IN_REVIEW && isReviewer
+    ? true // Reviewers can change status of IN_REVIEW tasks
+    : (currentMember?.role !== MemberRole.VISITOR || isCreator); // Non-visitors and creators can edit status
+
+  // Access restriction: Only assignee, creator, reviewer, followers, and workspace admins can view task details
+  // Exception: All workspace members can view TO DO tasks (since this is where they get their tasks)
+  const canViewTaskDetails = task?.status === TaskStatus.TODO
+    ? currentMember?.role !== undefined // All workspace members can view TO DO tasks
+    : (isCreator || isAssignee || isReviewer || isFollower || isWorkspaceAdmin || isSuperAdmin);
+
+  // If user doesn't have permission to view task details, show access denied
+  if (!canViewTaskDetails && task && currentMember) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+        {/* Access denied header */}
+        <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.back()}
+                className="hover:bg-gray-100 transition-all duration-200 group"
+              >
+                <ArrowLeftIcon className="size-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                Back
+              </Button>
+              <div className="h-4 w-px bg-gray-300" />
+              <span className="text-sm text-red-600 font-medium">Access Restricted</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg p-8 lg:p-12">
+            <div className="text-center space-y-6">
+              {/* Access denied icon */}
+              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-red-50 to-red-100 rounded-full flex items-center justify-center shadow-lg">
+                <FileTextIcon className="w-12 h-12 text-red-600" />
+              </div>
+
+              {/* Access denied content */}
+              <div className="space-y-4">
+                <h1 className="text-3xl font-bold text-gray-900">Access Restricted</h1>
+                <div className="space-y-3">
+                  <p className="text-lg text-gray-700 leading-relaxed">
+                    You don&apos;t have permission to view this task&apos;s details.
+                  </p>
+                  <p className="text-gray-600">
+                    Only the task assignee, creator, reviewer, followers, and workspace administrators can access task details.
+                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+                    <strong>Need access?</strong> Contact the task assignee, reviewer, a follower, or a workspace administrator to be added as a follower.
+                  </div>
+                </div>
+              </div>
+
+              {/* Enhanced action buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-6">
+                <Button
+                  variant="outline"
+                  onClick={() => router.back()}
+                  className="hover:bg-gray-50 transition-all duration-200 group px-6 py-3"
+                >
+                  <ArrowLeftIcon className="size-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                  Go Back
+                </Button>
+                <Button
+                  onClick={() => router.push(`/workspaces/${workspaceId}/tasks`)}
+                  className="bg-blue-600 hover:bg-blue-700 transition-all duration-200 px-6 py-3"
+                >
+                  View All Tasks
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
 
 

@@ -9,7 +9,8 @@ import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Member } from "@/features/members/types";
+import { Member, MemberRole } from "@/features/members/types";
+import { useCurrent } from "@/features/auth/api/use-current";
 
 interface KanbanCardProps {
   task: PopulatedTask;
@@ -22,6 +23,7 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
   const router = useRouter();
   const workspaceId = useWorkspaceId();
   const { data: members } = useGetMembers({ workspaceId });
+  const { data: currentUser } = useCurrent();
 
   // Find the single assignee (not multiple assignees)
   const assignee = members?.documents?.find((member) =>
@@ -38,24 +40,79 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
     (member as Member).userId === task.creatorId
   );
 
+  // Find current user's member record
+  const currentMember = members?.documents?.find((member) =>
+    (member as Member).userId === currentUser?.id
+  ) as Member;
+
+  // Parse followers
+  const followedIds = task.followedIds ? (() => {
+    try {
+      return JSON.parse(task.followedIds);
+    } catch {
+      return [];
+    }
+  })() : [];
+
+  // Check access permissions
+  const isCreator = currentUser && task.creatorId ? currentUser.id === task.creatorId : false;
+  const isAssignee = currentMember && task.assigneeId ? currentMember.id === task.assigneeId : false;
+  const isReviewer = currentMember && task.reviewerId ? currentMember.id === task.reviewerId : false;
+  const isFollower = followedIds.includes(currentMember?.id || '');
+  const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
+  const isSuperAdmin = currentUser?.isSuperAdmin || false;
+
+  // Exception: All workspace members can view TO DO tasks (since this is where they get their tasks)
+  const canViewTaskDetails = task.status === 'TODO'
+    ? currentMember?.role !== undefined // All workspace members can view TO DO tasks
+    : (isCreator || isAssignee || isReviewer || isFollower || isWorkspaceAdmin || isSuperAdmin);
+
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Prevent drag events from interfering
     e.stopPropagation();
-    
+
+    // Check if user has permission to view task details
+    if (!canViewTaskDetails) {
+      toast.error("Access restricted", {
+        description: "You can only view tasks you're assigned to, created, or following",
+        style: {
+          background: '#ffffff',
+          borderColor: '#6b7280',
+          color: '#dc2626'
+        },
+        descriptionClassName: '!text-black !important'
+      });
+      return;
+    }
+
     // Validate task ID format before navigation
     if (!task.id || task.id.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(task.id)) {
       console.error("Invalid task ID format:", task.id);
       toast.error("Invalid task ID format");
       return;
     }
-    
+
     router.push(`/workspaces/${workspaceId}/tasks/${task.id}`);
   };
 
   const handleCardDoubleClick = (e: React.MouseEvent) => {
     // Prevent drag events from interfering
     e.stopPropagation();
+
+    // Check if user has permission to view task details
+    if (!canViewTaskDetails) {
+      toast.error("Access restricted", {
+        description: "You can only view tasks you're assigned to, created, or following",
+        style: {
+          background: '#ffffff',
+          borderColor: '#6b7280',
+          color: '#dc2626'
+        },
+        descriptionClassName: '!text-black !important'
+      });
+      return;
+    }
 
     // Validate task ID format before navigation
     if (!task.id || task.id.length > 36 || !/^[a-zA-Z0-9_-]+$/.test(task.id)) {
@@ -111,13 +168,28 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
           ref={provided.innerRef}
           onClick={handleCardClick}
           onDoubleClick={handleCardDoubleClick}
-          className={`group bg-white rounded-lg shadow-sm border-2 border-neutral-200/80 overflow-hidden cursor-grab active:cursor-grabbing kanban-card hover:shadow-lg hover:border-blue-300/60 hover:bg-blue-50/30 touch-manipulation transition-all duration-200 w-full min-w-0 ${
-            snapshot.isDragging 
-              ? "opacity-0 invisible scale-75" 
-              : isBeingDragged 
-                ? "opacity-30 scale-95" 
-                : "hover:scale-[1.02]"
+          className={`group bg-white rounded-lg shadow-sm border-2 border-neutral-200/80 overflow-hidden kanban-card hover:shadow-lg hover:border-blue-300/60 hover:bg-blue-50/30 touch-manipulation transition-all duration-200 w-full min-w-0 ${
+            !canViewTaskDetails
+              ? "cursor-not-allowed opacity-60 hover:scale-100 border-gray-300"
+              : isDragDisabled
+                ? "cursor-not-allowed opacity-75 hover:scale-100"
+                : "cursor-grab active:cursor-grabbing"
+          } ${
+            snapshot.isDragging
+              ? "opacity-0 invisible scale-75"
+              : isBeingDragged
+                ? "opacity-30 scale-95"
+                : !isDragDisabled && canViewTaskDetails
+                  ? "hover:scale-[1.02]"
+                  : ""
           }`}
+          title={
+            !canViewTaskDetails
+              ? "You don't have permission to view this task"
+              : isDragDisabled
+                ? "You don't have permission to move this task"
+                : undefined
+          }
         >
           {/* Card Header */}
           <div className="p-3 pb-2">

@@ -71,7 +71,7 @@ interface CollapsibleColumnProps {
     bgColor: string;
     emoji: string;
   };
-  tasks: Task[];
+  tasks: PopulatedTask[];
   isExpanded: boolean;
   onToggle: () => void;
   taskCount: number;
@@ -82,9 +82,17 @@ interface CollapsibleColumnProps {
     targetColumnId: string | null;
   };
   isWorkspaceAdmin?: boolean;
+  currentMember?: Member;
+  currentUser?: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    isAdmin?: boolean;
+    isSuperAdmin?: boolean;
+  } | null;
 }
 
-const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, taskCount, dragState, isWorkspaceAdmin = false }: CollapsibleColumnProps) => {
+const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, taskCount, dragState, isWorkspaceAdmin = false, currentMember, currentUser }: CollapsibleColumnProps) => {
   const isArchived = board.key === TaskStatus.ARCHIVED;
   const isDoneColumn = board.key === TaskStatus.DONE;
   
@@ -202,15 +210,42 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
                   scrollbarColor: '#cbd5e1 #f1f5f9'
                 }}
               >
-                {tasks.map((task, index) => (
-                  <KanbanCard
-                    key={task.id}
-                    task={task}
-                    index={index}
-                    isDragDisabled={isArchived || (isDoneColumn && !isWorkspaceAdmin)} // Disable dragging for archived tasks and dragging FROM DONE for non-admins
-                    isBeingDragged={dragState.draggedTaskId === task.id}
-                  />
-                ))}
+                {tasks.map((task, index) => {
+                  // Parse followers for this task
+                  const followedIds = task.followedIds ? (() => {
+                    try {
+                      return JSON.parse(task.followedIds);
+                    } catch {
+                      return [];
+                    }
+                  })() : [];
+
+                  // Check if current user can drag this task
+                  const isAssignee = currentMember?.id === task.assigneeId;
+                  const isReviewer = currentMember?.id === task.reviewerId;
+                  const isFollower = followedIds.includes(currentMember?.id || '');
+                  const isCreator = currentUser?.id === task.creatorId;
+
+                  // Allow all workspace members to drag TO DO tasks (since this is where they get their tasks)
+                  // Reviewers can drag tasks in IN_REVIEW status
+                  const canDragTask = task.status === TaskStatus.TODO
+                    ? true // All workspace members can drag TO DO tasks
+                    : (task.status === TaskStatus.IN_REVIEW && isReviewer)
+                    ? true // Reviewers can drag tasks in IN_REVIEW status
+                    : isCreator || isAssignee ||
+                      (isFollower && currentMember?.role === MemberRole.MEMBER) ||
+                      isWorkspaceAdmin;
+
+                  return (
+                    <KanbanCard
+                      key={task.id}
+                      task={task}
+                      index={index}
+                      isDragDisabled={isArchived || (isDoneColumn && !isWorkspaceAdmin) || !canDragTask}
+                      isBeingDragged={dragState.draggedTaskId === task.id}
+                    />
+                  );
+                })}
                 {provided.placeholder}
                 
                 {/* Drop zone indicator when dragging over empty column */}
@@ -330,7 +365,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         sourceColumnId: null,
         targetColumnId: null,
       });
-      
+
       if (!result.destination) return;
 
       // Validate draggable ID format
@@ -344,17 +379,60 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
       const sourceStatus = source.droppableId as TaskStatus;
       const destStatus = destination.droppableId as TaskStatus;
 
+      // Find the task being dragged
+      const draggedTask = data.find(t => t.id === taskId);
+      if (!draggedTask) {
+        console.error("Task not found:", taskId);
+        return;
+      }
+
       // Check if current user is a workspace admin
       const currentMember = (membersData?.documents as Member[] || []).find(
         (member) => member.userId === currentUser?.id
       );
       const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
 
+      // Parse followers for permission check
+      const followedIds = draggedTask.followedIds ? (() => {
+        try {
+          return JSON.parse(draggedTask.followedIds);
+        } catch {
+          return [];
+        }
+      })() : [];
+
+      // Check permissions for dragging this specific task
+      const isAssignee = currentMember?.id === draggedTask.assigneeId;
+      const isReviewer = currentMember?.id === draggedTask.reviewerId;
+      const isFollower = followedIds.includes(currentMember?.id || '');
+      const isCreator = currentUser?.id === draggedTask.creatorId;
+
+      // Allow all workspace members to drag TO DO tasks (since this is where they get their tasks)
+      // Reviewers can drag tasks in IN_REVIEW status
+      const canDragTask = draggedTask.status === TaskStatus.TODO
+        ? true // All workspace members can drag TO DO tasks
+        : (draggedTask.status === TaskStatus.IN_REVIEW && isReviewer)
+        ? true // Reviewers can drag tasks in IN_REVIEW status
+        : isCreator || isAssignee ||
+          (isFollower && currentMember?.role === MemberRole.MEMBER) ||
+          isWorkspaceAdmin ||
+          currentUser?.isSuperAdmin;
+
+      // Check if user has permission to drag this task
+      if (!canDragTask) {
+        toast.error("📋 You can only move tasks that are assigned to you, created by you, reviewing, or tasks you're following", {
+          description: "Contact the task assignee, reviewer, or a workspace admin for assistance"
+        });
+        return;
+      }
+
       // Check if moving FROM DONE status and user is not admin
       // Allow moving TO DONE from IN_REVIEW (no restriction)
       if (sourceStatus === TaskStatus.DONE && !isWorkspaceAdmin) {
         // Show error toast and prevent the move
-        toast.error("Only workspace administrators can move tasks from Done status");
+        toast.error("🔒 Only workspace administrators can move tasks from Done status", {
+          description: "Please contact a workspace admin to make changes to completed tasks"
+        });
         return;
       }
 
@@ -464,7 +542,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         });
       }
     },
-    [data, onChange, updateTask, currentUser?.id, membersData?.documents]
+    [data, onChange, updateTask, currentUser?.id, currentUser?.isSuperAdmin, membersData?.documents]
   );
 
   // Handle assignee selection confirmation
@@ -590,6 +668,8 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
                   taskCount={taskCounts[board.key]}
                   dragState={dragState}
                   isWorkspaceAdmin={isWorkspaceAdmin}
+                  currentMember={currentMember}
+                  currentUser={currentUser}
                 />
               </div>
             );

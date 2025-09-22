@@ -10,6 +10,7 @@ type AdditionalContext = {
       email: string;
       name?: string;
       isAdmin?: boolean;
+      isSuperAdmin?: boolean;
     };
     prisma: typeof prisma;
   };
