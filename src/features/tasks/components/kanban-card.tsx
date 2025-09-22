@@ -133,15 +133,25 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
                   </div>
                 )}
               </div>
-              {task.attachmentId && (
-                <div
-                  className="flex-shrink-0 cursor-pointer hover:bg-blue-50 p-1.5 rounded transition-colors"
-                  onClick={handleViewAttachment}
-                  title="View attachment"
-                >
-                  <FileTextIcon className="size-4 text-blue-600 hover:text-blue-700" />
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                {/* Task Type Badge - MT for Main Task, ST for Subtask */}
+                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                  task.parentTaskId
+                    ? 'bg-purple-100 text-purple-700 border border-purple-300'
+                    : 'bg-green-100 text-green-700 border border-green-300'
+                }`}>
+                  {task.parentTaskId ? 'ST' : 'MT'}
+                </span>
+                {task.attachmentId && (
+                  <div
+                    className="flex-shrink-0 cursor-pointer hover:bg-blue-50 p-1.5 rounded transition-colors"
+                    onClick={handleViewAttachment}
+                    title="View attachment"
+                  >
+                    <FileTextIcon className="size-4 text-blue-600 hover:text-blue-700" />
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-start gap-2 mb-2">
               <h3 className="text-sm font-semibold text-neutral-900 line-clamp-2 flex-1 leading-snug break-words overflow-hidden">

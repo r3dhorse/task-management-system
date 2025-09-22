@@ -30,6 +30,7 @@ export type Task = {
   followedIds?: string; // JSON string array of user IDs following this task
   creatorId?: string | null; // User ID of the task creator
   isConfidential?: boolean; // If true, only visible to creator, assignee, and followers
+  parentTaskId?: string | null; // ID of the parent task if this is a subtask
   createdAt: string;
   updatedAt: string;
 }
