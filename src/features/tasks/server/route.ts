@@ -611,15 +611,11 @@ const app = new Hono()
         // Ensure creator is always included in followers
         if (!followerIds.includes(member.id)) {
           followerIds.push(member.id);
-          console.log(`✅ Auto-added creator ${member.id} as follower to task`);
-        } else {
-          console.log(`ℹ️ Creator ${member.id} already in followers list`);
         }
 
         // Ensure assignee is always included in followers (if different from creator)
         if (assigneeId && assigneeId !== 'undefined' && assigneeId !== member.id && !followerIds.includes(assigneeId)) {
           followerIds.push(assigneeId);
-          console.log(`✅ Auto-added assignee ${assigneeId} as follower to task`);
         }
         
         // Validate required fields and convert string 'undefined' to proper values
@@ -673,10 +669,6 @@ const app = new Hono()
           }
         });
 
-        console.log("Task creation - Created task:", {
-          id: task.id
-        });
-
         // Create history entry for task creation
         try {
           await prisma.taskHistory.create({
@@ -699,7 +691,7 @@ const app = new Hono()
               where: { id: task.assigneeId },
               include: { user: true }
             });
-            
+
             if (assigneeMember) {
               await prisma.notification.create({
                 data: {
@@ -712,7 +704,6 @@ const app = new Hono()
                   mentionedBy: user.id,
                 }
               });
-              console.log("Task assignment notification created for user:", assigneeMember.userId);
             }
           } catch (notificationError) {
             console.error("Failed to create task assignment notification:", notificationError);
@@ -720,7 +711,6 @@ const app = new Hono()
           }
         }
 
-        console.log("Task created successfully:", task.id);
         return c.json({ 
           data: {
             ...task,
@@ -971,68 +961,69 @@ const app = new Hono()
           }
 
           // Auto-register followers as visitors to the target workspace if they're not already members
+          // Optimized batch processing to avoid N+1 queries
+          const followerIds = existingTask.followers.map(f => f.id);
+
+          // Batch fetch all follower member data with users
+          const followerMembers = await prisma.member.findMany({
+            where: { id: { in: followerIds } },
+            include: { user: true },
+          });
+
+          const followerUserIds = followerMembers.map(fm => fm.userId);
+
+          // Batch check existing memberships in target workspace
+          const existingMemberships = await prisma.member.findMany({
+            where: {
+              userId: { in: followerUserIds },
+              workspaceId: workspaceId,
+            },
+          });
+
+          const existingUserIds = new Set(existingMemberships.map(m => m.userId));
           const targetFollowerMembershipIds = [];
 
-          console.log(`🔄 Workspace transfer initiated: ${existingTask.workspaceId} → ${workspaceId}`);
-          console.log(`📋 Processing ${existingTask.followers.length} followers for auto-registration`);
+          // Add existing memberships
+          targetFollowerMembershipIds.push(...existingMemberships.map(m => m.id));
 
-          for (const follower of existingTask.followers) {
-            // Get the user ID for this follower
-            const followerMember = await prisma.member.findUnique({
-              where: { id: follower.id },
-              include: { user: true },
-            });
+          // Identify users who need visitor memberships
+          const usersNeedingMembership = followerMembers.filter(
+            fm => !existingUserIds.has(fm.userId)
+          );
 
-            if (!followerMember) {
-              console.log(`⚠️ Follower member ${follower.id} not found, skipping`);
-              continue;
-            }
+          // Batch create visitor memberships for users not in target workspace
+          if (usersNeedingMembership.length > 0) {
+            try {
+              await prisma.member.createMany({
+                data: usersNeedingMembership.map(fm => ({
+                  userId: fm.userId,
+                  workspaceId: workspaceId,
+                  role: MemberRole.VISITOR,
+                })),
+                skipDuplicates: true, // Handle concurrent creation attempts
+              });
 
-            // Check if this user is already a member of the target workspace
-            const existingTargetMembership = await prisma.member.findFirst({
-              where: {
-                userId: followerMember.userId,
-                workspaceId: workspaceId,
-              },
-            });
+              // Get the created membership IDs
+              const createdMemberships = await prisma.member.findMany({
+                where: {
+                  userId: { in: usersNeedingMembership.map(fm => fm.userId) },
+                  workspaceId: workspaceId,
+                },
+              });
 
-            if (existingTargetMembership) {
-              // User is already a member of target workspace, use existing membership
-              targetFollowerMembershipIds.push(existingTargetMembership.id);
-              console.log(`✓ ${followerMember.user.name} already member of target workspace (${existingTargetMembership.role})`);
-            } else {
-              // User is not a member, register them as a visitor
-              try {
-                const newVisitorMembership = await prisma.member.create({
-                  data: {
-                    userId: followerMember.userId,
-                    workspaceId: workspaceId,
-                    role: MemberRole.VISITOR,
-                  },
-                });
-                targetFollowerMembershipIds.push(newVisitorMembership.id);
-                console.log(`✅ Auto-registered ${followerMember.user.name} as VISITOR to target workspace`);
-              } catch (error) {
-                // Handle case where user might have been added concurrently
-                console.error(`⚠️ Failed to register ${followerMember.user.name} as visitor:`, error);
-                // Try to find if they were added by another process
-                const retryMembership = await prisma.member.findFirst({
-                  where: {
-                    userId: followerMember.userId,
-                    workspaceId: workspaceId,
-                  },
-                });
-                if (retryMembership) {
-                  targetFollowerMembershipIds.push(retryMembership.id);
-                  console.log(`✓ Found ${followerMember.user.name} after retry (concurrent add)`);
-                } else {
-                  console.log(`❌ Skipping ${followerMember.user.name} - could not add to target workspace`);
-                }
-              }
+              targetFollowerMembershipIds.push(...createdMemberships.map(m => m.id));
+            } catch (error) {
+              console.error("Failed to batch create visitor memberships:", error);
+              // Fallback: try to find existing memberships in case of race condition
+              const fallbackMemberships = await prisma.member.findMany({
+                where: {
+                  userId: { in: usersNeedingMembership.map(fm => fm.userId) },
+                  workspaceId: workspaceId,
+                },
+              });
+              targetFollowerMembershipIds.push(...fallbackMemberships.map(m => m.id));
             }
           }
-
-          console.log(`📊 Workspace transfer followers: ${targetFollowerMembershipIds.length} of ${existingTask.followers.length} preserved`);
 
           // Set the followers to the new membership IDs in the target workspace
           updateData.followers = {
@@ -1080,7 +1071,6 @@ const app = new Hono()
               // Ensure assignee is included in followers (if assignee is being updated)
               if (updateData.assigneeId && updateData.assigneeId !== null && !validIds.includes(updateData.assigneeId)) {
                 validIds.push(updateData.assigneeId);
-                console.log(`✅ Auto-added assignee ${updateData.assigneeId} as follower during update`);
               }
 
               // Use the target workspace ID if provided, otherwise use existing
@@ -1112,7 +1102,6 @@ const app = new Hono()
             updateData.followers = {
               set: newFollowerIds.map((id: string) => ({ id }))
             };
-            console.log(`✅ Auto-added new assignee ${updateData.assigneeId} as follower`);
           }
         }
 
@@ -1205,7 +1194,6 @@ const app = new Hono()
                   mentionedBy: user.id,
                 }
               });
-              console.log("Task assignment notification created for user:", assigneeMember.userId);
             }
           } catch (notificationError) {
             console.error("Failed to create task assignment notification:", notificationError);
@@ -1250,7 +1238,6 @@ const app = new Hono()
               });
 
             await Promise.all(notificationPromises);
-            console.log(`Task update notifications created for ${notificationPromises.length} followers`);
           } catch (notificationError) {
             console.error("Failed to create task update notifications:", notificationError);
             // Don't fail task update if notification fails
@@ -1629,8 +1616,6 @@ const app = new Hono()
         const prisma = c.get("prisma");
         const { taskId } = c.req.valid("param");
         const values = c.req.valid("json");
-
-        console.log("Creating sub-task:", { taskId, values });
 
       // Check if parent task exists and user has access to it
       const parentTask = await prisma.task.findUnique({

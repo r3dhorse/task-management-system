@@ -18,9 +18,6 @@ const app = new Hono()
       const prisma = c.get("prisma");
       const { workspaceId, taskId } = c.req.valid("query");
       
-      console.log("=== Messages Route Debug ===");
-      console.log("workspaceId:", workspaceId);
-      console.log("taskId:", taskId);
       
       if (!user) {
         return c.json({ error: "Unauthorized" }, 401);

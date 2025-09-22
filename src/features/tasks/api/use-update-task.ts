@@ -26,7 +26,6 @@ export const useUpdateTask = (options?: { showSuccessToast?: boolean; originalWo
         let errorMessage = `Failed to update task (${response.status})`;
         try {
           const errorData = await response.json();
-          console.log("Update task error response:", errorData);
           
           // Handle different error formats
           if (typeof errorData === 'string') {

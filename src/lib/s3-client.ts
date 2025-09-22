@@ -39,13 +39,6 @@ export async function uploadToS3(
   contentType: string
 ): Promise<S3UploadResult> {
   try {
-    console.log('Uploading to S3 with:', {
-      bucket: BUCKET_NAME,
-      key,
-      contentType,
-      bufferSize: buffer.length,
-      region: process.env.AWS_REGION
-    });
 
     const upload = new Upload({
       client: s3Client,
@@ -58,12 +51,6 @@ export async function uploadToS3(
     });
 
     const result = await upload.done();
-    
-    console.log('S3 upload successful:', {
-      key,
-      location: result.Location,
-      etag: result.ETag
-    });
     
     return {
       key,

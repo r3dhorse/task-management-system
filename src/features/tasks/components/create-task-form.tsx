@@ -206,8 +206,6 @@ export const CreateTaskForm = ({
       isConfidential: values.isConfidential || false, // Ensure boolean value
     };
 
-    console.log("Frontend: Form values before submission:", values);
-    console.log("Frontend: Formatted values being sent:", formattedValues);
 
     const successCallback = () => {
       form.reset({

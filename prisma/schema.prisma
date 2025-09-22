@@ -131,6 +131,7 @@ model Member {
   @@index([workspaceId])
   @@index([userId])
   @@index([role])
+  @@index([workspaceId, role])
   @@map("members")
 }
 
@@ -206,6 +207,12 @@ model Task {
   @@index([isConfidential])
   @@index([parentTaskId])
   @@index([workspaceId, status, createdAt])
+  @@index([workspaceId, isConfidential, createdAt])
+  @@index([creatorId, workspaceId, status])
+  @@index([assigneeId, status])
+  @@index([reviewerId, status])
+  @@index([serviceId, status])
+  @@index([dueDate, status])
   @@map("tasks")
 }
 
@@ -335,6 +342,7 @@ model Notification {
   @@index([workspaceId])
   @@index([createdAt])
   @@index([userId, isRead, createdAt])
+  @@index([taskId, createdAt])
   @@map("notifications")
 }
 

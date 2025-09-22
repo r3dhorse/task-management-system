@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
     }
 
     const useS3 = isS3Configured();
-    console.log(`Using ${useS3 ? 'S3' : 'local'} storage for file upload`);
 
     let uploadResult: {
       id: string;
@@ -107,20 +106,11 @@ export async function POST(request: NextRequest) {
       const fileName = `${fileId}.${extension}`;
       const s3Key = generateS3Key(workspaceName, fileName, taskName);
       
-      console.log('Generated S3 key:', {
-        s3Key,
-        workspaceName,
-        taskName,
-        fileName,
-        fileType,
-        source
-      });
 
       // Convert File to Buffer and upload to S3
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       const s3Result: S3UploadResult = await uploadToS3(buffer, s3Key, file.type);
-      console.log('S3 upload completed:', s3Result);
 
       uploadResult = {
         id: fileType === 'message' ? s3Result.key : fileId,
@@ -130,9 +120,7 @@ export async function POST(request: NextRequest) {
       };
     } else {
       // Local Storage Upload Logic
-      console.log('Starting local file upload for:', file.name);
       const localResult = await uploadToLocal(file, fileType);
-      console.log('Local upload completed:', localResult);
 
       uploadResult = {
         id: localResult.id,
