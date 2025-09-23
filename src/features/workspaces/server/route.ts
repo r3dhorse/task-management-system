@@ -88,12 +88,12 @@ const app = new Hono()
     async (c) => {
       const user = c.get("user");
       const prisma = c.get("prisma");
-      const { name, description } = c.req.valid("json");
+      const { name, description, withReviewStage } = c.req.valid("json");
 
       // Check if user is admin (required for workspace creation)
       if (!user.isAdmin) {
-        return c.json({ 
-          error: "Unauthorized. Only admin users can create workspaces." 
+        return c.json({
+          error: "Unauthorized. Only admin users can create workspaces."
         }, 403);
       }
 
@@ -105,6 +105,7 @@ const app = new Hono()
             description: description || null,
             userId: user.id,
             inviteCode: generateInviteCode(10),
+            withReviewStage: withReviewStage ?? true,
           },
         });
 
@@ -126,12 +127,12 @@ const app = new Hono()
   .patch(
     "/:workspaceId",
     sessionMiddleware,
-    zValidator("form", updateWorkspaceSchema),
+    zValidator("json", updateWorkspaceSchema),
     async (c) => {
       const user = c.get("user");
       const prisma = c.get("prisma");
       const { workspaceId } = c.req.param();
-      const { name, description } = c.req.valid("form");
+      const { name, description, withReviewStage } = c.req.valid("json");
 
       // Check if user is admin of this workspace
       const member = await prisma.member.findUnique({
@@ -154,6 +155,7 @@ const app = new Hono()
         data: {
           name,
           ...(description !== undefined && { description }),
+          ...(withReviewStage !== undefined && { withReviewStage }),
         },
       });
 

@@ -23,6 +23,7 @@ interface KanbanBoardProps {
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
   hasMore?: boolean;
+  withReviewStage?: boolean;
 }
 
 const boards = [
@@ -279,7 +280,7 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
 
 CollapsibleColumn.displayName = "CollapsibleColumn";
 
-export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLoadMore, isLoadingMore, hasMore }: KanbanBoardProps) => {
+export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLoadMore, isLoadingMore, hasMore, withReviewStage = true }: KanbanBoardProps) => {
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask({ showSuccessToast: false });
   const workspaceId = useWorkspaceId();
   const { data: membersData } = useGetMembers({ workspaceId });
@@ -628,16 +629,23 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     return grouped;
   }, [data, expandedColumns]);
 
+  // Filter boards based on withReviewStage setting
+  const filteredBoards = React.useMemo(() => {
+    return withReviewStage
+      ? boards
+      : boards.filter(board => board.key !== TaskStatus.IN_REVIEW);
+  }, [withReviewStage]);
+
   // Count tasks for each column for the collapsed state (excluding archived)
   const taskCounts = React.useMemo(() => {
     const counts: Record<string, number> = {};
-    boards.forEach(board => {
-      counts[board.key] = data.filter(task => 
+    filteredBoards.forEach(board => {
+      counts[board.key] = data.filter(task =>
         task.status === board.key && task.status !== TaskStatus.ARCHIVED
       ).length;
     });
     return counts;
-  }, [data]);
+  }, [data, filteredBoards]);
 
   return (
     <div className="relative">
@@ -649,7 +657,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         <div className={`flex overflow-x-auto gap-2 pb-4 kanban-drag-container ${
           isUpdating ? 'blur-sm opacity-75' : ''
         } ${dragState.isDragging ? 'select-none' : ''}`}>
-          {boards.map((board) => {
+          {filteredBoards.map((board) => {
             const isExpanded = expandedColumns[board.key];
             return (
               <div

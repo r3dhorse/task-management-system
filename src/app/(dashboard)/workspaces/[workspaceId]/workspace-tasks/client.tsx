@@ -22,12 +22,14 @@ import { useCurrent } from "@/features/auth/api/use-current";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberRole } from "@/features/members/types";
 import { toast } from "sonner";
+import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 
 export const WorkspaceTasksClient = () => {
   const workspaceId = useWorkspaceId();
   const { isAuthorized } = useWorkspaceAuthorization({ workspaceId });
   const { data: user } = useCurrent();
   const { data: members } = useGetMembers({ workspaceId });
+  const { data: workspace } = useGetWorkspace({ workspaceId });
 
   const [{ status, serviceId, assigneeId, dueDate, search }] = useTaskFilters();
   const [isExporting, setIsExporting] = useState(false);
@@ -280,6 +282,7 @@ export const WorkspaceTasksClient = () => {
                   onLoadMore={handleLoadMoreKanban}
                   isLoadingMore={isLoadingMore}
                   hasMore={hasMoreKanban}
+                  withReviewStage={workspace?.withReviewStage ?? true}
                 />
               </TabsContent>
               <TabsContent value="table" className="mt-0">

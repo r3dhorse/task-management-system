@@ -86,6 +86,7 @@ model Workspace {
   description String?
   inviteCode  String   @unique @default(cuid())
   userId      String   // Owner ID
+  withReviewStage Boolean @default(true) // Toggle for IN_REVIEW stage visibility
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

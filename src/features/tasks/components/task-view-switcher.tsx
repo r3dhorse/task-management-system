@@ -14,6 +14,7 @@ import { KanbanBoard } from "./kanban-board";
 import { useCallback, useState, useEffect } from "react";
 import { PopulatedTask } from "../types";
 import { UserWelcomeBadge } from "@/components/user-welcome-badge";
+import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 
 
 export const TaskViewSwitcher = () => {
@@ -28,6 +29,7 @@ export const TaskViewSwitcher = () => {
     defaultValue: "table"
   });
   const workspaceId = useWorkspaceId();
+  const { data: workspace } = useGetWorkspace({ workspaceId });
   // Removed unused includeBacklog state
 
   // For table view, include archived tasks when ARCHIVED status is specifically selected
@@ -185,6 +187,7 @@ export const TaskViewSwitcher = () => {
                 onLoadMore={handleLoadMoreKanban}
                 isLoadingMore={isLoadingMore}
                 hasMore={hasMoreKanban}
+                withReviewStage={workspace?.withReviewStage ?? true}
               />
             </TabsContent>
         

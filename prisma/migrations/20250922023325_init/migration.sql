@@ -72,6 +72,7 @@ CREATE TABLE "public"."workspaces" (
     "description" TEXT,
     "inviteCode" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "withReviewStage" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

@@ -4,6 +4,7 @@ export type Workspace = {
   description?: string | null;
   inviteCode: string;
   userId: string;
+  withReviewStage: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;
 }

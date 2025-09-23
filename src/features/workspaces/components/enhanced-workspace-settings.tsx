@@ -127,7 +127,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
 
   const onSubmit = (values: z.infer<typeof extendedWorkspaceSchema>) => {
     updateWorkspace({
-      form: { name: values.name, description: values.description },
+      json: { name: values.name, description: values.description },
       param: { workspaceId: initialValues.id }
     }, {
       onSuccess: () => {
