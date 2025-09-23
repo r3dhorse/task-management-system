@@ -21,6 +21,8 @@ export const getService = async ({ serviceId }: GetServiceProps) => {
       name: true,
       workspaceId: true,
       isPublic: true,
+      slaDays: true,
+      includeWeekends: true,
       createdAt: true,
       updatedAt: true,
       workspace: true,

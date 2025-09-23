@@ -141,6 +141,8 @@ model Service {
   name        String
   workspaceId String
   isPublic    Boolean  @default(false)
+  slaDays     Int?     // Service Level Agreement in days
+  includeWeekends Boolean @default(false) // Include Saturday and Sunday in SLA calculation
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -15,7 +15,7 @@ const app = new Hono()
       try {
         const prisma = c.get("prisma");
         const user = c.get("user");
-        const { name, workspaceId, isPublic } = c.req.valid("form");
+        const { name, workspaceId, isPublic, slaDays, includeWeekends } = c.req.valid("form");
 
         // Check if user is admin of the workspace
         const member = await prisma.member.findUnique({
@@ -52,6 +52,8 @@ const app = new Hono()
             name,
             workspaceId,
             isPublic: isPublic || false,
+            slaDays,
+            includeWeekends: includeWeekends || false,
           },
         });
 
@@ -119,7 +121,7 @@ const app = new Hono()
       const prisma = c.get("prisma");
       const user = c.get("user");
       const { serviceId } = c.req.param();
-      const { name, isPublic } = c.req.valid("form");
+      const { name, isPublic, slaDays, includeWeekends } = c.req.valid("form");
 
       const existingService = await prisma.service.findUnique({
         where: { id: serviceId },
@@ -162,9 +164,11 @@ const app = new Hono()
 
       const service = await prisma.service.update({
         where: { id: serviceId },
-        data: { 
+        data: {
           name,
           isPublic: isPublic || false,
+          slaDays,
+          includeWeekends: includeWeekends || false,
         },
       });
 

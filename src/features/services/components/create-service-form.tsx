@@ -23,12 +23,16 @@ export const CreateServiceForm = ({ onCancel }: CreateServiceFormProps) => {
   type FormData = {
     name: string;
     isPublic: boolean;
+    slaDays?: number;
+    includeWeekends: boolean;
   };
 
   const form = useForm<FormData>({
     defaultValues: {
       name: "",
       isPublic: false,
+      slaDays: undefined,
+      includeWeekends: false,
     },
   });
 
@@ -37,6 +41,8 @@ export const CreateServiceForm = ({ onCancel }: CreateServiceFormProps) => {
       name: values.name,
       workspaceId,
       isPublic: values.isPublic ? "true" : "false",
+      slaDays: values.slaDays?.toString(),
+      includeWeekends: values.includeWeekends ? "true" : "false",
     };
 
     mutate(
@@ -71,6 +77,49 @@ export const CreateServiceForm = ({ onCancel }: CreateServiceFormProps) => {
                     <FormLabel>Service Name</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Enter service name" />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="slaDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Service Level Agreement (Days)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        min="1"
+                        max="365"
+                        placeholder="e.g., 5"
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                      />
+                    </FormControl>
+                    <div className="text-sm text-muted-foreground">
+                      Optional: Set the expected completion time for tasks in this service
+                    </div>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="includeWeekends"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Include Weekends in SLA</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Include Saturday and Sunday when calculating SLA deadlines
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}

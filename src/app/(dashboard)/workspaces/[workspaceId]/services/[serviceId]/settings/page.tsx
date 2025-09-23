@@ -35,6 +35,8 @@ const ServiceIdSettingsPage = async ({
       name: serviceData.name,
       workspaceId: serviceData.workspaceId,
       isPublic: serviceData.isPublic,
+      slaDays: serviceData.slaDays,
+      includeWeekends: serviceData.includeWeekends,
       createdAt: serviceData.createdAt,
       updatedAt: serviceData.updatedAt,
     };

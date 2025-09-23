@@ -24,13 +24,17 @@ import { MemberRole } from "@/features/members/types";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
-import { EyeOff as EyeOffIcon } from "@/lib/lucide-icons";
+import { EyeOff as EyeOffIcon, Clock as ClockIcon } from "@/lib/lucide-icons";
+import { calculateSLADueDate, formatSLAInfo } from "@/lib/sla-utils";
 
 // Type definitions for API response data
 type ServiceDocument = {
   id: string;
   name: string;
   workspaceId: string;
+  isPublic: boolean;
+  slaDays?: number | null;
+  includeWeekends: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -112,14 +116,18 @@ export const CreateTaskForm = ({
       isConfidential: false, // Default to not confidential
       name: "",
       description: "",
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 7 days from now
     },
   });
 
   // Watch the selected workspace to load services and members dynamically
   const selectedWorkspaceId = form.watch("workspaceId");
-  
+
   // Watch the confidential field to enforce assignee requirement
   const isConfidentialValue = form.watch("isConfidential");
+
+  // Watch the selected service to update due date based on SLA
+  const selectedServiceId = form.watch("serviceId");
   
   // Load services and members for the selected workspace
   const { data: services, isLoading: isLoadingServices } = useGetServices({ 
@@ -135,7 +143,12 @@ export const CreateTaskForm = ({
   const serviceOptions = services?.documents?.map((service: ServiceDocument) => ({
     id: service.id,
     name: service.name,
+    slaDays: service.slaDays,
+    includeWeekends: service.includeWeekends,
   })) || [];
+
+  // Get selected service for SLA calculations
+  const selectedService = services?.documents?.find((service: ServiceDocument) => service.id === selectedServiceId);
 
   type MemberOption = {
     id: string;
@@ -189,6 +202,23 @@ export const CreateTaskForm = ({
     }
   }, [isConfidentialValue, form]);
 
+  // Update due date when service changes (SLA-based)
+  useEffect(() => {
+    if (selectedService?.slaDays) {
+      const suggestedDueDate = calculateSLADueDate(
+        selectedService.slaDays,
+        selectedService.includeWeekends
+      );
+      if (suggestedDueDate) {
+        form.setValue("dueDate", suggestedDueDate);
+      }
+    } else if (selectedServiceId && !selectedService?.slaDays) {
+      // If service has no SLA, set default due date (7 days from now)
+      const defaultDueDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      form.setValue("dueDate", defaultDueDate);
+    }
+  }, [selectedServiceId, selectedService, form]);
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     // Validate that serviceId is selected
     if (!values.serviceId || values.serviceId === "") {
@@ -199,7 +229,7 @@ export const CreateTaskForm = ({
     const formattedValues = {
       ...values,
       serviceId: values.serviceId || "", // Convert undefined to empty string
-      dueDate: new Date(values.dueDate).toISOString(), // Convert date to ISO string (always required now)
+      dueDate: new Date(values.dueDate).toISOString(), // Convert date to ISO string
       attachmentId: "", // No attachment support in creation
       assigneeId: values.assigneeId === "unassigned" ? "" : values.assigneeId || "", // Send empty string if unassigned
       followedIds: JSON.stringify(selectedFollowers), // JSON string array of follower IDs
@@ -372,11 +402,19 @@ export const CreateTaskForm = ({
                         )}
                         {serviceOptions.map((service) => (
                           <SelectItem key={service.id} value={String(service.id)}>
-                            <div className="flex items-center gap-x-2">
-                              <div className="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center text-sm font-medium text-white">
-                                {service.name.charAt(0).toUpperCase()}
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center gap-x-2">
+                                <div className="w-6 h-6 rounded-full bg-blue-700 flex items-center justify-center text-sm font-medium text-white">
+                                  {service.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span>{service.name}</span>
                               </div>
-                              <span>{service.name}</span>
+                              {service.slaDays && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <ClockIcon className="w-3 h-3" />
+                                  <span>{formatSLAInfo(service.slaDays, service.includeWeekends)}</span>
+                                </div>
+                              )}
                             </div>
                           </SelectItem>
                         ))}
@@ -392,7 +430,15 @@ export const CreateTaskForm = ({
                 name="dueDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Due Date</FormLabel>
+                    <FormLabel className="flex items-center gap-2">
+                      Due Date
+                      {selectedService?.slaDays && (
+                        <div className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                          <ClockIcon className="w-3 h-3" />
+                          SLA: {formatSLAInfo(selectedService.slaDays, selectedService.includeWeekends)}
+                        </div>
+                      )}
+                    </FormLabel>
                     <FormControl>
                       <DatePicker
                         value={field.value}
@@ -400,6 +446,15 @@ export const CreateTaskForm = ({
                         disabled={field.disabled}
                       />
                     </FormControl>
+                    {selectedService?.slaDays ? (
+                      <p className="text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                        ✓ Due date automatically set based on service SLA ({formatSLAInfo(selectedService.slaDays, selectedService.includeWeekends)}). You can adjust if needed.
+                      </p>
+                    ) : selectedServiceId && !selectedService?.slaDays ? (
+                      <p className="text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-lg border border-amber-200">
+                        ⚠️ No SLA configured for this service. Default due date set to 7 days from now.
+                      </p>
+                    ) : null}
                     <FormMessage />
                   </FormItem>
                 )}

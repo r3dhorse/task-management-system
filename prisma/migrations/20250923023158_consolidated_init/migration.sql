@@ -96,6 +96,8 @@ CREATE TABLE "public"."services" (
     "name" TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
     "isPublic" BOOLEAN NOT NULL DEFAULT false,
+    "slaDays" INTEGER,
+    "includeWeekends" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -254,6 +256,9 @@ CREATE INDEX "members_userId_idx" ON "public"."members"("userId");
 CREATE INDEX "members_role_idx" ON "public"."members"("role");
 
 -- CreateIndex
+CREATE INDEX "members_workspaceId_role_idx" ON "public"."members"("workspaceId", "role");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "members_userId_workspaceId_key" ON "public"."members"("userId", "workspaceId");
 
 -- CreateIndex
@@ -294,6 +299,24 @@ CREATE INDEX "tasks_parentTaskId_idx" ON "public"."tasks"("parentTaskId");
 
 -- CreateIndex
 CREATE INDEX "tasks_workspaceId_status_createdAt_idx" ON "public"."tasks"("workspaceId", "status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "tasks_workspaceId_isConfidential_createdAt_idx" ON "public"."tasks"("workspaceId", "isConfidential", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "tasks_creatorId_workspaceId_status_idx" ON "public"."tasks"("creatorId", "workspaceId", "status");
+
+-- CreateIndex
+CREATE INDEX "tasks_assigneeId_status_idx" ON "public"."tasks"("assigneeId", "status");
+
+-- CreateIndex
+CREATE INDEX "tasks_reviewerId_status_idx" ON "public"."tasks"("reviewerId", "status");
+
+-- CreateIndex
+CREATE INDEX "tasks_serviceId_status_idx" ON "public"."tasks"("serviceId", "status");
+
+-- CreateIndex
+CREATE INDEX "tasks_dueDate_status_idx" ON "public"."tasks"("dueDate", "status");
 
 -- CreateIndex
 CREATE INDEX "task_history_taskId_idx" ON "public"."task_history"("taskId");
@@ -339,6 +362,9 @@ CREATE INDEX "notifications_createdAt_idx" ON "public"."notifications"("createdA
 
 -- CreateIndex
 CREATE INDEX "notifications_userId_isRead_createdAt_idx" ON "public"."notifications"("userId", "isRead", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "notifications_taskId_createdAt_idx" ON "public"."notifications"("taskId", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "task_reviews_taskId_idx" ON "public"."task_reviews"("taskId");
