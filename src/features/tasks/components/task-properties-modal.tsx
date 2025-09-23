@@ -13,13 +13,24 @@ import { DatePicker } from "@/components/date-picker";
 import { FileUpload } from "@/components/file-upload";
 import { StatusIndicator } from "./status-badge";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { 
-  XIcon, 
-  SaveIcon, 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  XIcon,
+  SaveIcon,
   EyeOffIcon,
   UsersIcon,
   PlusIcon,
-  SettingsIcon
+  SettingsIcon,
+  AlertTriangleIcon
 } from "@/lib/lucide-icons";
 import { TaskStatus } from "../types";
 import { Member, MemberRole } from "@/features/members/types";
@@ -73,7 +84,9 @@ export const TaskPropertiesModal = ({
   onManageFollowers,
   onWorkspaceChange
 }: TaskPropertiesModalProps) => {
-  
+  // State for confirmation dialog
+  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
+
   const handleSave = () => {
     // Validate that assignee is required for confidential tasks
     if (editForm.isConfidential && (!editForm.assigneeId || editForm.assigneeId === "" || editForm.assigneeId === "unassigned")) {
@@ -88,11 +101,6 @@ export const TaskPropertiesModal = ({
       return;
     }
 
-    // Validate that reviewer is required before changing to IN_REVIEW status
-    if (editForm.status === TaskStatus.IN_REVIEW && (!editForm.reviewerId || editForm.reviewerId === "" || editForm.reviewerId === "unassigned")) {
-      toast.error("Reviewer is required before changing status to In Review");
-      return;
-    }
 
     // Validate that service is selected when changing workspace
     if (editForm.workspaceId !== task.workspaceId && (!editForm.serviceId || editForm.serviceId === "")) {
@@ -109,8 +117,32 @@ export const TaskPropertiesModal = ({
       }
     }
 
+    // Check if moving from IN_REVIEW to DONE without reviewer
+    const isMovingToDone = editForm.status === TaskStatus.DONE && task.status === TaskStatus.IN_REVIEW;
+    const hasNoReviewer = !editForm.reviewerId || editForm.reviewerId === "" || editForm.reviewerId === "unassigned";
+
+    if (isMovingToDone && hasNoReviewer) {
+      // Show confirmation dialog
+      setShowConfirmDialog(true);
+      return;
+    }
+
+    // Proceed with save
+    performSave();
+  };
+
+  const performSave = () => {
     onSave();
     onClose();
+  };
+
+  const handleConfirmSave = () => {
+    setShowConfirmDialog(false);
+    performSave();
+  };
+
+  const handleCancelConfirm = () => {
+    setShowConfirmDialog(false);
   };
 
   const handleCancel = () => {
@@ -400,11 +432,6 @@ export const TaskPropertiesModal = ({
                   <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
                     Reviewer
-                    {editForm.status === TaskStatus.IN_REVIEW && (
-                      <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">
-                        Required
-                      </span>
-                    )}
                   </label>
                   <Select
                     value={editForm.reviewerId}
@@ -528,6 +555,32 @@ export const TaskPropertiesModal = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog for Moving to Done without Reviewer */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangleIcon className="w-5 h-5 text-amber-500" />
+              Complete Task without Reviewer?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to mark this task as <strong>Done</strong> without assigning a reviewer.
+              The task was in review status but no reviewer was assigned to validate the completion.
+              <br /><br />
+              Do you want to proceed without a reviewer?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelConfirm}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSave}>
+              Yes, Complete Task
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ResponsiveModal>
   );
 };

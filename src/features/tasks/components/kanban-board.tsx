@@ -6,7 +6,17 @@ import { Task, TaskStatus, PopulatedTask } from "../types";
 import { KanbanCard } from "./kanban-card";
 import { useUpdateTask } from "../api/use-update-task";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight } from "@/lib/lucide-icons";
+import { ChevronDown, ChevronRight, AlertTriangleIcon } from "@/lib/lucide-icons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AssigneeSelectionModal } from "./assignee-selection-modal";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -91,9 +101,10 @@ interface CollapsibleColumnProps {
     isAdmin?: boolean;
     isSuperAdmin?: boolean;
   } | null;
+  withReviewStage?: boolean;
 }
 
-const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, taskCount, dragState, isWorkspaceAdmin = false, currentMember, currentUser }: CollapsibleColumnProps) => {
+const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, taskCount, dragState, isWorkspaceAdmin = false, currentMember, currentUser, withReviewStage = true }: CollapsibleColumnProps) => {
   const isArchived = board.key === TaskStatus.ARCHIVED;
   const isDoneColumn = board.key === TaskStatus.DONE;
   
@@ -244,6 +255,7 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
                       index={index}
                       isDragDisabled={isArchived || (isDoneColumn && !isWorkspaceAdmin) || !canDragTask}
                       isBeingDragged={dragState.draggedTaskId === task.id}
+                      withReviewStage={withReviewStage}
                     />
                   );
                 })}
@@ -328,6 +340,19 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     pendingOperation: null,
   });
 
+  // Confirmation dialog for completing tasks without reviewer
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    taskId: string | null;
+    taskName: string;
+    pendingOperation: DropResult | null;
+  }>({
+    isOpen: false,
+    taskId: null,
+    taskName: "",
+    pendingOperation: null,
+  });
+
   const toggleColumn = (columnKey: string) => {
     const newExpandedState = !expandedColumns[columnKey];
     setExpandedColumns(prev => ({
@@ -356,6 +381,116 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
       targetColumnId: update.destination?.droppableId || null,
     }));
   }, []);
+
+  const processDragOperation = React.useCallback((result: DropResult) => {
+    const { source, destination } = result;
+
+    if (!destination) return;
+
+    const sourceStatus = source.droppableId as TaskStatus;
+    const destStatus = destination.droppableId as TaskStatus;
+    const taskId = result.draggableId;
+
+    let updatesPayload: { id: string; status?: TaskStatus; position: number }[] = [];
+
+    if (sourceStatus !== destStatus) {
+        const tasksToUpdate = [...data];
+        const taskToMove = tasksToUpdate.find((task) => task.id === taskId);
+
+        if (!taskToMove) {
+          console.error("Task not found for ID:", taskId);
+          return;
+        }
+
+        // Auto-assign current user when moving to IN_PROGRESS without assignee
+        if (destStatus === TaskStatus.IN_PROGRESS && !taskToMove.assigneeId) {
+          // Find the current user's member in this workspace
+          const currentMember = (membersData?.documents as Member[] || []).find(
+            (member) => member.userId === currentUser?.id
+          );
+
+          if (currentMember) {
+            taskToMove.assigneeId = currentMember.id;
+          }
+        }
+
+        taskToMove.status = destStatus;
+
+        updatesPayload.push({
+          id: taskToMove.id,
+          status: destStatus,
+          position: Math.min((destination.index + 1) * 1000, 1_000_000),
+        });
+
+        onChange?.(tasksToUpdate);
+
+        // Update task with correct API format
+        const taskUpdate = updatesPayload[0];
+        updateTask({
+          param: { taskId: taskUpdate.id },
+          json: {
+            name: taskToMove.name,
+            status: taskUpdate.status!,
+            serviceId: taskToMove.serviceId,
+            dueDate: taskToMove.dueDate || undefined,
+            assigneeId: taskToMove.assigneeId || undefined,
+            reviewerId: taskToMove.reviewerId || undefined,
+            description: taskToMove.description || undefined,
+            attachmentId: taskToMove.attachmentId || undefined,
+          }
+        });
+      } else {
+        const tasksToUpdate = [...data]
+          .filter((task) => task.status === sourceStatus)
+          .sort((a, b) => a.position - b.position);
+
+        const taskToMove = tasksToUpdate[source.index];
+        tasksToUpdate.splice(source.index, 1);
+        tasksToUpdate.splice(destination.index, 0, taskToMove);
+
+        const minimumPosition = tasksToUpdate[0]?.position ?? 0;
+
+        updatesPayload = tasksToUpdate.map((task, index) => ({
+          id: task.id,
+          status: sourceStatus,
+          position: minimumPosition + (index + 1) * 1000,
+        }));
+
+        onChange?.(
+          data.map((task) => {
+            const update = updatesPayload.find((u) => u.id === task.id);
+            if (update) {
+              return { ...task, ...update };
+            }
+            return task;
+          })
+        );
+
+        // Update each task with correct API format
+        updatesPayload.forEach((update) => {
+          const task = data.find(t => t.id === update.id);
+          if (!task) {
+            console.error("Task not found for position update:", update.id);
+            return;
+          }
+
+          updateTask({
+            param: { taskId: update.id },
+            json: {
+              name: task.name,
+              status: update.status!,
+              serviceId: task.serviceId,
+              dueDate: task.dueDate || undefined,
+              assigneeId: task.assigneeId || undefined,
+              description: task.description || undefined,
+              attachmentId: task.attachmentId || undefined,
+            }
+          });
+        });
+      }
+    },
+    [data, onChange, updateTask, currentUser?.id, membersData?.documents]
+  );
 
   const onDragEnd = React.useCallback(
     (result: DropResult) => {
@@ -438,112 +573,29 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
       }
 
       // Archived tasks are not shown in Kanban view, so no need to prevent drag to/from ARCHIVED
-      
+
+      // Check if moving from IN_REVIEW to DONE without reviewer
+      if (sourceStatus === TaskStatus.IN_REVIEW && destStatus === TaskStatus.DONE &&
+          (!draggedTask.reviewerId || draggedTask.reviewerId === "" || draggedTask.reviewerId === "unassigned")) {
+        // Show confirmation dialog
+        setConfirmDialog({
+          isOpen: true,
+          taskId: taskId,
+          taskName: draggedTask.name,
+          pendingOperation: result,
+        });
+        return;
+      }
+
       // Add haptic feedback for mobile devices
       if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
         navigator.vibrate(50);
       }
 
-      let updatesPayload: { id: string; status?: TaskStatus; position: number }[] = [];
-
-      if (sourceStatus !== destStatus) {
-        const tasksToUpdate = [...data];
-        const taskToMove = tasksToUpdate.find((task) => task.id === taskId);
-
-        if (!taskToMove) {
-          console.error("Task not found for ID:", taskId);
-          return;
-        }
-
-        // Auto-assign current user when moving to IN_PROGRESS without assignee
-        if (destStatus === TaskStatus.IN_PROGRESS && !taskToMove.assigneeId) {
-          // Find the current user's member in this workspace
-          const currentMember = (membersData?.documents as Member[] || []).find(
-            (member) => member.userId === currentUser?.id
-          );
-
-          if (currentMember) {
-            taskToMove.assigneeId = currentMember.id;
-          }
-        }
-
-
-        taskToMove.status = destStatus;
-
-        updatesPayload.push({
-          id: taskToMove.id,
-          status: destStatus,
-          position: Math.min((destination.index + 1) * 1000, 1_000_000),
-        });
-
-        onChange?.(tasksToUpdate);
-
-        // Update task with correct API format
-        const taskUpdate = updatesPayload[0];
-        updateTask({
-          param: { taskId: taskUpdate.id },
-          json: {
-            name: taskToMove.name,
-            status: taskUpdate.status!,
-            serviceId: taskToMove.serviceId,
-            dueDate: taskToMove.dueDate || undefined,
-            assigneeId: taskToMove.assigneeId || undefined,
-            reviewerId: taskToMove.reviewerId || undefined,
-            description: taskToMove.description || undefined,
-            attachmentId: taskToMove.attachmentId || undefined,
-          }
-        });
-      } else {
-        const tasksToUpdate = [...data]
-          .filter((task) => task.status === sourceStatus)
-          .sort((a, b) => a.position - b.position);
-
-        const taskToMove = tasksToUpdate[source.index];
-        tasksToUpdate.splice(source.index, 1);
-        tasksToUpdate.splice(destination.index, 0, taskToMove);
-
-        const minimumPosition = tasksToUpdate[0]?.position ?? 0;
-
-        updatesPayload = tasksToUpdate.map((task, index) => ({
-          id: task.id,
-          status: sourceStatus,
-          position: minimumPosition + (index + 1) * 1000,
-        }));
-
-        onChange?.(
-          data.map((task) => {
-            const update = updatesPayload.find((u) => u.id === task.id);
-            if (update) {
-              return { ...task, ...update };
-            }
-            return task;
-          })
-        );
-
-        // Update each task with correct API format
-        updatesPayload.forEach((update) => {
-          const task = data.find(t => t.id === update.id);
-          if (!task) {
-            console.error("Task not found for position update:", update.id);
-            return;
-          }
-          
-          updateTask({
-            param: { taskId: update.id },
-            json: {
-              name: task.name,
-              status: update.status!,
-              serviceId: task.serviceId,
-              dueDate: task.dueDate || undefined,
-              assigneeId: task.assigneeId || undefined,
-              description: task.description || undefined,
-              attachmentId: task.attachmentId || undefined,
-            }
-          });
-        });
-      }
+      // Proceed with drag operation
+      processDragOperation(result);
     },
-    [data, onChange, updateTask, currentUser?.id, currentUser?.isSuperAdmin, membersData?.documents]
+    [data, currentUser?.id, currentUser?.isSuperAdmin, membersData?.documents, processDragOperation]
   );
 
   // Handle assignee selection confirmation
@@ -599,6 +651,28 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     });
   }, []);
 
+  // Handle confirmation dialog for completing task without reviewer
+  const handleConfirmComplete = React.useCallback(() => {
+    const { pendingOperation } = confirmDialog;
+    if (pendingOperation) {
+      processDragOperation(pendingOperation);
+    }
+    setConfirmDialog({
+      isOpen: false,
+      taskId: null,
+      taskName: "",
+      pendingOperation: null,
+    });
+  }, [confirmDialog, processDragOperation]);
+
+  const handleCancelComplete = React.useCallback(() => {
+    setConfirmDialog({
+      isOpen: false,
+      taskId: null,
+      taskName: "",
+      pendingOperation: null,
+    });
+  }, []);
 
   const tasks = React.useMemo(() => {
     const grouped: Record<string, Task[]> = {
@@ -678,6 +752,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
                   isWorkspaceAdmin={isWorkspaceAdmin}
                   currentMember={currentMember}
                   currentUser={currentUser}
+                  withReviewStage={withReviewStage}
                 />
               </div>
             );
@@ -731,6 +806,32 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         taskName={assigneeModal.taskName}
         isLoading={isUpdating}
       />
+
+      {/* Confirmation Dialog for Completing Task without Reviewer */}
+      <AlertDialog open={confirmDialog.isOpen} onOpenChange={(open) => !open && handleCancelComplete()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangleIcon className="w-5 h-5 text-amber-500" />
+              Complete Task without Reviewer?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to mark the task <strong>&ldquo;{confirmDialog.taskName}&rdquo;</strong> as <strong>Done</strong> without assigning a reviewer.
+              The task was in review status but no reviewer was assigned to validate the completion.
+              <br /><br />
+              Do you want to proceed without a reviewer?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelComplete}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmComplete}>
+              Yes, Complete Task
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );

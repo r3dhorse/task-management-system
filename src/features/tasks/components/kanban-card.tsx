@@ -17,9 +17,10 @@ interface KanbanCardProps {
   index: number;
   isDragDisabled?: boolean;
   isBeingDragged?: boolean;
+  withReviewStage?: boolean;
 }
 
-export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged = false }: KanbanCardProps) => {
+export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged = false, withReviewStage = true }: KanbanCardProps) => {
   const router = useRouter();
   const workspaceId = useWorkspaceId();
   const { data: members } = useGetMembers({ workspaceId });
@@ -271,8 +272,8 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
               </div>
             </div>
 
-            {/* Reviewer - show when status is IN_REVIEW or DONE */}
-            {(task.status === 'IN_REVIEW' || task.status === 'DONE') && (
+            {/* Reviewer - show when status is IN_REVIEW or DONE and withReviewStage is enabled */}
+            {withReviewStage && (task.status === 'IN_REVIEW' || task.status === 'DONE') && (
               <div className="mb-2">
                 <div className="flex items-center gap-1 text-xs">
                   <span className="text-gray-500 font-medium">Reviewer:</span>
