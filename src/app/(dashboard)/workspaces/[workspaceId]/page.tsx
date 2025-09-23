@@ -751,6 +751,7 @@ const WorkspaceIdPage = () => {
           services={services?.documents || []}
           dateFrom={dateFrom}
           dateTo={dateTo}
+          withReviewStage={workspace?.withReviewStage}
         />
       </TabsContent>
       </Tabs>
