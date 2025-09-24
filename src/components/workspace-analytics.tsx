@@ -34,6 +34,14 @@ interface WorkspaceAnalyticsProps {
   dateFrom?: Date;
   dateTo?: Date;
   withReviewStage?: boolean;
+  // KPI weight configuration
+  kpiWeights?: {
+    kpiCompletionWeight: number;
+    kpiProductivityWeight: number;
+    kpiSlaWeight: number;
+    kpiFollowerWeight: number;
+    kpiReviewWeight: number;
+  };
 }
 
 
@@ -43,8 +51,18 @@ export const WorkspaceAnalytics = ({
   services,
   dateFrom: _dateFrom,
   dateTo: _dateTo,
-  withReviewStage = true
+  withReviewStage = true,
+  kpiWeights
 }: WorkspaceAnalyticsProps) => {
+
+  // Default KPI weights - use provided weights or fallback to defaults
+  const weights = kpiWeights || {
+    kpiCompletionWeight: withReviewStage ? 30.0 : 35.0,
+    kpiProductivityWeight: withReviewStage ? 20.0 : 25.0,
+    kpiSlaWeight: withReviewStage ? 20.0 : 25.0,
+    kpiFollowerWeight: 15.0,
+    kpiReviewWeight: withReviewStage ? 15.0 : 0.0,
+  };
 
   // Calculate productivity metrics
   const productivityMetrics = useMemo(() => {
@@ -178,27 +196,14 @@ export const WorkspaceAnalytics = ({
       // Normalize productivity score (PS) to 0-1 scale
       const normalizedProductivityScore = member.contributionScore / maxContributionScore;
 
-      // Calculate weighted KPI based on workspace configuration
-      let kpiScore: number;
-
-      if (withReviewStage) {
-        // With Reviewer Workspace weights
-        kpiScore = (
-          member.completionRate * 0.30 +        // 30% Completion Rate
-          normalizedProductivityScore * 0.20 +   // 20% Productivity
-          member.slaCompliance * 0.20 +          // 20% SLA Compliance
-          member.followerScore * 0.15 +          // 15% Follower Contribution
-          member.reviewScore * 0.15               // 15% Review Score
-        );
-      } else {
-        // Without Reviewer Workspace weights (no review score)
-        kpiScore = (
-          member.completionRate * 0.35 +        // 35% Completion Rate
-          normalizedProductivityScore * 0.25 +   // 25% Productivity
-          member.slaCompliance * 0.25 +          // 25% SLA Compliance
-          member.followerScore * 0.15             // 15% Follower Contribution
-        );
-      }
+      // Calculate weighted KPI using custom weights (converted from percentage to decimal)
+      const kpiScore = (
+        member.completionRate * (weights.kpiCompletionWeight / 100) +
+        normalizedProductivityScore * (weights.kpiProductivityWeight / 100) +
+        member.slaCompliance * (weights.kpiSlaWeight / 100) +
+        member.followerScore * (weights.kpiFollowerWeight / 100) +
+        (withReviewStage ? member.reviewScore * (weights.kpiReviewWeight / 100) : 0)
+      );
 
       // Legacy productivity score for backward compatibility
       const productivityScore = Math.max(0, Math.round(
@@ -213,7 +218,7 @@ export const WorkspaceAnalytics = ({
       };
     })
     .sort((a, b) => b.kpiScore - a.kpiScore); // Sort by KPI score instead of productivity
-  }, [tasks, members, withReviewStage]);
+  }, [tasks, members, withReviewStage, weights.kpiCompletionWeight, weights.kpiProductivityWeight, weights.kpiSlaWeight, weights.kpiFollowerWeight, weights.kpiReviewWeight]);
 
   // Calculate service analytics
   const serviceAnalytics = useMemo(() => {
@@ -537,28 +542,22 @@ export const WorkspaceAnalytics = ({
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1 text-sm text-gray-500 cursor-help">
                     <Info className="h-4 w-4" />
-                    <span>KPI Weights: {withReviewStage ? 'With Review Stage' : 'Without Review Stage'}</span>
+                    <span>KPI Weights: Custom Configuration</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-md p-3">
                   <div className="space-y-2 text-xs">
-                    <p className="font-semibold mb-2">⚖️ Weight Distribution:</p>
-                    {withReviewStage ? (
-                      <div className="space-y-1">
-                        <div>• Completion Rate (CR): 30%</div>
-                        <div>• Productivity (PS): 20%</div>
-                        <div>• SLA Compliance (SLA): 20%</div>
-                        <div>• Follower Contribution (FS): 15%</div>
-                        <div>• Review Score (RS): 15%</div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <div>• Completion Rate (CR): 35%</div>
-                        <div>• Productivity (PS): 25%</div>
-                        <div>• SLA Compliance (SLA): 25%</div>
-                        <div>• Follower Contribution (FS): 15%</div>
-                      </div>
-                    )}
+                    <p className="font-semibold mb-2">⚖️ Current Weight Distribution:</p>
+                    <div className="space-y-1">
+                      <div>• Completion Rate (CR): {weights.kpiCompletionWeight.toFixed(1)}%</div>
+                      <div>• Productivity (PS): {weights.kpiProductivityWeight.toFixed(1)}%</div>
+                      <div>• SLA Compliance (SLA): {weights.kpiSlaWeight.toFixed(1)}%</div>
+                      <div>• Follower Contribution (FS): {weights.kpiFollowerWeight.toFixed(1)}%</div>
+                      {withReviewStage && <div>• Review Score (RS): {weights.kpiReviewWeight.toFixed(1)}%</div>}
+                    </div>
+                    <div className="mt-2 pt-2 border-t text-xs text-gray-600">
+                      Configure weights in Workspace Settings → KPI Config tab
+                    </div>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -653,9 +652,7 @@ export const WorkspaceAnalytics = ({
                 </thead>
                 <tbody>
                 {memberAnalytics.map((member, index) => {
-                  const kpiBreakdown = withReviewStage
-                    ? `(${(member.completionRate * 100).toFixed(0)}×0.30) + (${(member.normalizedProductivityScore * 100).toFixed(0)}×0.20) + (${(member.slaCompliance * 100).toFixed(0)}×0.20) + (${(member.followerScore * 100).toFixed(0)}×0.15) + (${(member.reviewScore * 100).toFixed(0)}×0.15)`
-                    : `(${(member.completionRate * 100).toFixed(0)}×0.35) + (${(member.normalizedProductivityScore * 100).toFixed(0)}×0.25) + (${(member.slaCompliance * 100).toFixed(0)}×0.25) + (${(member.followerScore * 100).toFixed(0)}×0.15)`;
+                  const kpiBreakdown = `(${(member.completionRate * 100).toFixed(0)}×${(weights.kpiCompletionWeight/100).toFixed(2)}) + (${(member.normalizedProductivityScore * 100).toFixed(0)}×${(weights.kpiProductivityWeight/100).toFixed(2)}) + (${(member.slaCompliance * 100).toFixed(0)}×${(weights.kpiSlaWeight/100).toFixed(2)}) + (${(member.followerScore * 100).toFixed(0)}×${(weights.kpiFollowerWeight/100).toFixed(2)})${withReviewStage ? ` + (${(member.reviewScore * 100).toFixed(0)}×${(weights.kpiReviewWeight/100).toFixed(2)})` : ''}`;
 
                   return (
                     <tr key={member.id} className="border-b hover:bg-gray-50">
@@ -703,11 +700,11 @@ export const WorkspaceAnalytics = ({
                                 <div className="mt-2 pt-2 border-t">
                                   <p className="font-semibold mb-1">Score Breakdown:</p>
                                   <div className="space-y-0.5 text-[11px]">
-                                    <div>CR: {(member.completionRate * 100).toFixed(0)}% × {withReviewStage ? '30%' : '35%'} = {(member.completionRate * (withReviewStage ? 30 : 35)).toFixed(1)}%</div>
-                                    <div>PS: {(member.normalizedProductivityScore * 100).toFixed(0)}% × {withReviewStage ? '20%' : '25%'} = {(member.normalizedProductivityScore * (withReviewStage ? 20 : 25)).toFixed(1)}%</div>
-                                    <div>SLA: {(member.slaCompliance * 100).toFixed(0)}% × {withReviewStage ? '20%' : '25%'} = {(member.slaCompliance * (withReviewStage ? 20 : 25)).toFixed(1)}%</div>
-                                    <div>FS: {(member.followerScore * 100).toFixed(0)}% × 15% = {(member.followerScore * 15).toFixed(1)}%</div>
-                                    {withReviewStage && <div>RS: {(member.reviewScore * 100).toFixed(0)}% × 15% = {(member.reviewScore * 15).toFixed(1)}%</div>}
+                                    <div>CR: {(member.completionRate * 100).toFixed(0)}% × {weights.kpiCompletionWeight.toFixed(1)}% = {(member.completionRate * weights.kpiCompletionWeight).toFixed(1)}%</div>
+                                    <div>PS: {(member.normalizedProductivityScore * 100).toFixed(0)}% × {weights.kpiProductivityWeight.toFixed(1)}% = {(member.normalizedProductivityScore * weights.kpiProductivityWeight).toFixed(1)}%</div>
+                                    <div>SLA: {(member.slaCompliance * 100).toFixed(0)}% × {weights.kpiSlaWeight.toFixed(1)}% = {(member.slaCompliance * weights.kpiSlaWeight).toFixed(1)}%</div>
+                                    <div>FS: {(member.followerScore * 100).toFixed(0)}% × {weights.kpiFollowerWeight.toFixed(1)}% = {(member.followerScore * weights.kpiFollowerWeight).toFixed(1)}%</div>
+                                    {withReviewStage && <div>RS: {(member.reviewScore * 100).toFixed(0)}% × {weights.kpiReviewWeight.toFixed(1)}% = {(member.reviewScore * weights.kpiReviewWeight).toFixed(1)}%</div>}
                                   </div>
                                 </div>
                               </div>

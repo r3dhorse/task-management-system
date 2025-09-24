@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { updateWorkspaceSchema } from "../schemas";
+import { updateWorkspaceSchema, kpiWeightsSchema } from "../schemas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -15,12 +15,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter } from "next/navigation";
 import { Workspace } from "../types";
-import { 
-  ArrowLeftIcon, 
-  CopyIcon, 
-  SettingsIcon, 
-  UsersIcon, 
-  LinkIcon, 
+import {
+  ArrowLeftIcon,
+  CopyIcon,
+  SettingsIcon,
+  UsersIcon,
+  LinkIcon,
   ShieldIcon,
   TrashIcon,
   RefreshCwIcon,
@@ -30,7 +30,9 @@ import {
   ClockIcon,
   BrushIcon,
   InfoIcon,
-  ExternalLinkIcon
+  ExternalLinkIcon,
+  BarChart3Icon,
+  Target
 } from "@/lib/lucide-icons";
 import { useUpdateWorkspace } from "../api/use-update-workspace";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -104,6 +106,17 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
     },
   });
 
+  const kpiForm = useForm<z.infer<typeof kpiWeightsSchema>>({
+    resolver: zodResolver(kpiWeightsSchema),
+    defaultValues: {
+      kpiCompletionWeight: initialValues.kpiCompletionWeight || 30.0,
+      kpiProductivityWeight: initialValues.kpiProductivityWeight || 20.0,
+      kpiSlaWeight: initialValues.kpiSlaWeight || 20.0,
+      kpiFollowerWeight: initialValues.kpiFollowerWeight || 15.0,
+      kpiReviewWeight: initialValues.kpiReviewWeight || 15.0,
+    },
+  });
+
   const handleDelete = async () => {
     const ok = await confirmDelete();
     if (!ok) return;
@@ -132,6 +145,33 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
     }, {
       onSuccess: () => {
         form.reset(values);
+      }
+    });
+  };
+
+  const onKpiSubmit = (values: z.infer<typeof kpiWeightsSchema>) => {
+    console.log("Submitting KPI values:", values);
+
+    // Convert any empty strings to 0 before submission
+    const processedValues = {
+      kpiCompletionWeight: Number(values.kpiCompletionWeight) || 0,
+      kpiProductivityWeight: Number(values.kpiProductivityWeight) || 0,
+      kpiSlaWeight: Number(values.kpiSlaWeight) || 0,
+      kpiFollowerWeight: Number(values.kpiFollowerWeight) || 0,
+      kpiReviewWeight: Number(values.kpiReviewWeight) || 0,
+    };
+
+    updateWorkspace({
+      json: processedValues,
+      param: { workspaceId: initialValues.id }
+    }, {
+      onSuccess: () => {
+        kpiForm.reset(processedValues);
+        toast.success("KPI weights updated successfully");
+      },
+      onError: (error) => {
+        console.error("KPI update error:", error);
+        toast.error("Failed to update KPI weights: " + error.message);
       }
     });
   };
@@ -233,11 +273,16 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
 
         {/* Settings Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 gap-1">
             <TabsTrigger value="general" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
               <BrushIcon className="h-3 sm:h-4 w-3 sm:w-4" />
               <span className="hidden sm:inline">General</span>
               <span className="sm:hidden">General</span>
+            </TabsTrigger>
+            <TabsTrigger value="kpi" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <BarChart3Icon className="h-3 sm:h-4 w-3 sm:w-4" />
+              <span className="hidden sm:inline">KPI Config</span>
+              <span className="sm:hidden">KPI</span>
             </TabsTrigger>
             <TabsTrigger value="members" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
               <UsersIcon className="h-3 sm:h-4 w-3 sm:w-4" />
@@ -330,6 +375,382 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
                             <>
                               <CheckIcon className="h-4 w-4 mr-2" />
                               Save Changes
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* KPI Configuration */}
+          <TabsContent value="kpi" className="space-y-6">
+            <Card className="border-0 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3Icon className="h-5 w-5 text-blue-600" />
+                  KPI Weight Configuration
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Customize the percentage weights for Key Performance Indicators in workspace analytics
+                </p>
+              </CardHeader>
+              <CardContent>
+                <Form {...kpiForm}>
+                  <form onSubmit={kpiForm.handleSubmit(onKpiSubmit)} className="space-y-6">
+                    {/* Debug info - will be removed */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+                        Form state: valid={kpiForm.formState.isValid},
+                        dirty={kpiForm.formState.isDirty},
+                        errors={Object.keys(kpiForm.formState.errors).length}
+                      </div>
+                    )}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-100 rounded-full p-1">
+                          <InfoIcon className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-900 mb-1">
+                            KPI Weight Configuration
+                          </p>
+                          <p className="text-xs text-blue-700">
+                            Set the percentage weights for each performance metric. All weights must sum to 100%.
+                            Current workspace is {initialValues.withReviewStage ? 'with' : 'without'} review stage.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={kpiForm.control}
+                        name="kpiCompletionWeight"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium flex items-center gap-2">
+                              <Target className="h-4 w-4 text-green-600" />
+                              Completion Rate Weight (%)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                placeholder="30.0"
+                                className="focus-visible:ring-2 focus-visible:ring-green-500"
+                                disabled={!isAdmin}
+                                value={field.value === undefined ? '' : field.value}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '') {
+                                    field.onChange(undefined); // Allow empty field
+                                  } else {
+                                    const numValue = parseFloat(value);
+                                    if (!isNaN(numValue)) {
+                                      field.onChange(numValue);
+                                    }
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  // Convert empty to 0 on blur to maintain validation
+                                  if (e.target.value === '' || field.value === undefined) {
+                                    field.onChange(0);
+                                  }
+                                  field.onBlur();
+                                }}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Weight for task completion effectiveness (Completed Tasks / Assigned Tasks)
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={kpiForm.control}
+                        name="kpiProductivityWeight"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium flex items-center gap-2">
+                              <BarChart3Icon className="h-4 w-4 text-purple-600" />
+                              Productivity Score Weight (%)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                placeholder="20.0"
+                                className="focus-visible:ring-2 focus-visible:ring-purple-500"
+                                disabled={!isAdmin}
+                                value={field.value === undefined ? '' : field.value}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '') {
+                                    field.onChange(undefined); // Allow empty field
+                                  } else {
+                                    const numValue = parseFloat(value);
+                                    if (!isNaN(numValue)) {
+                                      field.onChange(numValue);
+                                    }
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  // Convert empty to 0 on blur to maintain validation
+                                  if (e.target.value === '' || field.value === undefined) {
+                                    field.onChange(0);
+                                  }
+                                  field.onBlur();
+                                }}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Weight for overall productivity and contribution to team
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={kpiForm.control}
+                        name="kpiSlaWeight"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium flex items-center gap-2">
+                              <ClockIcon className="h-4 w-4 text-orange-600" />
+                              SLA Compliance Weight (%)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                placeholder="20.0"
+                                className="focus-visible:ring-2 focus-visible:ring-orange-500"
+                                disabled={!isAdmin}
+                                value={field.value === undefined ? '' : field.value}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '') {
+                                    field.onChange(undefined); // Allow empty field
+                                  } else {
+                                    const numValue = parseFloat(value);
+                                    if (!isNaN(numValue)) {
+                                      field.onChange(numValue);
+                                    }
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  // Convert empty to 0 on blur to maintain validation
+                                  if (e.target.value === '' || field.value === undefined) {
+                                    field.onChange(0);
+                                  }
+                                  field.onBlur();
+                                }}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Weight for on-time delivery performance
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={kpiForm.control}
+                        name="kpiFollowerWeight"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm font-medium flex items-center gap-2">
+                              <UsersIcon className="h-4 w-4 text-blue-600" />
+                              Follower Score Weight (%)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                placeholder="15.0"
+                                className="focus-visible:ring-2 focus-visible:ring-blue-500"
+                                disabled={!isAdmin}
+                                value={field.value === undefined ? '' : field.value}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '') {
+                                    field.onChange(undefined); // Allow empty field
+                                  } else {
+                                    const numValue = parseFloat(value);
+                                    if (!isNaN(numValue)) {
+                                      field.onChange(numValue);
+                                    }
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  // Convert empty to 0 on blur to maintain validation
+                                  if (e.target.value === '' || field.value === undefined) {
+                                    field.onChange(0);
+                                  }
+                                  field.onBlur();
+                                }}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Weight for collaboration and team contribution
+                            </FormDescription>
+                          </FormItem>
+                        )}
+                      />
+
+                      {initialValues.withReviewStage && (
+                        <FormField
+                          control={kpiForm.control}
+                          name="kpiReviewWeight"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm font-medium flex items-center gap-2">
+                                <ShieldIcon className="h-4 w-4 text-indigo-600" />
+                                Review Score Weight (%)
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.1"
+                                  placeholder="15.0"
+                                  className="focus-visible:ring-2 focus-visible:ring-indigo-500"
+                                  disabled={!isAdmin}
+                                  value={field.value}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === '') {
+                                      field.onChange('');
+                                    } else {
+                                      const numValue = parseFloat(value);
+                                      if (!isNaN(numValue)) {
+                                        field.onChange(numValue);
+                                      }
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Weight for review completion and quality
+                              </FormDescription>
+                            </FormItem>
+                          )}
+                        />
+                      )}
+                    </div>
+
+                    {/* Current Total Display */}
+                    <div className="bg-gray-50 border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">Total Weight:</span>
+                        <span className={`text-lg font-bold ${
+                          Math.abs((kpiForm.watch("kpiCompletionWeight") || 0) +
+                                   (kpiForm.watch("kpiProductivityWeight") || 0) +
+                                   (kpiForm.watch("kpiSlaWeight") || 0) +
+                                   (kpiForm.watch("kpiFollowerWeight") || 0) +
+                                   (initialValues.withReviewStage ? (kpiForm.watch("kpiReviewWeight") || 0) : 0) - 100) < 0.01
+                            ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {((kpiForm.watch("kpiCompletionWeight") || 0) +
+                            (kpiForm.watch("kpiProductivityWeight") || 0) +
+                            (kpiForm.watch("kpiSlaWeight") || 0) +
+                            (kpiForm.watch("kpiFollowerWeight") || 0) +
+                            (initialValues.withReviewStage ? (kpiForm.watch("kpiReviewWeight") || 0) : 0)).toFixed(1)}%
+                        </span>
+                      </div>
+                      {Math.abs((kpiForm.watch("kpiCompletionWeight") || 0) +
+                               (kpiForm.watch("kpiProductivityWeight") || 0) +
+                               (kpiForm.watch("kpiSlaWeight") || 0) +
+                               (kpiForm.watch("kpiFollowerWeight") || 0) +
+                               (initialValues.withReviewStage ? (kpiForm.watch("kpiReviewWeight") || 0) : 0) - 100) >= 0.01 && (
+                        <p className="text-xs text-red-600 mt-2">
+                          ⚠️ All weights must sum to exactly 100%
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Form Validation Errors */}
+                    {Object.keys(kpiForm.formState.errors).length > 0 && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex">
+                          <div className="flex-shrink-0">
+                            <AlertTriangleIcon className="h-5 w-5 text-red-400" />
+                          </div>
+                          <div className="ml-3">
+                            <h3 className="text-sm font-medium text-red-800">
+                              Please fix the following errors:
+                            </h3>
+                            <div className="mt-2 text-sm text-red-700">
+                              <ul className="list-disc list-inside space-y-1">
+                                {Object.entries(kpiForm.formState.errors).map(([field, error]) => (
+                                  <li key={field}>
+                                    {field}: {error?.message || 'Invalid value'}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {isAdmin && (
+                      <div className="flex justify-end gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            kpiForm.reset({
+                              kpiCompletionWeight: initialValues.withReviewStage ? 30.0 : 35.0,
+                              kpiProductivityWeight: initialValues.withReviewStage ? 20.0 : 25.0,
+                              kpiSlaWeight: initialValues.withReviewStage ? 20.0 : 25.0,
+                              kpiFollowerWeight: 15.0,
+                              kpiReviewWeight: initialValues.withReviewStage ? 15.0 : 0.0,
+                            });
+                          }}
+                          disabled={isPending}
+                        >
+                          Reset to Defaults
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={isPending}
+                          className="bg-blue-600 hover:bg-blue-700"
+                          onClick={() => {
+                            console.log("KPI Save button clicked");
+                            console.log("Form values:", kpiForm.getValues());
+                            console.log("Form errors:", kpiForm.formState.errors);
+                            console.log("Form valid:", kpiForm.formState.isValid);
+                          }}
+                        >
+                          {isPending ? (
+                            <>
+                              <RefreshCwIcon className="h-4 w-4 mr-2 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <CheckIcon className="h-4 w-4 mr-2" />
+                              Save KPI Configuration
                             </>
                           )}
                         </Button>

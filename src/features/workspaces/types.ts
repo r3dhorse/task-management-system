@@ -5,6 +5,14 @@ export type Workspace = {
   inviteCode: string;
   userId: string;
   withReviewStage: boolean;
+
+  // KPI Configuration weights (percentages)
+  kpiCompletionWeight: number;
+  kpiProductivityWeight: number;
+  kpiSlaWeight: number;
+  kpiFollowerWeight: number;
+  kpiReviewWeight: number;
+
   createdAt: Date | string;
   updatedAt: Date | string;
 }

@@ -752,6 +752,13 @@ const WorkspaceIdPage = () => {
           dateFrom={dateFrom}
           dateTo={dateTo}
           withReviewStage={workspace?.withReviewStage}
+          kpiWeights={workspace ? {
+            kpiCompletionWeight: workspace.kpiCompletionWeight,
+            kpiProductivityWeight: workspace.kpiProductivityWeight,
+            kpiSlaWeight: workspace.kpiSlaWeight,
+            kpiFollowerWeight: workspace.kpiFollowerWeight,
+            kpiReviewWeight: workspace.kpiReviewWeight,
+          } : undefined}
         />
       </TabsContent>
       </Tabs>

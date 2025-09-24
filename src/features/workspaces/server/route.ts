@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { MemberRole } from "@/features/members/types";
 import { generateInviteCode } from "@/lib/utils";
 import { sessionMiddleware } from "@/lib/session-middleware";
-import { createWorkspaceSchema, updateWorkspaceSchema } from "../schemas";
+import { createWorkspaceSchema, updateWorkspaceWithKpiSchema } from "../schemas";
 import { z } from "zod";
 
 const app = new Hono()
@@ -127,12 +127,21 @@ const app = new Hono()
   .patch(
     "/:workspaceId",
     sessionMiddleware,
-    zValidator("json", updateWorkspaceSchema),
+    zValidator("json", updateWorkspaceWithKpiSchema),
     async (c) => {
       const user = c.get("user");
       const prisma = c.get("prisma");
       const { workspaceId } = c.req.param();
-      const { name, description, withReviewStage } = c.req.valid("json");
+      const {
+        name,
+        description,
+        withReviewStage,
+        kpiCompletionWeight,
+        kpiProductivityWeight,
+        kpiSlaWeight,
+        kpiFollowerWeight,
+        kpiReviewWeight
+      } = c.req.valid("json");
 
       // Check if user is admin of this workspace
       const member = await prisma.member.findUnique({
@@ -153,9 +162,14 @@ const app = new Hono()
           id: workspaceId,
         },
         data: {
-          name,
+          ...(name !== undefined && { name }),
           ...(description !== undefined && { description }),
           ...(withReviewStage !== undefined && { withReviewStage }),
+          ...(kpiCompletionWeight !== undefined && { kpiCompletionWeight }),
+          ...(kpiProductivityWeight !== undefined && { kpiProductivityWeight }),
+          ...(kpiSlaWeight !== undefined && { kpiSlaWeight }),
+          ...(kpiFollowerWeight !== undefined && { kpiFollowerWeight }),
+          ...(kpiReviewWeight !== undefined && { kpiReviewWeight }),
         },
       });
 
