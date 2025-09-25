@@ -12,11 +12,16 @@ import { Button } from "./ui/button";
 import { LogOutIcon, Plus } from "@/lib/lucide-icons";
 import { useConfirm } from "@/hooks/use-confirm";
 import { NotificationDropdown } from "@/features/notifications/components/notification-dropdown";
+import { useCurrent } from "@/features/auth/api/use-current";
+import { useGetMembers } from "@/features/members/api/use-get-members";
+import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
+import { Member, MemberRole } from "@/features/members/types";
 
 
 
 
 export const Sidebar = () => {
+  const workspaceId = useWorkspaceId();
   const { mutate: logout } = useLogout();
   const { open } = useCreateTaskModal();
 
@@ -25,6 +30,17 @@ export const Sidebar = () => {
     "Are you sure you want to log out? You will need to sign in again to access your account.",
     "destructive",
   );
+
+  // Get current user and member information to check visitor role
+  const { data: currentUser } = useCurrent();
+  const { data: members } = useGetMembers({ workspaceId });
+
+  // Find current user's member record to check role
+  const currentMember = members?.documents.find(member =>
+    (member as Member).userId === currentUser?.id
+  ) as Member;
+
+  const isVisitor = currentMember?.role === MemberRole.VISITOR;
 
   const handleLogout = async () => {
     const ok = await confirmLogout();
@@ -57,14 +73,18 @@ export const Sidebar = () => {
         <DottedSeparator className="my-3 sm:my-4" />
         < Navigation />
         <DottedSeparator className="my-3 sm:my-4" />
-        <Button
-          onClick={() => open()}
-          className="w-full bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all duration-200"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          New Task
-        </Button>
-        <DottedSeparator className="my-3 sm:my-4" />
+        {!isVisitor && (
+          <>
+            <Button
+              onClick={() => open()}
+              className="w-full bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all duration-200"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Task
+            </Button>
+            <DottedSeparator className="my-3 sm:my-4" />
+          </>
+        )}
         < ServiceSwitcher />
       </div>
 

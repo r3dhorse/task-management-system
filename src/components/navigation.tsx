@@ -159,20 +159,9 @@ export const Navigation = () => {
           (item.serviceAware && isInServiceContext && pathname.startsWith(fullHref));
         const Icon = isActive ? item.activeIcon : item.icon;
 
-        // If restricted for current user, render as disabled div instead of Link
+        // If restricted for current user, hide the button completely
         if (isRestrictedForCurrentUser) {
-          return (
-            <div key={item.href}>
-              <div
-                className={cn(
-                  "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium text-neutral-300 cursor-not-allowed min-h-[44px] touch-manipulation opacity-50"
-                )}
-              >
-                <Icon className="size-5 flex-shrink-0 text-neutral-300" />
-                <span className="text-sm sm:text-base truncate">{item.label}</span>
-              </div>
-            </div>
-          );
+          return null;
         }
 
         // Handle modal items (like Created Tasks)
