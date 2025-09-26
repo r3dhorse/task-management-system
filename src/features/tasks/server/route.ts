@@ -203,6 +203,231 @@ const app = new Hono()
     }
   )
 
+  .get(
+    "/my-tasks-all",
+    sessionMiddleware,
+    zValidator(
+      "query",
+      z.object({
+        search: z.string().nullish(),
+        status: z.nativeEnum(TaskStatus).nullish(),
+        includeArchived: z.string().optional().transform(val => val === "true"),
+        limit: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
+        offset: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
+      })
+    ),
+    async (c) => {
+      const prisma = c.get("prisma");
+      const user = c.get("user");
+      const {
+        search,
+        status,
+        includeArchived,
+        limit,
+        offset
+      } = c.req.valid("query");
+
+      // Get all workspaces the user is a member of
+      const userMemberships = await prisma.member.findMany({
+        where: { userId: user.id },
+        include: {
+          workspace: {
+            select: {
+              id: true,
+              name: true,
+            }
+          }
+        }
+      });
+
+      if (userMemberships.length === 0) {
+        return c.json({
+          data: {
+            documents: [],
+            total: 0,
+          },
+        });
+      }
+
+      const memberIds = userMemberships.map(m => m.id);
+      const workspaceIds = userMemberships.map(m => m.workspaceId);
+
+      // Build the where clause for filtering
+      interface TaskWhereClause {
+        workspaceId: { in: string[] };
+        assigneeId?: { in: string[] };
+        status?: TaskStatus | { not: TaskStatus };
+        AND?: Array<{
+          OR?: Array<{
+            name?: { contains: string; mode: 'insensitive' };
+            taskNumber?: { contains: string; mode: 'insensitive' };
+            isConfidential?: boolean;
+            creatorId?: string;
+            assigneeId?: { in: string[] };
+            reviewerId?: { in: string[] };
+            followers?: {
+              some: {
+                id: { in: string[] };
+              };
+            };
+          }>;
+        }>;
+        OR?: Array<{
+          isConfidential?: boolean;
+          creatorId?: string;
+          assigneeId?: { in: string[] };
+          reviewerId?: { in: string[] };
+          followers?: {
+            some: {
+              id: { in: string[] };
+            };
+          };
+        }>;
+      }
+
+      const where: TaskWhereClause = {
+        workspaceId: { in: workspaceIds },
+        assigneeId: { in: memberIds }, // User is assigned to the task via one of their member records
+      };
+
+      if (status) {
+        where.status = status;
+      } else {
+        // Only exclude archived tasks if user hasn't explicitly requested them
+        if (!includeArchived) {
+          where.status = { not: TaskStatus.ARCHIVED };
+        }
+      }
+
+      // Handle search - can search both task name and task number
+      if (search) {
+        const isTaskNumberSearch = /^\d+$/.test(search.trim()) || /^Task #\d+$/i.test(search.trim());
+
+        if (isTaskNumberSearch) {
+          const digits = search.replace(/[^\d]/g, '');
+          if (digits) {
+            const searchPatterns = [
+              digits,
+              digits.padStart(4, '0'),
+              digits.padStart(7, '0'),
+            ];
+
+            where.AND = [{
+              OR: searchPatterns.map(pattern => ({
+                taskNumber: { contains: pattern, mode: 'insensitive' as const }
+              }))
+            }];
+          }
+        } else {
+          where.AND = [{
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { taskNumber: { contains: search, mode: 'insensitive' as const } }
+            ]
+          }];
+        }
+      }
+
+      // Add confidential task filtering
+      const confidentialFilter = [
+        { isConfidential: false },
+        { isConfidential: true, creatorId: user.id },
+        { isConfidential: true, assigneeId: { in: memberIds } },
+        { isConfidential: true, reviewerId: { in: memberIds } },
+        { isConfidential: true, followers: { some: { id: { in: memberIds } } } },
+      ];
+
+      // Combine search filter with confidential filter
+      if (where.AND && where.AND.length > 0) {
+        where.AND.push({ OR: confidentialFilter });
+      } else {
+        where.OR = confidentialFilter;
+      }
+
+      const tasks = await prisma.task.findMany({
+        where,
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'desc' }
+        ],
+        take: limit,
+        skip: offset,
+        include: {
+          workspace: {
+            select: {
+              id: true,
+              name: true,
+            }
+          },
+          service: true,
+          assignee: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
+          reviewer: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
+          followers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
+          _count: {
+            select: {
+              subTasks: true
+            }
+          }
+        }
+      });
+
+      // Map tasks to the expected format
+      const populatedTasks = tasks.map((task) => ({
+        ...task,
+        dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+        createdAt: task.createdAt.toISOString(),
+        updatedAt: task.updatedAt.toISOString(),
+        assignees: task.assignee ? [{
+          ...task.assignee,
+          name: task.assignee.user.name,
+          email: task.assignee.user.email,
+        }] : [],
+        followedIds: JSON.stringify(task.followers.map(f => f.id)),
+        subTaskCount: task._count.subTasks,
+      }));
+
+      // Get total count
+      const totalCount = await prisma.task.count({ where });
+
+      return c.json({
+        data: {
+          documents: populatedTasks,
+          total: totalCount,
+        },
+      });
+    }
+  )
+
   .delete(
     "/:taskId",
     sessionMiddleware,

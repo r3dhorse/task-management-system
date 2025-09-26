@@ -18,6 +18,10 @@ interface TaskDocument {
   description?: string;
   createdAt: string;
   updatedAt: string;
+  workspace?: {
+    id: string;
+    name: string;
+  };
   service?: {
     id: string;
     name: string;
@@ -151,7 +155,13 @@ export const TaskListModal = ({ isOpen, onClose, title, tasks, filterType }: Tas
                               <Badge className={cn("text-xs", getStatusColor(task.status))}>
                                 {getStatusLabel(task.status)}
                               </Badge>
-                              
+
+                              {task.workspace && (
+                                <div className="flex items-center gap-1 text-xs text-purple-600 font-medium">
+                                  <span className="truncate max-w-[120px]">{task.workspace.name}</span>
+                                </div>
+                              )}
+
                               {task.service && (
                                 <div className="flex items-center gap-1 text-xs text-gray-500">
                                   <FolderOpen className="h-3 w-3" />

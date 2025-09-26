@@ -5,22 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/date-picker";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
+import { useGetAllMyTasks } from "@/features/tasks/api/use-get-all-my-tasks";
 import { useCurrent } from "@/features/auth/api/use-current";
-import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
-import { useGetMembers } from "@/features/members/api/use-get-members";
 import { TaskStatus } from "@/features/tasks/types";
 import { TaskListModal } from "@/features/tasks/components/task-list-modal";
-
-interface MemberDocument {
-  id: string;
-  userId: string;
-  workspaceId: string;
-  role: string;
-  joinedAt: string;
-  name: string;
-  email: string;
-}
 
 interface TaskDocument {
   id: string;
@@ -32,6 +20,10 @@ interface TaskDocument {
   description?: string;
   createdAt: string;
   updatedAt: string;
+  workspace?: {
+    id: string;
+    name: string;
+  };
   service?: {
     id: string;
     name: string;
@@ -75,10 +67,8 @@ interface TaskStatusCount {
 }
 
 export const MyTasksClient = () => {
-  const workspaceId = useWorkspaceId();
   const router = useRouter();
   const { data: user } = useCurrent();
-  const { data: members, isLoading: isLoadingMembers } = useGetMembers({ workspaceId });
   const [dateFrom, setDateFrom] = useState<Date | undefined>(subDays(new Date(), 30));
   const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
@@ -87,58 +77,12 @@ export const MyTasksClient = () => {
   const [modalTasks, setModalTasks] = useState<TaskDocument[]>([]);
   const [modalFilterType, setModalFilterType] = useState("");
 
-  // Find the current user's member record
-  const currentMember = members?.documents.find((member) => (member as MemberDocument).userId === user?.id) as MemberDocument | undefined;
-
-  const { data: allTasks, isLoading: isLoadingTasks } = useGetTasks({
-    workspaceId,
-    assigneeId: currentMember?.id || null,
-  });
-
-  const isLoading = isLoadingMembers || isLoadingTasks;
+  const { data: allTasks, isLoading } = useGetAllMyTasks({});
 
   if (isLoading) {
     return <LoadingSpinner variant="fullscreen" />;
   }
 
-  if (!currentMember) {
-    return (
-      <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="flex-shrink-0 px-6 py-4 border-b bg-white/80 backdrop-blur-sm shadow-sm">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.back()}
-              className="flex items-center gap-2 hover:bg-slate-100 transition-all duration-200"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <div className="border-l h-6 border-slate-200" />
-            <div>
-              <h1 className="text-xl font-semibold text-slate-900">My Tasks</h1>
-              <p className="text-sm text-slate-500">Personal Dashboard</p>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <Card className="max-w-md w-full shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-            <CardContent className="flex items-center justify-center py-16">
-              <div className="text-center">
-                <div className="relative inline-block">
-                  <ListTodo className="h-16 w-16 mx-auto mb-6 text-slate-300" />
-                  <div className="absolute -top-1 -right-1 h-6 w-6 bg-amber-400 rounded-full animate-pulse" />
-                </div>
-                <p className="text-lg font-medium text-slate-700 mb-2">Not a workspace member</p>
-                <p className="text-sm text-slate-500">Please join the workspace to see your tasks</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   if (!allTasks || !allTasks.documents) {
     return (
@@ -179,10 +123,10 @@ export const MyTasksClient = () => {
     );
   }
 
-  const tasks = allTasks.documents || [];
+  const tasks = (allTasks.documents || []) as TaskDocument[];
 
   // Filter tasks by date range
-  const filteredTasks = tasks.filter((task: typeof tasks[0]) => {
+  const filteredTasks = tasks.filter((task) => {
     if (!dateFrom || !dateTo) return true;
     const taskDate = new Date(task.createdAt);
     return isAfter(taskDate, dateFrom) && isBefore(taskDate, dateTo);
@@ -190,13 +134,13 @@ export const MyTasksClient = () => {
 
   // Calculate basic metrics
   const totalTasks = filteredTasks.length;
-  const completedTasks = filteredTasks.filter((task) => (task as unknown as TaskDocument).status === TaskStatus.DONE).length;
-  const inProgressTasks = filteredTasks.filter((task) => (task as unknown as TaskDocument).status === TaskStatus.IN_PROGRESS).length;
-  const todoTasks = filteredTasks.filter((task) => (task as unknown as TaskDocument).status === TaskStatus.TODO).length;
+  const completedTasks = filteredTasks.filter((task) => task.status === TaskStatus.DONE).length;
+  const inProgressTasks = filteredTasks.filter((task) => task.status === TaskStatus.IN_PROGRESS).length;
+  const todoTasks = filteredTasks.filter((task) => task.status === TaskStatus.TODO).length;
 
   // Calculate overdue tasks
   const overdueTasks = filteredTasks.filter((task) => {
-    const taskDoc = task as unknown as TaskDocument;
+    const taskDoc = task;
     if (!taskDoc.dueDate) return false;
     const dueDate = new Date(taskDoc.dueDate);
     const today = new Date();
@@ -208,7 +152,7 @@ export const MyTasksClient = () => {
   const thisWeekStart = startOfWeek(new Date());
   const thisWeekEnd = endOfWeek(new Date());
   const dueThisWeek = filteredTasks.filter((task) => {
-    const taskDoc = task as unknown as TaskDocument;
+    const taskDoc = task;
     if (!taskDoc.dueDate) return false;
     const dueDate = new Date(taskDoc.dueDate);
     return isAfter(dueDate, thisWeekStart) && isBefore(dueDate, thisWeekEnd) && taskDoc.status !== TaskStatus.DONE;
@@ -219,8 +163,8 @@ export const MyTasksClient = () => {
 
   // Weekly productivity (tasks completed this week)
   const thisWeekCompleted = filteredTasks.filter((task) => {
-    if ((task as unknown as TaskDocument).status !== TaskStatus.DONE) return false;
-    const completedDate = new Date((task as unknown as TaskDocument).updatedAt);
+    if (task.status !== TaskStatus.DONE) return false;
+    const completedDate = new Date(task.updatedAt);
     return isAfter(completedDate, thisWeekStart) && isBefore(completedDate, thisWeekEnd);
   }).length;
 
@@ -228,8 +172,8 @@ export const MyTasksClient = () => {
   const lastWeekStart = subDays(thisWeekStart, 7);
   const lastWeekEnd = subDays(thisWeekEnd, 7);
   const lastWeekCompleted = filteredTasks.filter((task) => {
-    if ((task as unknown as TaskDocument).status !== TaskStatus.DONE) return false;
-    const completedDate = new Date((task as unknown as TaskDocument).updatedAt);
+    if (task.status !== TaskStatus.DONE) return false;
+    const completedDate = new Date(task.updatedAt);
     return isAfter(completedDate, lastWeekStart) && isBefore(completedDate, lastWeekEnd);
   }).length;
 
@@ -239,24 +183,24 @@ export const MyTasksClient = () => {
 
   // Task status breakdown
   const taskStatusCount: TaskStatusCount = {
-    [TaskStatus.BACKLOG]: filteredTasks.filter((task) => (task as unknown as TaskDocument).status === TaskStatus.BACKLOG).length,
+    [TaskStatus.BACKLOG]: filteredTasks.filter((task) => task.status === TaskStatus.BACKLOG).length,
     [TaskStatus.TODO]: todoTasks,
     [TaskStatus.IN_PROGRESS]: inProgressTasks,
-    [TaskStatus.IN_REVIEW]: filteredTasks.filter((task) => (task as unknown as TaskDocument).status === TaskStatus.IN_REVIEW).length,
+    [TaskStatus.IN_REVIEW]: filteredTasks.filter((task) => task.status === TaskStatus.IN_REVIEW).length,
     [TaskStatus.DONE]: completedTasks,
     [TaskStatus.ARCHIVED]: 0 // Archived tasks are filtered out and not displayed
   };
 
   // Calculate average completion time
   const completedTasksWithTime = filteredTasks.filter((task) =>
-    (task as unknown as TaskDocument).status === TaskStatus.DONE && (task as unknown as TaskDocument).createdAt && (task as unknown as TaskDocument).updatedAt
+    task.status === TaskStatus.DONE && task.createdAt && task.updatedAt
   );
 
   const avgCompletionTime = completedTasksWithTime.length > 0
     ? Math.round(
         completedTasksWithTime.reduce((acc, task) => {
-          const created = new Date((task as unknown as TaskDocument).createdAt);
-          const updated = new Date((task as unknown as TaskDocument).updatedAt);
+          const created = new Date(task.createdAt);
+          const updated = new Date(task.updatedAt);
           return acc + differenceInDays(updated, created);
         }, 0) / completedTasksWithTime.length
       )
@@ -278,47 +222,46 @@ export const MyTasksClient = () => {
 
     switch (filterType) {
       case 'completed':
-        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.DONE) as TaskDocument[];
+        filteredModalTasks = filteredTasks.filter(task => task.status === TaskStatus.DONE);
         title = "Completed Tasks";
         break;
       case 'progress':
-        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.IN_PROGRESS) as TaskDocument[];
+        filteredModalTasks = filteredTasks.filter(task => task.status === TaskStatus.IN_PROGRESS);
         title = "In Progress Tasks";
         break;
       case 'overdue':
         filteredModalTasks = filteredTasks.filter((task) => {
-          const taskDoc = task as unknown as TaskDocument;
-          if (!taskDoc.dueDate) return false;
-          const dueDate = new Date(taskDoc.dueDate);
+          if (!task.dueDate) return false;
+          const dueDate = new Date(task.dueDate);
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          return dueDate < today && taskDoc.status !== TaskStatus.DONE;
-        }) as TaskDocument[];
+          return dueDate < today && task.status !== TaskStatus.DONE;
+        });
         title = "Overdue Tasks";
         break;
       case 'total':
-        filteredModalTasks = filteredTasks as TaskDocument[];
+        filteredModalTasks = filteredTasks;
         title = "All Tasks";
         break;
       case 'todo':
-        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.TODO) as TaskDocument[];
+        filteredModalTasks = filteredTasks.filter(task => task.status === TaskStatus.TODO);
         title = "To Do Tasks";
         break;
       case 'backlog':
-        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.BACKLOG) as TaskDocument[];
+        filteredModalTasks = filteredTasks.filter(task => task.status === TaskStatus.BACKLOG);
         title = "Backlog Tasks";
         break;
       case 'review':
-        filteredModalTasks = filteredTasks.filter(task => (task as unknown as TaskDocument).status === TaskStatus.IN_REVIEW) as TaskDocument[];
+        filteredModalTasks = filteredTasks.filter(task => task.status === TaskStatus.IN_REVIEW);
         title = "In Review Tasks";
         break;
       default:
-        filteredModalTasks = filteredTasks as TaskDocument[];
+        filteredModalTasks = filteredTasks;
         title = "All Tasks";
         break;
     }
 
-    setModalTasks(filteredModalTasks as TaskDocument[]);
+    setModalTasks(filteredModalTasks);
     setModalTitle(title);
     setModalFilterType(filterType);
     setModalOpen(true);
@@ -344,7 +287,7 @@ export const MyTasksClient = () => {
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold text-slate-900">My Tasks</h1>
                 <div className="px-2 py-0.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs font-medium rounded-full">
-                  Personal
+                  System-wide
                 </div>
               </div>
               <p className="text-sm text-slate-500 mt-0.5">Track your productivity and progress</p>
@@ -425,7 +368,7 @@ export const MyTasksClient = () => {
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-white/70 rounded-lg border border-blue-200">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                   <span className="text-sm font-medium text-blue-900">
-                    {user?.name || currentMember?.name || 'User'}
+                    {user?.name || 'User'}
                   </span>
                 </div>
               </div>
@@ -535,13 +478,12 @@ export const MyTasksClient = () => {
             <Card
               className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-orange-50 to-orange-100/50 backdrop-blur-sm cursor-pointer"
               onClick={() => {
-                const thisWeekFilteredTasks = filteredTasks.filter((task: typeof filteredTasks[0]) => {
-                  const taskDoc = task;
-                  if (!taskDoc.dueDate) return false;
-                  const dueDate = new Date(taskDoc.dueDate);
-                  return isAfter(dueDate, thisWeekStart) && isBefore(dueDate, thisWeekEnd) && taskDoc.status !== TaskStatus.DONE;
+                const thisWeekFilteredTasks = filteredTasks.filter((task) => {
+                  if (!task.dueDate) return false;
+                  const dueDate = new Date(task.dueDate);
+                  return isAfter(dueDate, thisWeekStart) && isBefore(dueDate, thisWeekEnd) && task.status !== TaskStatus.DONE;
                 });
-                setModalTasks(thisWeekFilteredTasks as TaskDocument[]);
+                setModalTasks(thisWeekFilteredTasks);
                 setModalTitle("Due This Week");
                 setModalFilterType("due-this-week");
                 setModalOpen(true);
@@ -562,12 +504,12 @@ export const MyTasksClient = () => {
             <Card
               className="hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-green-50 to-green-100/50 backdrop-blur-sm cursor-pointer"
               onClick={() => {
-                const weeklyCompletedTasks = filteredTasks.filter((task: typeof filteredTasks[0]) => {
+                const weeklyCompletedTasks = filteredTasks.filter((task) => {
                   if (task.status !== TaskStatus.DONE) return false;
                   const completedDate = new Date(task.updatedAt);
                   return isAfter(completedDate, thisWeekStart) && isBefore(completedDate, thisWeekEnd);
                 });
-                setModalTasks(weeklyCompletedTasks as TaskDocument[]);
+                setModalTasks(weeklyCompletedTasks);
                 setModalTitle("Completed This Week");
                 setModalFilterType("weekly-completed");
                 setModalOpen(true);
@@ -641,14 +583,7 @@ export const MyTasksClient = () => {
                       <div
                         key={status}
                         className="group cursor-pointer hover:bg-slate-50 rounded-lg p-2 transition-colors border border-transparent hover:border-black"
-                        onClick={() => {
-                          const params = new URLSearchParams();
-                          params.set('status', status);
-                          if (currentMember?.id) {
-                            params.set('assigneeId', currentMember.id);
-                          }
-                          router.push(`/workspaces/${workspaceId}/workspace-tasks?${params.toString()}`);
-                        }}
+                        onClick={() => handleCardClick(status.toLowerCase())}
                       >
                         <div className="flex items-center justify-between mb-1">
                           <div className="flex items-center gap-3">
@@ -691,25 +626,34 @@ export const MyTasksClient = () => {
               <CardContent>
                 <div className="space-y-3">
                   {filteredTasks.length > 0 ? (
-                    filteredTasks.slice(0, 4).map((task: typeof filteredTasks[0], index: number) => {
-                      const config = statusConfig[task.status as TaskStatus] || statusConfig[TaskStatus.TODO];
-                      const taskDoc = task;
-                      const daysUntilDue = taskDoc.dueDate ? differenceInDays(new Date(taskDoc.dueDate), new Date()) : null;
+                    filteredTasks.slice(0, 4).map((task, index) => {
+                      const config = statusConfig[task.status] || statusConfig[TaskStatus.TODO];
+                      const daysUntilDue = task.dueDate ? differenceInDays(new Date(task.dueDate), new Date()) : null;
 
                       return (
                         <div
-                          key={(task as unknown as TaskDocument).id}
-                          onClick={() => router.push(`/workspaces/${workspaceId}/tasks/${(task as unknown as TaskDocument).id}`)}
+                          key={task.id}
+                          onClick={() => router.push(`/workspaces/${task.workspaceId}/tasks/${task.id}`)}
                           className="group p-4 rounded-xl bg-gradient-to-r from-slate-50 to-slate-100/50 hover:from-slate-100 hover:to-slate-200/50 border border-transparent hover:border-black transition-all duration-300 cursor-pointer"
                           style={{ animationDelay: `${index * 50}ms` }}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm text-slate-800 truncate group-hover:text-slate-900">
-                                {(task as unknown as TaskDocument).name}
+                                {task.name}
                               </p>
                               <div className="flex items-center gap-3 mt-2">
-                                {(task as unknown as TaskDocument).dueDate && (
+                                {task.workspace && (
+                                  <p className="text-xs text-purple-600 font-medium truncate max-w-[150px]">
+                                    {task.workspace.name}
+                                  </p>
+                                )}
+                                {task.service && (
+                                  <p className="text-xs text-slate-500 truncate max-w-[150px]">
+                                    {task.service.name}
+                                  </p>
+                                )}
+                                {task.dueDate && (
                                   <p className={`text-xs ${daysUntilDue !== null && daysUntilDue < 0 ? 'text-red-600' : 'text-slate-500'}`}>
                                     {daysUntilDue !== null && daysUntilDue < 0
                                       ? `${Math.abs(daysUntilDue)} days overdue`
@@ -721,17 +665,12 @@ export const MyTasksClient = () => {
                                     }
                                   </p>
                                 )}
-                                {(task as unknown as TaskDocument).service && (
-                                  <p className="text-xs text-slate-500 truncate max-w-[150px]">
-                                    {(task as unknown as TaskDocument).service?.name}
-                                  </p>
-                                )}
                               </div>
                             </div>
                             <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${config.lightBg} ${config.textColor} group-hover:scale-105 transition-transform duration-200`}>
-                              {(task as unknown as TaskDocument).status === TaskStatus.IN_PROGRESS ? 'Progress' :
-                               (task as unknown as TaskDocument).status === TaskStatus.IN_REVIEW ? 'Review' :
-                               (task as unknown as TaskDocument).status && (task as unknown as TaskDocument).status.charAt(0) ? (task as unknown as TaskDocument).status.charAt(0) + (task as unknown as TaskDocument).status.slice(1).toLowerCase() : 'Unknown'}
+                              {task.status === TaskStatus.IN_PROGRESS ? 'Progress' :
+                               task.status === TaskStatus.IN_REVIEW ? 'Review' :
+                               task.status.charAt(0) + task.status.slice(1).toLowerCase()}
                             </div>
                           </div>
                         </div>
