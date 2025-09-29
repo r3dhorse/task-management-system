@@ -1,0 +1,84 @@
+"use client";
+
+import { useCurrent } from "@/features/auth/api/use-current";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { User, Mail, Key, Building2 } from "@/lib/lucide-icons";
+import { ChangePasswordModal } from "@/features/auth/components/change-password-modal";
+import { DefaultWorkspaceModal } from "@/features/auth/components/default-workspace-modal";
+import { useState } from "react";
+
+export const UserInfoCard = () => {
+  const { data: user, isLoading } = useCurrent();
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isDefaultWorkspaceOpen, setIsDefaultWorkspaceOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <Card className="w-fit">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 bg-gray-200 rounded-full animate-pulse" />
+            <div className="space-y-2">
+              <div className="w-36 h-5 bg-gray-200 rounded animate-pulse" />
+              <div className="w-48 h-4 bg-gray-200 rounded animate-pulse" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!user) return null;
+
+  return (
+    <Card className="w-fit bg-white/50 backdrop-blur-sm border-neutral-200">
+      <CardContent className="p-5">
+        <div className="flex items-center gap-5">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <User className="w-8 h-8 text-white" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <span className="font-medium text-neutral-900 text-lg">{user.name}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-neutral-600">
+              <Mail className="w-4 h-4" />
+              {user.email}
+            </div>
+            <div className="pt-2 flex gap-2">
+              <Button
+                onClick={() => setIsChangePasswordOpen(true)}
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs"
+              >
+                <Key className="w-3 h-3 mr-1" />
+                Change Password
+              </Button>
+              <Button
+                onClick={() => setIsDefaultWorkspaceOpen(true)}
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs"
+              >
+                <Building2 className="w-3 h-3 mr-1" />
+                Default Workspace
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+      
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
+
+      <DefaultWorkspaceModal
+        isOpen={isDefaultWorkspaceOpen}
+        onClose={() => setIsDefaultWorkspaceOpen(false)}
+      />
+    </Card>
+  );
+};

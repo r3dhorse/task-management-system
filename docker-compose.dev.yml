@@ -1,0 +1,70 @@
+# Development Docker Compose Configuration
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: task-management-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-task_management}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-task_management}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Task Management Application (Development)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: task-management-app-dev
+    restart: unless-stopped
+    environment:
+      # Database connection
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-task_management}"
+      
+      # NextAuth.js configuration
+      NEXTAUTH_URL: "http://localhost:3000"
+      NEXTAUTH_SECRET: "dev-secret-key-not-for-production"
+
+      # Frontend API URL
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+
+      # Application settings
+      NODE_ENV: development
+      PORT: 3000
+      UPLOAD_DIR: "./uploads"
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot reload
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+      - uploads_dev_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  uploads_dev_data:
+    driver: local
+
+networks:
+  default:
+    name: task-management-dev-network

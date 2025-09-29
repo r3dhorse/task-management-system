@@ -1,0 +1,91 @@
+"use client"
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { DottedSeparator } from "@/components/dotted-separator";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ChangePasswordModal } from "./change-password-modal";
+
+import { useLogout } from "../api/use-logout";
+import { useCurrent } from "../api/use-current";
+import { LogOut, Settings } from "@/lib/lucide-icons";
+import { useState } from "react";
+
+export const UserButton = () => {
+  const { data: user, isLoading } = useCurrent();
+  const { mutate: logout } = useLogout();
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="size-10 rounded-full flex items-center justify-center bg-neutral-200 border border-neutral-300">
+        <LoadingSpinner size="sm" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const { name, email } = user;
+
+  const avatarFallback = name
+    ? name.charAt(0).toUpperCase()
+    : email ? email.charAt(0).toUpperCase() : "U"
+
+  return (
+
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger className="outline-none relative" data-testid="user-menu">
+        <Avatar className="size-10 hover:opacity-75 transition border border-neutral-400">
+          <AvatarFallback className="bg-neutral-200 font-medium text-neutral-500 flex items-center justify-center">
+            {avatarFallback}
+          </AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" side="bottom" className="w-60" sideOffset={10}>
+        <div className="flex flex-col items-center justify-center gap-2 px-2.5 py-4">
+          <Avatar className="size-[52px] border-neutral-400">
+            <AvatarFallback className="bg-neutral-300 text-xl font-medium text-neutral-500 flex items-center justify-center">
+              {avatarFallback}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col items-center justify-center">
+            <p className="text-sm font-medium text-neutral-950">
+              {name || "User"}
+            </p >
+            <p className="text-xs text-neutral-500">{email}</p>
+          </div>
+        </div>
+        <DottedSeparator className="mb-1" />
+        <DropdownMenuItem
+          onClick={() => setIsChangePasswordOpen(true)}
+          className="h-10 flex items-center justify-center text-blue-700 font-medium cursor-pointer"
+          data-testid="profile-settings"
+        >
+          <Settings className="size-4 mr-2" />
+          Profile Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => logout()}
+          className="h-10 flex items-center justify-center text-amber-700 font-medium cursor-pointer"
+          data-testid="signout-button"
+        >
+          <LogOut className="size-4 mr-2" />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+      />
+    </DropdownMenu>
+  );
+};

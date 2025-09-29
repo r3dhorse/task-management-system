@@ -1,0 +1,64 @@
+"use client";
+
+import * as React from "react";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "@/lib/lucide-icons";
+
+import { cn } from "@/lib/utils"
+import { Button } from "./ui/button";
+import { Calendar } from "./ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+
+
+interface DatePickerProps {
+  value: Date | undefined;
+  onChange: (date: Date) => void;
+  className?: string;
+  placeholder?: string;
+  disabled?: boolean;
+};
+
+export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
+  ({ value, onChange, className, placeholder = "Select Date", disabled }, ref) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+
+    const handleDateSelect = (date: Date | undefined) => {
+      if (date) {
+        onChange(date);
+        setIsOpen(false);
+      }
+    };
+
+    return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          ref={ref}
+          variant="outline"
+          size="lg"
+          disabled={disabled}
+          className={cn(
+            "w-full justify-start text-left font-normal px-3",
+            !value && "text-muted-foreground",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {value ? format(value, "MMM dd, yyyy") : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={handleDateSelect}
+          initialFocus
+        >
+        </Calendar>
+      </PopoverContent>
+    </Popover >
+    );
+  }
+);
+
+DatePicker.displayName = "DatePicker";

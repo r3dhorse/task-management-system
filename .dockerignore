@@ -1,0 +1,89 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun.lock
+
+# Next.js build outputs
+.next
+out
+
+# Production build
+build
+dist
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+logs
+
+# Database
+*.db
+*.sqlite
+
+# Testing
+coverage
+test-results
+playwright-report
+.nyc_output
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+!CLAUDE.md
+
+# Development tools
+.eslintrc.json
+prettier.config.js
+jest.config.js
+playwright.config.ts
+
+# Temporary files
+tmp
+temp
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.yaml
+
+# Scripts not needed in container (but allow docker start scripts)
+dev.sh
+reset-db.sh
+!docker-start*.sh
+
+# Uploads (will be created in container)
+uploads/*
+
+# Build info
+tsconfig.tsbuildinfo
+
+# Prisma migrations (will be copied separately)
+# prisma/migrations
+
+# Test files
+e2e
+**/*.test.*
+**/*.spec.*

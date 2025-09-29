@@ -1,0 +1,12 @@
+# Bitbucket Pipeline configuration
+image: node:20
+
+pipelines:
+  default:
+    - step:
+        name: Build and Test
+        caches:
+          - node
+        script:
+          - npm ci
+          - npm test

@@ -1,0 +1,107 @@
+import { getServerSession } from "next-auth"
+import { authOptions } from "./auth"
+import { prisma } from "./prisma"
+import { redirect } from "next/navigation"
+
+export async function getCurrentUser() {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return null
+
+  // Fetch the user from database to get the latest defaultWorkspaceId
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      isAdmin: true,
+      isSuperAdmin: true,
+      defaultWorkspaceId: true,
+    }
+  })
+
+  if (!user) return null
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    isAdmin: user.isAdmin || false,
+    isSuperAdmin: user.isSuperAdmin || false,
+    defaultWorkspaceId: user.defaultWorkspaceId,
+  }
+}
+
+export async function requireAuth() {
+  const user = await getCurrentUser()
+  if (!user) {
+    redirect("/sign-in")
+  }
+  return user
+}
+
+export async function requireAdmin() {
+  const user = await requireAuth()
+  if (!user.isAdmin) {
+    redirect("/")
+  }
+  return user
+}
+
+export async function requireSuperAdmin() {
+  const user = await requireAuth()
+  if (!user.isSuperAdmin) {
+    redirect("/")
+  }
+  return user
+}
+
+export async function getUserWithMemberships(userId: string) {
+  return await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      memberships: {
+        include: {
+          workspace: true,
+        },
+      },
+      ownedWorkspaces: true,
+    },
+  })
+}
+
+export async function getWorkspaceMember(workspaceId: string, userId: string) {
+  return await prisma.member.findUnique({
+    where: {
+      userId_workspaceId: {
+        userId,
+        workspaceId,
+      },
+    },
+    include: {
+      user: true,
+      workspace: true,
+    },
+  })
+}
+
+export async function requireWorkspaceAccess(workspaceId: string) {
+  const user = await requireAuth()
+  const member = await getWorkspaceMember(workspaceId, user.id)
+  
+  if (!member) {
+    redirect("/")
+  }
+  
+  return { user, member }
+}
+
+export async function requireWorkspaceAdmin(workspaceId: string) {
+  const { user, member } = await requireWorkspaceAccess(workspaceId)
+  
+  if (member.role !== "ADMIN") {
+    redirect(`/workspaces/${workspaceId}`)
+  }
+  
+  return { user, member }
+}
