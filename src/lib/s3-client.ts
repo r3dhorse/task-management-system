@@ -16,13 +16,19 @@ console.log('🔧 S3 Client Configuration:', {
   accessKeyPrefix: S3_ACCESS_KEY.substring(0, 8),
 });
 
+// Validate S3 configuration before creating client
+if (!S3_ACCESS_KEY || !S3_SECRET_KEY) {
+  console.error('❌ S3 credentials missing!');
+}
+
 const s3Client = new S3Client({
   region: S3_REGION,
   credentials: {
     accessKeyId: S3_ACCESS_KEY,
     secretAccessKey: S3_SECRET_KEY,
   },
-  forcePathStyle: false, // Use virtual-hosted-style URLs (default)
+  endpoint: `https://s3.${S3_REGION}.amazonaws.com`, // Explicit regional endpoint
+  forcePathStyle: false,
   useAccelerateEndpoint: false,
 });
 
