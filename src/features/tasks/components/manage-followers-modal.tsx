@@ -64,10 +64,12 @@ export const ManageFollowersModal = ({
   const hasChanges = JSON.stringify(selectedFollowers.sort()) !== JSON.stringify(currentFollowers.sort());
 
   return (
-    <ResponsiveModal 
-      open={isOpen} 
+    <ResponsiveModal
+      open={isOpen}
       onOpenChange={handleOpenChange}
       disableOutsideClick={true}
+      title="Manage Followers"
+      hideTitle={true}
     >
       <Card className="w-full h-full border-none shadow-none">
         <CardHeader className="pb-4">

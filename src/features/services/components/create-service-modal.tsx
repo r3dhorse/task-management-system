@@ -8,7 +8,7 @@ export const CreateServiceModal = () => {
 
   const { isOpen, setIsOpen, close } = useCreateServiceModal();
   return (
-    <ResponsiveModal open={isOpen} onOpenChange={setIsOpen} disableOutsideClick={true}>
+    <ResponsiveModal open={isOpen} onOpenChange={setIsOpen} disableOutsideClick={true} title="Create Service" hideTitle={true}>
       <CreateServiceForm onCancel={close} />
     </ResponsiveModal >
   );

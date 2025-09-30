@@ -49,6 +49,8 @@ export const AssigneeSelectionModal = ({
     <ResponsiveModal
       open={isOpen}
       onOpenChange={onClose}
+      title="Select Assignee"
+      hideTitle={true}
     >
       <Card className="w-full max-w-md border-none shadow-none">
         <CardHeader className="pb-3">

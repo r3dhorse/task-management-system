@@ -10,7 +10,7 @@ interface ChangePasswordModalProps {
 
 export const ChangePasswordModal = ({ isOpen, onClose }: ChangePasswordModalProps) => {
   return (
-    <ResponsiveModal open={isOpen} onOpenChange={onClose} disableOutsideClick={true}>
+    <ResponsiveModal open={isOpen} onOpenChange={onClose} disableOutsideClick={true} title="Change Password" hideTitle={true}>
       <ChangePasswordForm onCancel={onClose} />
     </ResponsiveModal>
   );

@@ -10,7 +10,13 @@ export const EditTaskModal = () => {
   const { taskId, close } = useEditTaskModal();
 
   return (
-    <ResponsiveModal open={!!taskId} onOpenChange={close} disableOutsideClick={true}>
+    <ResponsiveModal
+      open={!!taskId}
+      onOpenChange={close}
+      disableOutsideClick={true}
+      title="Edit Task"
+      hideTitle={true}
+    >
       {taskId && (
         < EditTaskFormWrapper id={taskId} onCancel={close} />
       )}

@@ -21,6 +21,8 @@ export const CreateTaskModal = () => {
       open={isOpen}
       onOpenChange={handleOpenChange}
       disableOutsideClick={true}
+      title="Create Task"
+      hideTitle={true}
     >
       <CreateTaskFormWrapper
         onCancel={close}

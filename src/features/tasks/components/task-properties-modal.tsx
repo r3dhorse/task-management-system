@@ -155,6 +155,8 @@ export const TaskPropertiesModal = ({
       onOpenChange={() => {}} // Disable auto-close, only close via buttons
       disableOutsideClick={true} // Always disable outside click
       hideCloseButton={true} // Hide the X button in upper right
+      title="Task Properties"
+      hideTitle={true}
     >
       <Card className="w-full max-w-5xl border-none shadow-none">
         <CardHeader className="pb-3">
