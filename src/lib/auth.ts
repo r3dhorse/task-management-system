@@ -29,6 +29,7 @@ if (typeof window === 'undefined') {
 export const authOptions: NextAuthOptions = {
   // No adapter needed for JWT strategy
   secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-build-time',
+  useSecureCookies: process.env.NODE_ENV === 'production',
   providers: [
     CredentialsProvider({
       name: "credentials",
