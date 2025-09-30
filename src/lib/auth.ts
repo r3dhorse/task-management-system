@@ -11,6 +11,21 @@ const loginSchema = z.object({
   password: z.string().min(1),
 })
 
+// Validate required environment variables
+if (!process.env.NEXTAUTH_SECRET) {
+  console.error('❌ NEXTAUTH_SECRET is not set')
+  throw new Error('NEXTAUTH_SECRET environment variable is required')
+}
+
+if (!process.env.NEXTAUTH_URL) {
+  console.error('❌ NEXTAUTH_URL is not set')
+}
+
+if (!process.env.DATABASE_URL) {
+  console.error('❌ DATABASE_URL is not set')
+  throw new Error('DATABASE_URL environment variable is required')
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
   secret: process.env.NEXTAUTH_SECRET,
@@ -22,28 +37,33 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials) return null
+        try {
+          if (!credentials) return null
 
-        const result = loginSchema.safeParse(credentials)
-        if (!result.success) return null
+          const result = loginSchema.safeParse(credentials)
+          if (!result.success) return null
 
-        const { email, password } = result.data
+          const { email, password } = result.data
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-        })
+          const user = await prisma.user.findUnique({
+            where: { email },
+          })
 
-        if (!user || !user.password) return null
+          if (!user || !user.password) return null
 
-        const isPasswordValid = await bcrypt.compare(password, user.password)
-        if (!isPasswordValid) return null
+          const isPasswordValid = await bcrypt.compare(password, user.password)
+          if (!isPasswordValid) return null
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          isAdmin: user.isAdmin,
-          isSuperAdmin: user.isSuperAdmin,
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            isAdmin: user.isAdmin,
+            isSuperAdmin: user.isSuperAdmin,
+          }
+        } catch (error) {
+          console.error('❌ Auth error:', error)
+          return null
         }
       }
     })
@@ -73,4 +93,5 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/sign-in",
   },
+  debug: process.env.NODE_ENV === 'development',
 }
