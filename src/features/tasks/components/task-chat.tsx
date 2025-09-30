@@ -209,7 +209,11 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to upload file');
+        console.error('Upload failed:', errorData);
+        const errorMsg = errorData.details
+          ? `${errorData.error}: ${errorData.details}`
+          : errorData.error || 'Failed to upload file';
+        throw new Error(errorMsg);
       }
 
       const result = await response.json();
