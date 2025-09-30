@@ -81,6 +81,19 @@ export async function POST(request: NextRequest) {
       hasRegion: !!(process.env.AWS_REGION || process.env.BUCKET_REGION),
     });
 
+    // IMPORTANT: Amplify deployment requires S3 (no persistent filesystem)
+    // Fail early if S3 is not configured in production
+    if (!useS3 && process.env.NODE_ENV === 'production') {
+      console.error('❌ S3 not configured in production environment');
+      return NextResponse.json(
+        {
+          error: "File storage not properly configured. Please contact system administrator.",
+          details: "S3 credentials are required for production deployment"
+        },
+        { status: 500 }
+      );
+    }
+
     let uploadResult: {
       id: string;
       filePath: string;
@@ -88,12 +101,12 @@ export async function POST(request: NextRequest) {
       isS3: boolean;
     };
     let fileId: string = randomUUID();
-    
+
     if (useS3) {
       // S3 Upload Logic
       let workspaceName = "unknown-workspace";
       let taskName: string | undefined;
-      
+
       if (taskId) {
         // Get task and workspace details
         const task = await prisma.task.findUnique({
@@ -119,7 +132,7 @@ export async function POST(request: NextRequest) {
       const extension = file.name.split('.').pop() || '';
       const fileName = `${fileId}.${extension}`;
       const s3Key = generateS3Key(workspaceName, fileName, taskName);
-      
+
 
       // Convert File to Buffer and upload to S3
       const arrayBuffer = await file.arrayBuffer();
@@ -133,7 +146,8 @@ export async function POST(request: NextRequest) {
         isS3: true
       };
     } else {
-      // Local Storage Upload Logic
+      // Local Storage Upload Logic (development only)
+      console.log('⚠️  Using local storage (development mode only)');
       const localResult = await uploadToLocal(file, fileType);
 
       uploadResult = {
