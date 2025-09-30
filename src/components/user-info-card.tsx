@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { User, Mail, Key, Building2, LogOut, Wrench } from "@/lib/lucide-icons";
+import { User, Mail, Key, Building2, LogOut, SlidersHorizontal } from "@/lib/lucide-icons";
 import { ChangePasswordModal } from "@/features/auth/components/change-password-modal";
 import { DefaultWorkspaceModal } from "@/features/auth/components/default-workspace-modal";
 import { useState } from "react";
@@ -58,7 +58,7 @@ export const UserInfoCard = () => {
                     size="icon"
                     className="h-4 w-4 ml-1 p-0 hover:bg-neutral-200 rounded-sm"
                   >
-                    <Wrench className="h-3 w-3" />
+                    <SlidersHorizontal className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">

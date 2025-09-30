@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/date-picker";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useGetAllMyTasks } from "@/features/tasks/api/use-get-all-my-tasks";
-import { useCurrent } from "@/features/auth/api/use-current";
 import { TaskStatus } from "@/features/tasks/types";
 import { TaskListModal } from "@/features/tasks/components/task-list-modal";
 
@@ -68,7 +67,6 @@ interface TaskStatusCount {
 
 export const MyTasksClient = () => {
   const router = useRouter();
-  const { data: user } = useCurrent();
   const [dateFrom, setDateFrom] = useState<Date | undefined>(subDays(new Date(), 30));
   const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
