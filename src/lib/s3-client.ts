@@ -2,15 +2,29 @@ import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || process.env.BUCKET_REGION || 'ap-southeast-2',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY || '',
-  },
+// Get S3 configuration from environment
+const S3_REGION = process.env.AWS_REGION || process.env.BUCKET_REGION || 'ap-southeast-2';
+const S3_ACCESS_KEY = process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID || '';
+const S3_SECRET_KEY = process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY || '';
+const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || process.env.BUCKET_NAME || 'task-management-system-2025';
+
+console.log('🔧 S3 Client Configuration:', {
+  region: S3_REGION,
+  bucket: BUCKET_NAME,
+  hasAccessKey: !!S3_ACCESS_KEY,
+  hasSecretKey: !!S3_SECRET_KEY,
+  accessKeyPrefix: S3_ACCESS_KEY.substring(0, 8),
 });
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || process.env.BUCKET_NAME || 'task-management-system-2025';
+const s3Client = new S3Client({
+  region: S3_REGION,
+  credentials: {
+    accessKeyId: S3_ACCESS_KEY,
+    secretAccessKey: S3_SECRET_KEY,
+  },
+  forcePathStyle: false, // Use virtual-hosted-style URLs (default)
+  useAccelerateEndpoint: false,
+});
 
 export interface S3UploadResult {
   key: string;
