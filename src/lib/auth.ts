@@ -11,19 +11,19 @@ const loginSchema = z.object({
   password: z.string().min(1),
 })
 
-// Validate required environment variables
-if (!process.env.NEXTAUTH_SECRET) {
-  console.error('❌ NEXTAUTH_SECRET is not set')
-  throw new Error('NEXTAUTH_SECRET environment variable is required')
-}
+// Log environment variable status (non-blocking warnings)
+console.log('🔍 Auth Configuration Check:')
+console.log('  - NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? '✅ Set' : '❌ Missing')
+console.log('  - NEXTAUTH_URL:', process.env.NEXTAUTH_URL || '❌ Missing')
+console.log('  - DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' : '❌ Missing')
+console.log('  - NODE_ENV:', process.env.NODE_ENV)
 
-if (!process.env.NEXTAUTH_URL) {
-  console.error('❌ NEXTAUTH_URL is not set')
+if (!process.env.NEXTAUTH_SECRET) {
+  console.warn('⚠️  WARNING: NEXTAUTH_SECRET is not set - authentication will not work properly')
 }
 
 if (!process.env.DATABASE_URL) {
-  console.error('❌ DATABASE_URL is not set')
-  throw new Error('DATABASE_URL environment variable is required')
+  console.warn('⚠️  WARNING: DATABASE_URL is not set - database operations will fail')
 }
 
 export const authOptions: NextAuthOptions = {
