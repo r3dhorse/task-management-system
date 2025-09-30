@@ -188,16 +188,18 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       setSelectedFile(file);
     }
     // Reset the input value to allow selecting the same file again
-    e.target.value = '';
+    if (e.target) {
+      e.target.value = '';
+    }
   };
 
-  const handleUploadFile = async (): Promise<{ id: string; name: string; size: string; type: string } | null> => {
-    if (!selectedFile) return null;
+  const handleUploadFile = async (fileToUpload = selectedFile): Promise<{ id: string; name: string; size: string; type: string } | null> => {
+    if (!fileToUpload) return null;
 
     setIsUploadingFile(true);
     try {
       const formData = new FormData();
-      formData.append('file', selectedFile);
+      formData.append('file', fileToUpload);
       formData.append('source', 'chat');
       formData.append('workspaceId', workspaceId);
       formData.append('taskId', taskId);
@@ -219,9 +221,9 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       const result = await response.json();
       return {
         id: result.data.id || result.data.$id,
-        name: selectedFile.name,
-        size: selectedFile.size.toString(),
-        type: selectedFile.type,
+        name: fileToUpload.name,
+        size: fileToUpload.size.toString(),
+        type: fileToUpload.type,
       };
     } catch (error) {
       console.error('File upload error:', error);
@@ -236,12 +238,23 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !selectedFile) || !currentUser || isCreatingMessage || isUploadingFile) return;
 
+    // Store message and file locally to prevent re-uploading on re-renders
+    const messageToSend = newMessage.trim();
+    const fileToUpload = selectedFile;
+
+    // Clear state immediately to prevent duplicate submissions
+    setNewMessage("");
+    setSelectedFile(null);
+
     let attachmentData = null;
-    
+
     // Upload file if selected
-    if (selectedFile) {
-      attachmentData = await handleUploadFile();
+    if (fileToUpload) {
+      attachmentData = await handleUploadFile(fileToUpload);
       if (!attachmentData) {
+        // Restore state if upload failed
+        setNewMessage(messageToSend);
+        setSelectedFile(fileToUpload);
         return; // Upload failed
       }
     }
@@ -257,7 +270,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       attachmentType?: string;
     } = {
       taskId,
-      content: newMessage.trim() || (selectedFile ? `Sent ${selectedFile.name}` : ''),
+      content: messageToSend || (fileToUpload ? `Sent ${fileToUpload.name}` : ''),
       workspaceId,
     };
 
@@ -313,10 +326,9 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
         }
       }
     );
-    
-    setNewMessage("");
-    setSelectedFile(null);
-    
+
+    // State already cleared at the beginning to prevent duplicate uploads
+
     // Simulate typing indicator for demo
     setIsTyping(true);
     setTimeout(() => {
