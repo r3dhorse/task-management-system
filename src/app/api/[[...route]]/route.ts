@@ -10,6 +10,8 @@ import taskMessages from "@/features/tasks/server/messages-route";
 import notifications from "@/features/notifications/server/route";
 import users from "@/features/users/server/route";
 
+export const dynamic = 'force-dynamic';
+
 const app = new Hono().basePath("/api");
 
 const routes = app
