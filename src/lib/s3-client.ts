@@ -3,10 +3,10 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Get S3 configuration from environment
-const S3_REGION = process.env.AWS_REGION || process.env.BUCKET_REGION || 'ap-southeast-2';
+const S3_REGION = process.env.AWS_REGION || process.env.BUCKET_REGION || 'ap-southeast-1';
 const S3_ACCESS_KEY = process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID || '';
 const S3_SECRET_KEY = process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY || '';
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || process.env.BUCKET_NAME || 'task-management-system-2025';
+const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || process.env.BUCKET_NAME || 's3-taskmanagement-bucket';
 
 console.log('🔧 S3 Client Configuration:', {
   region: S3_REGION,
@@ -36,15 +36,15 @@ export function generateS3Key(workspaceName: string, fileName: string, taskName?
   const timestamp = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); // dd-mm-yyyy format
   const sanitizedWorkspaceName = workspaceName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-_]/g, '-');
-  
+
   // If task name is provided, use TaskName_WorkspaceName_Timestamp format
   if (taskName) {
     const sanitizedTaskName = taskName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
-    return `task-management-system-2025/${sanitizedTaskName}_${sanitizedWorkspaceName}_${timestamp}/${sanitizedFileName}`;
+    return `uploads/${sanitizedTaskName}_${sanitizedWorkspaceName}_${timestamp}/${sanitizedFileName}`;
   }
-  
+
   // Fallback to workspace-timestamp format
-  return `task-management-system-2025/${sanitizedWorkspaceName}_${timestamp}/${sanitizedFileName}`;
+  return `uploads/${sanitizedWorkspaceName}_${timestamp}/${sanitizedFileName}`;
 }
 
 export async function uploadToS3(
