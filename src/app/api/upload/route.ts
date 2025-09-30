@@ -13,9 +13,9 @@ type FileType = "task" | "message";
 
 // Check if AWS S3 is configured
 function isS3Configured(): boolean {
-  return !!(process.env.AWS_ACCESS_KEY_ID && 
-           process.env.AWS_SECRET_ACCESS_KEY && 
-           process.env.AWS_REGION);
+  return !!((process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID) &&
+           (process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY) &&
+           (process.env.AWS_REGION || process.env.BUCKET_REGION));
 }
 
 
