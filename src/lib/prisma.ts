@@ -4,21 +4,19 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Explicit database URL for Amplify SSR
-const databaseUrl = process.env.DATABASE_URL
+// Log environment variable status for debugging
+if (typeof window === 'undefined') {
+  const hasDbUrl = !!process.env.DATABASE_URL
+  console.log('🔍 Prisma initialization:', {
+    hasDatabaseUrl: hasDbUrl,
+    nodeEnv: process.env.NODE_ENV,
+  })
 
-if (!databaseUrl) {
-  console.error('❌ DATABASE_URL not found in environment variables')
-  console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('DATABASE') || k.includes('NEXTAUTH')))
-  throw new Error('DATABASE_URL environment variable is required')
+  if (!hasDbUrl) {
+    console.warn('⚠️ DATABASE_URL not set - database operations will fail')
+  }
 }
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  datasources: {
-    db: {
-      url: databaseUrl
-    }
-  }
-})
+export const prisma = globalForPrisma.prisma ?? new PrismaClient()
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
