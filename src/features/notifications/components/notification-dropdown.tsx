@@ -126,8 +126,9 @@ export const NotificationDropdown = () => {
         </Button>
       </DropdownMenuTrigger>
       
-      <DropdownMenuContent 
-        align="end" 
+      <DropdownMenuContent
+        align="start"
+        side="right"
         className="w-96 p-0"
         sideOffset={5}
       >
