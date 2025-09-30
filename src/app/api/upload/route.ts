@@ -21,20 +21,27 @@ function isS3Configured(): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('📤 Upload request received');
+
     // Check authentication
     const user = await getCurrentUser();
     if (!user) {
+      console.log('❌ Upload failed: Unauthorized');
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       );
     }
-    
+
+    console.log('✅ User authenticated:', user.email);
+
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const source = formData.get("source") as string; // 'chat' or 'task'
     const taskId = formData.get("taskId") as string;
     const workspaceId = formData.get("workspaceId") as string;
+
+    console.log('📋 Upload details:', { source, taskId, workspaceId, fileName: file?.name, fileSize: file?.size });
     
     if (!file) {
       return NextResponse.json(
@@ -68,6 +75,11 @@ export async function POST(request: NextRequest) {
     }
 
     const useS3 = isS3Configured();
+    console.log('🔧 S3 configured:', useS3, {
+      hasAccessKey: !!(process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID),
+      hasSecretKey: !!(process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY),
+      hasRegion: !!(process.env.AWS_REGION || process.env.BUCKET_REGION),
+    });
 
     let uploadResult: {
       id: string;
@@ -161,17 +173,22 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("File upload error:", error);
-    
+    console.error("❌ File upload error:", error);
+    console.error("Error details:", {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
     if (error instanceof FileStorageError) {
       return NextResponse.json(
         { error: error.message },
         { status: 400 }
       );
     }
-    
+
     return NextResponse.json(
-      { error: "Failed to upload file" },
+      { error: "Failed to upload file", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
