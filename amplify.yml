@@ -9,6 +9,7 @@ frontend:
         - npm run db:seed
     build:
       commands:
+        - env | grep -E "DATABASE_URL|NEXTAUTH" || echo "Env vars not found"
         - npm run build
   artifacts:
     baseDirectory: .next

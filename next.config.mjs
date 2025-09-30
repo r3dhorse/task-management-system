@@ -1,15 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable standalone output for Docker only (not for Amplify)
-  ...(process.env.DOCKER_BUILD === 'true' ? { output: 'standalone' } : {}),
+  // Important: Don't use standalone output for Amplify SSR
+  // Amplify needs the default output mode for SSR to work
 
-  // Expose environment variables to runtime
-  env: {
-    DATABASE_URL: process.env.DATABASE_URL,
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-    DB_SEED_TOKEN: process.env.DB_SEED_TOKEN,
-  },
+  // Remove env config - it doesn't work for server-side in Amplify
+  // Environment variables should be set in Amplify Console and are
+  // automatically available to server-side code via process.env
 
   // Performance optimizations
   compress: true,
