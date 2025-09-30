@@ -645,28 +645,12 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                           <div className="mt-2">
                             {isImage(message.attachmentType || '') ? (
                               <div className="w-full max-w-sm max-h-80 overflow-hidden rounded-lg border-0 bg-gray-100">
-                                <Image
+                                <img
                                   src={`/api/download/${encodeURIComponent(message.attachmentId || '')}`}
                                   alt={message.attachmentName || "Image attachment"}
-                                  width={400}
-                                  height={320}
-                                  className="w-full h-auto object-contain cursor-pointer hover:scale-105 transition-transform duration-200"
+                                  className="w-full h-auto object-contain cursor-pointer hover:opacity-90 transition-opacity duration-200"
                                   onClick={() => handleDownloadFile(message.attachmentId!)}
-                                  priority={false}
-                                  quality={85}
-                                  placeholder="blur"
-                                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R+on//Z"
-                                  onError={(e) => {
-                                    // Fallback to regular img tag if Next.js Image fails
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                    const fallback = document.createElement('img');
-                                    fallback.src = `/api/download/${encodeURIComponent(message.attachmentId || '')}`;
-                                    fallback.alt = message.attachmentName || "Image attachment";
-                                    fallback.className = "w-full h-auto object-contain cursor-pointer hover:scale-105 transition-transform duration-200";
-                                    fallback.onclick = () => handleDownloadFile(message.attachmentId!);
-                                    target.parentNode?.insertBefore(fallback, target);
-                                  }}
+                                  loading="lazy"
                                 />
                               </div>
                             ) : (
