@@ -85,7 +85,7 @@ export const UserInfoCard = () => {
                     <SlidersHorizontal className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" side="bottom" className="w-56">
+                <DropdownMenuContent align="start" side="right" className="w-56">
                   <DropdownMenuItem
                     onClick={() => setIsChangePasswordOpen(true)}
                     className="cursor-pointer"
