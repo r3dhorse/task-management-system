@@ -18,7 +18,6 @@ import { CalendarIcon, UsersIcon, CheckCircle2Icon, Clock3Icon, ListTodoIcon, Ba
 import { TaskStatus, PopulatedTask } from "@/features/tasks/types";
 import { subDays, isAfter, isBefore } from "date-fns";
 import { DottedSeparator } from "@/components/dotted-separator";
-import { UserInfoCard } from "@/components/user-info-card";
 import { TaskDeadlineTimeline } from "@/components/task-deadline-timeline";
 import { WorkspaceAnalytics } from "@/components/workspace-analytics";
 
@@ -299,26 +298,19 @@ const WorkspaceIdPage = () => {
   return (
     <div className="flex flex-col space-y-6 py-2">
       {/* Header */}
-      <div className="flex justify-between items-start ">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-              <BarChart3Icon className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {workspace?.name || "Workspace Dashboard"}
-              </h1>
-              <p className="text-muted-foreground">
-                {workspace?.description || "Overview of workspace metrics and performance"}
-              </p>
-            </div>
+      <div className="space-y-2">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+            <BarChart3Icon className="h-6 w-6 text-white" />
           </div>
-        </div>
-
-        {/* User Info */}
-        <div className="hidden sm:flex items-start">
-          <UserInfoCard />
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              {workspace?.name || "Workspace Dashboard"}
+            </h1>
+            <p className="text-muted-foreground">
+              {workspace?.description || "Overview of workspace metrics and performance"}
+            </p>
+          </div>
         </div>
       </div>
 
