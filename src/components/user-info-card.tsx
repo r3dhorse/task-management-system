@@ -14,15 +14,20 @@ import { User, Key, Building2, LogOut, SlidersHorizontal } from "@/lib/lucide-ic
 import { Badge } from "@/components/ui/badge";
 import { ChangePasswordModal } from "@/features/auth/components/change-password-modal";
 import { DefaultWorkspaceModal } from "@/features/auth/components/default-workspace-modal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const UserInfoCard = () => {
   const { data: user, isLoading } = useCurrent();
   const { mutate: logout } = useLogout();
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isDefaultWorkspaceOpen, setIsDefaultWorkspaceOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted || isLoading) {
     return (
       <Card className="w-full">
         <CardContent className="p-3">
