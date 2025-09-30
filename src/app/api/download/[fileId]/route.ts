@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { readFile } from "fs/promises";
 
+export const dynamic = 'force-dynamic';
+
 interface RouteProps {
   params: {
     fileId: string;
