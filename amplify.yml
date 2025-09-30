@@ -14,11 +14,14 @@ frontend:
         - npm run db:seed
     build:
       commands:
+        - cat .env.production
         - npm run build
+        - cp .env.production .next/standalone/.env.production || echo "No standalone dir"
   artifacts:
     baseDirectory: .next
     files:
       - '**/*'
+      - '../.env.production'
   cache:
     paths:
       - node_modules/**/*
