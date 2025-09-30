@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable standalone output for Docker
-  output: 'standalone',
+  // Enable standalone output for Docker only (not for Amplify)
+  ...(process.env.DOCKER_BUILD === 'true' ? { output: 'standalone' } : {}),
   
   // Performance optimizations
   compress: true,
