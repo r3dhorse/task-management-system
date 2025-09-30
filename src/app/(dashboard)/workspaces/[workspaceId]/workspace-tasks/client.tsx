@@ -17,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { useQueryState } from "nuqs";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { DottedSeparator } from "@/components/dotted-separator";
-import { UserWelcomeBadge } from "@/components/user-welcome-badge";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberRole } from "@/features/members/types";
@@ -205,53 +204,45 @@ export const WorkspaceTasksClient = () => {
         className="flex-1 w-full border rounded-lg"
       >
         <div className="h-full flex flex-col overflow-auto p-4 space-y-4">
-          {/* Header Section: Tabs and User Info */}
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-3 sm:space-y-0 gap-3">
-            {/* Tabs List and Export Button */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <TabsList className="w-full sm:w-auto">
-                <TabsTrigger
-                  className="h-10 w-full sm:w-auto touch-manipulation"
-                  value="kanban"
-                >
-                  Kanban
-                </TabsTrigger>
-                <TabsTrigger
-                  className="h-10 w-full sm:w-auto touch-manipulation"
-                  value="table"
-                >
-                  Table
-                </TabsTrigger>
-              </TabsList>
+          {/* Header Section: Tabs and Export Button */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger
+                className="h-10 w-full sm:w-auto touch-manipulation"
+                value="kanban"
+              >
+                Kanban
+              </TabsTrigger>
+              <TabsTrigger
+                className="h-10 w-full sm:w-auto touch-manipulation"
+                value="table"
+              >
+                Table
+              </TabsTrigger>
+            </TabsList>
 
-              {/* Download List Button - Only visible to workspace admins and super users */}
-              {hasExportPermission && (
-                <Button
-                  onClick={handleExportToExcel}
-                  disabled={isExporting}
-                  variant="outline"
-                  size="sm"
-                  className="w-full sm:w-auto h-10 gap-2 bg-green-50 hover:bg-green-100 border-green-200 hover:border-green-300 text-green-700 hover:text-green-800 transition-colors"
-                >
-                  {isExporting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent" />
-                      Exporting...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="size-4" />
-                      Download List
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-
-            {/* User Welcome Message with Role */}
-            <div className="hidden sm:block">
-              <UserWelcomeBadge />
-            </div>
+            {/* Download List Button - Only visible to workspace admins and super users */}
+            {hasExportPermission && (
+              <Button
+                onClick={handleExportToExcel}
+                disabled={isExporting}
+                variant="outline"
+                size="sm"
+                className="w-full sm:w-auto h-10 gap-2 bg-green-50 hover:bg-green-100 border-green-200 hover:border-green-300 text-green-700 hover:text-green-800 transition-colors"
+              >
+                {isExporting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="size-4" />
+                    Download List
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
           <DottedSeparator />

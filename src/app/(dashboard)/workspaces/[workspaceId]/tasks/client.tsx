@@ -302,75 +302,63 @@ export const MyTasksClient = () => {
 
           {/* Date Range Filter - AT THE TOP */}
           <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full relative z-10">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="size-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-900">Date Range:</span>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap relative z-20">
-                  <DatePicker
-                    value={dateFrom}
-                    onChange={setDateFrom}
-                    placeholder="From date"
-                    className="w-44 min-w-[11rem]"
-                  />
-                  <span className="text-muted-foreground text-sm shrink-0">to</span>
-                  <DatePicker
-                    value={dateTo}
-                    onChange={setDateTo}
-                    placeholder="To date"
-                    className="w-44 min-w-[11rem]"
-                  />
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const today = new Date();
-                      setDateTo(today);
-                      setDateFrom(subDays(today, 7));
-                    }}
-                    className="bg-white hover:bg-blue-50 text-xs px-3"
-                  >
-                    7 days
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const today = new Date();
-                      setDateTo(today);
-                      setDateFrom(subDays(today, 15));
-                    }}
-                    className="bg-white hover:bg-blue-50 text-xs px-3"
-                  >
-                    15 days
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const today = new Date();
-                      setDateTo(today);
-                      setDateFrom(subDays(today, 30));
-                    }}
-                    className="bg-white hover:bg-blue-50 text-xs px-3"
-                  >
-                    30 days
-                  </Button>
-                </div>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+              <div className="flex items-center gap-2">
+                <Calendar className="size-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-900">Date Range:</span>
               </div>
-
-              {/* User Name - Aligned Right */}
-              <div className="flex items-center gap-2 lg:ml-auto">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/70 rounded-lg border border-blue-200">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-blue-900">
-                    {user?.name || 'User'}
-                  </span>
-                </div>
+              <div className="flex items-center gap-2 flex-wrap relative z-20">
+                <DatePicker
+                  value={dateFrom}
+                  onChange={setDateFrom}
+                  placeholder="From date"
+                  className="w-44 min-w-[11rem]"
+                />
+                <span className="text-muted-foreground text-sm shrink-0">to</span>
+                <DatePicker
+                  value={dateTo}
+                  onChange={setDateTo}
+                  placeholder="To date"
+                  className="w-44 min-w-[11rem]"
+                />
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const today = new Date();
+                    setDateTo(today);
+                    setDateFrom(subDays(today, 7));
+                  }}
+                  className="bg-white hover:bg-blue-50 text-xs px-3"
+                >
+                  7 days
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const today = new Date();
+                    setDateTo(today);
+                    setDateFrom(subDays(today, 15));
+                  }}
+                  className="bg-white hover:bg-blue-50 text-xs px-3"
+                >
+                  15 days
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const today = new Date();
+                    setDateTo(today);
+                    setDateFrom(subDays(today, 30));
+                  }}
+                  className="bg-white hover:bg-blue-50 text-xs px-3"
+                >
+                  30 days
+                </Button>
               </div>
             </div>
           </Card>

@@ -23,14 +23,17 @@ export const UserInfoCard = () => {
 
   if (isLoading) {
     return (
-      <Card className="w-fit">
-        <CardContent className="p-5">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-gray-200 rounded-full animate-pulse" />
-            <div className="space-y-2">
-              <div className="w-36 h-5 bg-gray-200 rounded animate-pulse" />
-              <div className="w-48 h-4 bg-gray-200 rounded animate-pulse" />
+      <Card className="w-full">
+        <CardContent className="p-3">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse" />
+              <div className="space-y-2 flex-1">
+                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+              </div>
             </div>
+            <div className="h-8 bg-gray-200 rounded animate-pulse" />
           </div>
         </CardContent>
       </Card>
@@ -40,29 +43,30 @@ export const UserInfoCard = () => {
   if (!user) return null;
 
   return (
-    <Card className="w-fit bg-white/50 backdrop-blur-sm border-neutral-200">
-      <CardContent className="p-5">
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-            <User className="w-8 h-8 text-white" />
-          </div>
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center gap-3">
-              <span className="font-medium text-neutral-900 text-lg">{user.name}</span>
+    <Card className="w-full bg-white/50 backdrop-blur-sm border-neutral-200">
+      <CardContent className="p-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <User className="w-6 h-6 text-white" />
             </div>
-            <div className="flex items-center gap-2 text-sm text-neutral-600">
-              <Mail className="w-4 h-4" />
-              {user.email}
+            <div className="space-y-1 flex-1 min-w-0">
+              <span className="font-medium text-neutral-900 text-sm block truncate">{user.name}</span>
+              <div className="flex items-center gap-1 text-xs text-neutral-600">
+                <Mail className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{user.email}</span>
+              </div>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-full"
+                size="sm"
+                className="w-full"
               >
-                <Settings className="h-4 w-4" />
+                <Settings className="h-3 w-3 mr-2" />
+                Settings
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

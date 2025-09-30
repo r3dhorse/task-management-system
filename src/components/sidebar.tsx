@@ -1,11 +1,10 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { DottedSeparator } from "./dotted-separator";
 import { Navigation } from "./navigation";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 import { ServiceSwitcher } from "./service-switcher";
+import { UserInfoCard } from "./user-info-card";
 import { useCreateTaskModal } from "@/features/tasks/hooks/use-create-task-modal";
 import { Button } from "./ui/button";
 import { Plus } from "@/lib/lucide-icons";
@@ -39,16 +38,9 @@ export const Sidebar = () => {
       aria-label="Sidebar"
     >
       <div>
-        <Link href="/" className="block mb-4 sm:mb-6">
-          <Image 
-            src="/logo.svg" 
-            alt="Task Management - Go to homepage" 
-            width={240} 
-            height={80} 
-            className="h-16 sm:h-20 w-auto max-w-full"
-            priority
-          />
-        </Link>
+        <div className="mb-4 sm:mb-6">
+          <UserInfoCard />
+        </div>
 
         <DottedSeparator className="my-3 sm:my-4" />
         <NotificationDropdown />
