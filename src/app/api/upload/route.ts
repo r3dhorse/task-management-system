@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 
+export const dynamic = 'force-dynamic';
+
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || "10485760"); // 10MB default
 
 type FileType = "task" | "message";
