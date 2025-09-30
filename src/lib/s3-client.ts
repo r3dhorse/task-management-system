@@ -39,6 +39,13 @@ export async function uploadToS3(
   contentType: string
 ): Promise<S3UploadResult> {
   try {
+    console.log('🚀 Starting S3 upload:', {
+      key,
+      contentType,
+      bufferSize: buffer.length,
+      bucket: BUCKET_NAME,
+      region: process.env.AWS_REGION || process.env.BUCKET_REGION,
+    });
 
     const upload = new Upload({
       client: s3Client,
@@ -51,21 +58,31 @@ export async function uploadToS3(
     });
 
     const result = await upload.done();
-    
+
+    console.log('✅ S3 upload successful:', {
+      key,
+      location: result.Location,
+    });
+
     return {
       key,
-      location: result.Location || `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
+      location: result.Location || `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || process.env.BUCKET_REGION}.amazonaws.com/${key}`,
       bucket: BUCKET_NAME,
     };
   } catch (error) {
-    console.error('Error uploading to S3:', error);
+    console.error('❌ Error uploading to S3:', error);
     console.error('S3 Configuration:', {
       bucket: BUCKET_NAME,
-      region: process.env.AWS_REGION,
-      hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
-      hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY
+      region: process.env.AWS_REGION || process.env.BUCKET_REGION,
+      hasAccessKey: !!(process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID),
+      hasSecretKey: !!(process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY),
+      accessKeyPrefix: (process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID || '').substring(0, 8),
     });
-    throw new Error('Failed to upload file to S3');
+    console.error('Error details:', {
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+    });
+    throw error; // Throw original error for better debugging
   }
 }
 
