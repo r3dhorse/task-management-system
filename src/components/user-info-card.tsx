@@ -10,7 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { User, Mail, Key, Building2, LogOut, SlidersHorizontal } from "@/lib/lucide-icons";
+import { User, Key, Building2, LogOut, SlidersHorizontal } from "@/lib/lucide-icons";
+import { Badge } from "@/components/ui/badge";
 import { ChangePasswordModal } from "@/features/auth/components/change-password-modal";
 import { DefaultWorkspaceModal } from "@/features/auth/components/default-workspace-modal";
 import { useState } from "react";
@@ -29,7 +30,7 @@ export const UserInfoCard = () => {
             <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse" />
             <div className="space-y-2 flex-1">
               <div className="h-4 bg-gray-200 rounded animate-pulse" />
-              <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+              <div className="h-5 bg-gray-200 rounded animate-pulse w-20" />
             </div>
           </div>
         </CardContent>
@@ -38,6 +39,28 @@ export const UserInfoCard = () => {
   }
 
   if (!user) return null;
+
+  // Determine role badge styling
+  const getRoleBadge = () => {
+    if (user.isSuperAdmin) {
+      return {
+        label: "Super Admin",
+        className: "bg-purple-500 hover:bg-purple-600 text-white border-0"
+      };
+    } else if (user.isAdmin) {
+      return {
+        label: "Admin",
+        className: "bg-yellow-500 hover:bg-yellow-600 text-white border-0"
+      };
+    } else {
+      return {
+        label: "Member",
+        className: "bg-blue-500 hover:bg-blue-600 text-white border-0"
+      };
+    }
+  };
+
+  const roleBadge = getRoleBadge();
 
   return (
     <Card className="w-full bg-white/50 backdrop-blur-sm border-neutral-200">
@@ -48,20 +71,21 @@ export const UserInfoCard = () => {
           </div>
           <div className="space-y-1 flex-1 min-w-0">
             <span className="font-medium text-neutral-900 text-sm block truncate">{user.name}</span>
-            <div className="flex items-center gap-1 text-xs text-neutral-600">
-              <Mail className="w-3 h-3 flex-shrink-0" />
-              <span className="truncate">{user.email}</span>
+            <div className="flex items-center gap-2">
+              <Badge className={`${roleBadge.className} text-xs px-2 py-0.5`}>
+                {roleBadge.label}
+              </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-4 w-4 ml-1 p-0 hover:bg-neutral-200 rounded-sm"
+                    className="h-5 w-5 p-0 hover:bg-neutral-200 rounded-sm"
                   >
                     <SlidersHorizontal className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" side="bottom" className="w-56">
                   <DropdownMenuItem
                     onClick={() => setIsChangePasswordOpen(true)}
                     className="cursor-pointer"
