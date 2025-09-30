@@ -6,7 +6,7 @@ frontend:
         - npm ci --include=dev
         - npx prisma generate
         - npx prisma migrate deploy
-        - npm run db:seed
+        # Seed manually via API: POST /api/admin/force-reset-users with DB_SEED_TOKEN
     build:
       commands:
         - npm run build
