@@ -1,7 +1,5 @@
 import { NextAuthOptions } from "next-auth"
-import { Adapter } from "next-auth/adapters"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
 import { z } from "zod"
@@ -11,24 +9,26 @@ const loginSchema = z.object({
   password: z.string().min(1),
 })
 
-// Log environment variable status (non-blocking warnings)
-console.log('🔍 Auth Configuration Check:')
-console.log('  - NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? '✅ Set' : '❌ Missing')
-console.log('  - NEXTAUTH_URL:', process.env.NEXTAUTH_URL || '❌ Missing')
-console.log('  - DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' : '❌ Missing')
-console.log('  - NODE_ENV:', process.env.NODE_ENV)
+// Log environment variable status (server-side only)
+if (typeof window === 'undefined') {
+  console.log('🔍 Auth Configuration Check:')
+  console.log('  - NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? '✅ Set' : '❌ Missing')
+  console.log('  - NEXTAUTH_URL:', process.env.NEXTAUTH_URL || '❌ Missing')
+  console.log('  - DATABASE_URL:', process.env.DATABASE_URL ? '✅ Set' : '❌ Missing')
+  console.log('  - NODE_ENV:', process.env.NODE_ENV)
 
-if (!process.env.NEXTAUTH_SECRET) {
-  console.warn('⚠️  WARNING: NEXTAUTH_SECRET is not set - authentication will not work properly')
-}
+  if (!process.env.NEXTAUTH_SECRET) {
+    console.warn('⚠️  WARNING: NEXTAUTH_SECRET is not set - authentication will not work properly')
+  }
 
-if (!process.env.DATABASE_URL) {
-  console.warn('⚠️  WARNING: DATABASE_URL is not set - database operations will fail')
+  if (!process.env.DATABASE_URL) {
+    console.warn('⚠️  WARNING: DATABASE_URL is not set - database operations will fail')
+  }
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as Adapter,
-  secret: process.env.NEXTAUTH_SECRET,
+  // No adapter needed for JWT strategy
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-build-time',
   providers: [
     CredentialsProvider({
       name: "credentials",
