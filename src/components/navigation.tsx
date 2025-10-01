@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon, ChevronDown, ChevronRight } from "@/lib/lucide-icons";
+import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon, ChevronDown, ChevronRight, Briefcase } from "@/lib/lucide-icons";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -14,6 +14,9 @@ import { UserManagementModal } from "@/components/user-management-modal";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCreatedTasksModal } from "@/features/tasks/hooks/use-created-tasks-modal";
+import { useGetServices } from "@/features/services/api/use-get-services";
+import { RiAddCircleFill } from "react-icons/ri";
+import { useCreateServiceModal } from "@/features/services/hooks/use-create-service-modal";
 
 interface Route {
   label: string;
@@ -94,13 +97,16 @@ export const Navigation = () => {
   const [userManagementModalOpen, setUserManagementModalOpen] = useState(false);
   const [isRunningAudit, setIsRunningAudit] = useState(false);
   const [tasksExpanded, setTasksExpanded] = useState(false);
+  const [servicesExpanded, setServicesExpanded] = useState(false);
   const queryClient = useQueryClient();
   const router = useRouter();
   const { open: openCreatedTasks } = useCreatedTasksModal();
+  const { open: openCreateService } = useCreateServiceModal();
 
   // Get current user and member information
   const { data: currentUser } = useCurrent();
   const { data: members } = useGetMembers({ workspaceId });
+  const { data: services } = useGetServices({ workspaceId });
 
   // Find current user's member record to check role
   const currentMember = members?.documents.find(member =>
@@ -109,6 +115,8 @@ export const Navigation = () => {
 
   const isVisitor = currentMember?.role === MemberRole.VISITOR;
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
+  const isAdmin = currentMember?.role === MemberRole.ADMIN;
+  const canManageServices = isAdmin || isSuperAdmin;
 
   // Check if we're currently in a service context
   const isInServiceContext = pathname.includes('/services/');
@@ -276,6 +284,77 @@ export const Navigation = () => {
             Menu
           </div>
           {routes.map((item) => renderMenuItem(item))}
+        </div>
+
+        {/* Services Section */}
+        <div className="my-3 border-t border-neutral-200 pt-3 space-y-0.5">
+          <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2 flex items-center justify-between">
+            <span>Services</span>
+            {canManageServices && (
+              <RiAddCircleFill
+                onClick={openCreateService}
+                className="size-4 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200"
+              />
+            )}
+          </div>
+
+          <button
+            onClick={() => setServicesExpanded(!servicesExpanded)}
+            className={cn(
+              "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation",
+              "hover:bg-white/70 group",
+              servicesExpanded || isInServiceContext ? "bg-white/70 text-primary shadow-sm" : "text-neutral-500",
+              "focus:outline-none focus:ring-2 focus:ring-primary/20"
+            )}
+          >
+            <Briefcase className={cn(
+              "size-5 flex-shrink-0 transition-colors",
+              servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-500 group-hover:text-primary"
+            )} />
+            <span className="text-sm sm:text-base truncate flex-1 text-left">
+              All Services
+            </span>
+            <ChevronDown className={cn(
+              "size-4 flex-shrink-0 transition-transform duration-200",
+              servicesExpanded || isInServiceContext ? "text-primary rotate-180" : "text-neutral-400 group-hover:text-neutral-600"
+            )} />
+          </button>
+
+          {servicesExpanded && (
+            <div className="mt-1 ml-3 space-y-0.5 border-l-2 border-neutral-200 pl-2">
+              {services?.documents?.map((service) => {
+                const serviceHref = `/workspaces/${workspaceId}/services/${service.id}`;
+                const isActiveService = pathname.includes(`/services/${service.id}`);
+
+                return (
+                  <Link key={service.id} href={serviceHref} className="block">
+                    <button
+                      className={cn(
+                        "w-full flex items-center gap-2 p-2 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
+                        isActiveService
+                          ? "bg-white shadow-sm text-primary"
+                          : "text-neutral-500 hover:bg-white/70 hover:text-primary",
+                        "focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0",
+                        isActiveService ? "bg-primary text-white" : "bg-blue-600 text-white group-hover:bg-primary"
+                      )}>
+                        {service.name.charAt(0)}
+                      </div>
+                      <span className="text-sm truncate text-left">{service.name}</span>
+                    </button>
+                  </Link>
+                );
+              })}
+              {(!services?.documents || services.documents.length === 0) && (
+                <div className="p-2 text-sm text-neutral-400 text-center">
+                  No services
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Super Admin Section */}
