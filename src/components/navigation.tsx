@@ -270,7 +270,13 @@ export const Navigation = () => {
   return (
     <>
       <nav className="flex flex-col space-y-1">
-        {routes.map((item) => renderMenuItem(item))}
+        {/* Main Menu Section */}
+        <div className="space-y-0.5">
+          <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">
+            Menu
+          </div>
+          {routes.map((item) => renderMenuItem(item))}
+        </div>
 
         {/* Super Admin Section */}
         {isSuperAdmin && (
