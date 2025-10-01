@@ -33,10 +33,10 @@ export const Sidebar = () => {
 
   return (
     <aside
-      className="h-full w-[270px] sm:w-[290px] lg:w-[270px] bg-neutral-100 p-4 sm:p-6 border-r overflow-x-hidden"
+      className="h-full w-[270px] sm:w-[290px] lg:w-[270px] bg-neutral-100 p-4 sm:p-6 border-r overflow-hidden"
       aria-label="Sidebar"
     >
-      <div>
+      <div className="overflow-x-hidden overflow-y-auto h-full">
         <div className="mb-4 sm:mb-6">
           <UserInfoCard />
         </div>
