@@ -93,7 +93,7 @@ export const Navigation = () => {
   const pathname = usePathname();
   const [userManagementModalOpen, setUserManagementModalOpen] = useState(false);
   const [isRunningAudit, setIsRunningAudit] = useState(false);
-  const [tasksExpanded, setTasksExpanded] = useState(true);
+  const [tasksExpanded, setTasksExpanded] = useState(false);
   const queryClient = useQueryClient();
   const router = useRouter();
   const { open: openCreatedTasks } = useCreatedTasksModal();
