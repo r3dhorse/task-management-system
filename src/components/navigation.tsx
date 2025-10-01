@@ -320,7 +320,7 @@ export const Navigation = () => {
       {servicesExpanded && (
         <div className={cn(
           "mt-1 ml-3 space-y-0.5 border-l-2 border-neutral-200 pl-2",
-          services?.documents && services.documents.length > 5 ? "max-h-[220px] overflow-y-auto" : ""
+          services?.documents && services.documents.length > 3 ? "max-h-[220px] overflow-y-auto" : ""
         )}>
           {services?.documents?.map((service) => {
             const serviceHref = `/workspaces/${workspaceId}/services/${service.id}/settings`;
