@@ -3,7 +3,6 @@
 import { DottedSeparator } from "./dotted-separator";
 import { Navigation } from "./navigation";
 import { WorkspaceSwitcher } from "./workspace-switcher";
-import { ServiceSwitcher } from "./service-switcher";
 import { UserInfoCard } from "./user-info-card";
 import { useCreateTaskModal } from "@/features/tasks/hooks/use-create-task-modal";
 import { Button } from "./ui/button";
@@ -54,9 +53,7 @@ export const Sidebar = () => {
         <DottedSeparator className="my-3 sm:my-4" />
         <WorkspaceSwitcher />
         <DottedSeparator className="my-3 sm:my-4" />
-        < Navigation />
-        <DottedSeparator className="my-3 sm:my-4" />
-        < ServiceSwitcher />
+        <Navigation />
       </div>
     </aside>
   );

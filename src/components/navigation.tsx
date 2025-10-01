@@ -284,24 +284,12 @@ export const Navigation = () => {
             Menu
           </div>
           {routes.map((item) => renderMenuItem(item))}
-        </div>
 
-        {/* Services Section */}
-        <div className="my-3 border-t border-neutral-200 pt-3 space-y-0.5">
-          <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2 flex items-center justify-between">
-            <span>Services</span>
-            {canManageServices && (
-              <RiAddCircleFill
-                onClick={openCreateService}
-                className="size-4 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200"
-              />
-            )}
-          </div>
-
+          {/* Services Section - Right after Tasks */}
           <button
             onClick={() => setServicesExpanded(!servicesExpanded)}
             className={cn(
-              "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation",
+              "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation mt-0.5",
               "hover:bg-white/70 group",
               servicesExpanded || isInServiceContext ? "bg-white/70 text-primary shadow-sm" : "text-neutral-500",
               "focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -311,13 +299,24 @@ export const Navigation = () => {
               "size-5 flex-shrink-0 transition-colors",
               servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-500 group-hover:text-primary"
             )} />
-            <span className="text-sm sm:text-base truncate flex-1 text-left">
+            <span className="text-sm truncate flex-1 text-left">
               All Services
             </span>
-            <ChevronDown className={cn(
-              "size-4 flex-shrink-0 transition-transform duration-200",
-              servicesExpanded || isInServiceContext ? "text-primary rotate-180" : "text-neutral-400 group-hover:text-neutral-600"
-            )} />
+            <div className="flex items-center gap-1">
+              {canManageServices && (
+                <RiAddCircleFill
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openCreateService();
+                  }}
+                  className="size-5 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200"
+                />
+              )}
+              <ChevronDown className={cn(
+                "size-4 flex-shrink-0 transition-transform duration-200",
+                servicesExpanded || isInServiceContext ? "text-primary rotate-180" : "text-neutral-400 group-hover:text-neutral-600"
+              )} />
+            </div>
           </button>
 
           {servicesExpanded && (
