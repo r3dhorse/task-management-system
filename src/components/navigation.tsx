@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon } from "@/lib/lucide-icons";
+import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon, ChevronDown, ChevronRight } from "@/lib/lucide-icons";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -23,6 +23,7 @@ interface Route {
   serviceAware: boolean;
   restrictedForVisitors: boolean;
   isModal?: boolean;
+  children?: Route[];
 }
 
 const routes: Route[] = [
@@ -31,49 +32,59 @@ const routes: Route[] = [
     href: "",
     icon: GoHome,
     activeIcon: GoHomeFill,
-    serviceAware: false, // Home always goes to workspace level
-    restrictedForVisitors: true, // Visitors can't access Home
+    serviceAware: false,
+    restrictedForVisitors: true,
   },
   {
     label: "Tasks",
     href: "/workspace-tasks",
     icon: ListTodo,
     activeIcon: ListTodo,
-    serviceAware: false, // Always workspace-level
-    restrictedForVisitors: false, // Visitors can access Tasks
-  },
-  {
-    label: "My Tasks",
-    href: "/tasks",
-    icon: GoCheckCircle,
-    activeIcon: GoCheckCircleFill,
-    serviceAware: true, // Can be service-specific
-    restrictedForVisitors: true, // Visitors can't access My Tasks
-  },
-  {
-    label: "Created Tasks",
-    href: "#created-tasks", // Special href to indicate modal action
-    icon: FileTextIcon,
-    activeIcon: FileTextIcon,
-    serviceAware: false, // Not service-specific (system-wide)
-    restrictedForVisitors: true, // Visitors can't access Created Tasks
-    isModal: true, // Special flag to indicate this opens a modal
+    serviceAware: false,
+    restrictedForVisitors: false,
+    children: [
+      {
+        label: "Workspace Tasks",
+        href: "/workspace-tasks",
+        icon: ListTodo,
+        activeIcon: ListTodo,
+        serviceAware: false,
+        restrictedForVisitors: false,
+      },
+      {
+        label: "My Tasks",
+        href: "/tasks",
+        icon: GoCheckCircle,
+        activeIcon: GoCheckCircleFill,
+        serviceAware: true,
+        restrictedForVisitors: true,
+      },
+      {
+        label: "Created Tasks",
+        href: "#created-tasks",
+        icon: FileTextIcon,
+        activeIcon: FileTextIcon,
+        serviceAware: false,
+        restrictedForVisitors: true,
+        isModal: true,
+      },
+    ],
   },
   {
     label: "Members",
     href: "/members",
     icon: UsersIcon,
     activeIcon: UsersIcon,
-    serviceAware: true, // Can be service-specific
-    restrictedForVisitors: true, // Visitors can't access Members
+    serviceAware: true,
+    restrictedForVisitors: true,
   },
   {
-  label: "Setting",
+    label: "Settings",
     href: "/settings",
     icon: SettingsIcon,
     activeIcon: SettingsIcon,
-    serviceAware: true, // Can be service-specific
-    restrictedForVisitors: true, // Visitors can't access Settings
+    serviceAware: true,
+    restrictedForVisitors: true,
   },
 ];
 
@@ -82,6 +93,7 @@ export const Navigation = () => {
   const pathname = usePathname();
   const [userManagementModalOpen, setUserManagementModalOpen] = useState(false);
   const [isRunningAudit, setIsRunningAudit] = useState(false);
+  const [tasksExpanded, setTasksExpanded] = useState(true);
   const queryClient = useQueryClient();
   const router = useRouter();
   const { open: openCreatedTasks } = useCreatedTasksModal();
@@ -97,7 +109,7 @@ export const Navigation = () => {
 
   const isVisitor = currentMember?.role === MemberRole.VISITOR;
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
-  
+
   // Check if we're currently in a service context
   const isInServiceContext = pathname.includes('/services/');
   const serviceId = isInServiceContext ? pathname.match(/\/services\/([^\/]+)/)?.[1] : null;
@@ -137,103 +149,137 @@ export const Navigation = () => {
     }
   };
 
+  const renderMenuItem = (item: Route, isChild: boolean = false) => {
+    const isRestrictedForCurrentUser = isVisitor && item.restrictedForVisitors;
+
+    if (isRestrictedForCurrentUser) {
+      return null;
+    }
+
+    let fullHref: string;
+    if (item.serviceAware && isInServiceContext && serviceId) {
+      fullHref = `/workspaces/${workspaceId}/services/${serviceId}${item.href}`;
+    } else {
+      fullHref = `/workspaces/${workspaceId}${item.href}`;
+    }
+
+    const isActive = pathname === fullHref ||
+      (item.serviceAware && isInServiceContext && pathname.startsWith(fullHref));
+    const Icon = isActive ? item.activeIcon : item.icon;
+
+    // Handle modal items
+    if (item.isModal) {
+      const handleModalClick = () => {
+        if (item.href === "#created-tasks") {
+          openCreatedTasks();
+        }
+      };
+
+      return (
+        <div
+          key={item.href}
+          onClick={handleModalClick}
+          className={cn(
+            "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50",
+            isChild && "pl-10"
+          )}
+        >
+          <Icon className="size-4 flex-shrink-0 text-neutral-500" />
+          <span className="text-sm truncate">{item.label}</span>
+        </div>
+      );
+    }
+
+    // Handle items with children (collapsible)
+    if (item.children && item.children.length > 0) {
+      const hasActiveChild = item.children.some(child => {
+        let childHref: string;
+        if (child.serviceAware && isInServiceContext && serviceId) {
+          childHref = `/workspaces/${workspaceId}/services/${serviceId}${child.href}`;
+        } else {
+          childHref = `/workspaces/${workspaceId}${child.href}`;
+        }
+        return pathname === childHref || pathname.startsWith(childHref);
+      });
+
+      const ChevronIcon = tasksExpanded ? ChevronDown : ChevronRight;
+
+      return (
+        <div key={item.href}>
+          <div
+            onClick={() => setTasksExpanded(!tasksExpanded)}
+            className={cn(
+              "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer",
+              hasActiveChild && "bg-white/70 text-primary"
+            )}
+          >
+            <Icon className={cn("size-5 flex-shrink-0", hasActiveChild ? "text-primary" : "text-neutral-500")} />
+            <span className="text-sm sm:text-base truncate flex-1">{item.label}</span>
+            <ChevronIcon className="size-4 flex-shrink-0 text-neutral-400" />
+          </div>
+          {tasksExpanded && (
+            <div className="mt-1 space-y-1">
+              {item.children.map(child => renderMenuItem(child, true))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Regular menu items
+    return (
+      <Link key={item.href} href={fullHref}>
+        <div
+          className={cn(
+            "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation",
+            isActive && "bg-white shadow-sm hover:opacity-100 text-primary",
+            isChild && "pl-10"
+          )}
+        >
+          <Icon className={cn(isChild ? "size-4" : "size-5", "flex-shrink-0", isActive ? "text-primary" : "text-neutral-500")} />
+          <span className={cn(isChild ? "text-sm" : "text-sm sm:text-base", "truncate")}>{item.label}</span>
+        </div>
+      </Link>
+    );
+  };
+
   return (
     <>
-      <ul className="flex flex-col">
-      {routes.map((item) => {
-        // Check if this item should be disabled for visitors
-        const isRestrictedForCurrentUser = isVisitor && item.restrictedForVisitors;
-        
-        // Determine the href based on service context
-        let fullHref: string;
-        
-        if (item.serviceAware && isInServiceContext && serviceId) {
-          // Navigate to service-specific version
-          fullHref = `/workspaces/${workspaceId}/services/${serviceId}${item.href}`;
-        } else {
-          // Navigate to workspace-level version
-          fullHref = `/workspaces/${workspaceId}${item.href}`;
-        }
-        
-        const isActive = pathname === fullHref || 
-          (item.serviceAware && isInServiceContext && pathname.startsWith(fullHref));
-        const Icon = isActive ? item.activeIcon : item.icon;
+      <nav className="flex flex-col space-y-1">
+        {routes.map((item) => renderMenuItem(item))}
 
-        // If restricted for current user, hide the button completely
-        if (isRestrictedForCurrentUser) {
-          return null;
-        }
-
-        // Handle modal items (like Created Tasks)
-        if (item.isModal) {
-          const handleModalClick = () => {
-            if (item.href === "#created-tasks") {
-              openCreatedTasks();
-            }
-          };
-
-          return (
-            <div key={item.href}>
+        {/* Super Admin Section */}
+        {isSuperAdmin && (
+          <>
+            <div className="my-3 border-t border-neutral-200 pt-3">
+              <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">
+                Super Admin
+              </div>
               <div
-                onClick={handleModalClick}
+                onClick={() => setUserManagementModalOpen(true)}
                 className={cn(
                   "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50"
                 )}
               >
-                <Icon className="size-5 flex-shrink-0 text-neutral-500" />
-                <span className="text-sm sm:text-base truncate">{item.label}</span>
+                <Shield className="size-5 flex-shrink-0 text-neutral-500" />
+                <span className="text-sm sm:text-base truncate">User Management</span>
+              </div>
+              <div
+                onClick={handleTaskAudit}
+                className={cn(
+                  "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50",
+                  isRunningAudit && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                <RefreshCw className={cn("size-5 flex-shrink-0 text-neutral-500", isRunningAudit && "animate-spin")} />
+                <span className="text-sm sm:text-base truncate">
+                  {isRunningAudit ? "Running Audit..." : "Run Task Audit"}
+                </span>
               </div>
             </div>
-          );
-        }
-
-        return (
-          <Link key={item.href} href={fullHref}>
-            <div
-              className={cn(
-                "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation",
-                isActive && "bg-white shadow-sm hover:opacity-100 text-primary"
-              )}
-            >
-              <Icon className={cn("size-5 flex-shrink-0", isActive ? "text-primary" : "text-neutral-500")} />
-              <span className="text-sm sm:text-base truncate">{item.label}</span>
-            </div>
-          </Link>
-        );
-      })}
-      
-      {/* Super Admin Link */}
-      {isSuperAdmin && (
-        <>
-          <div className="my-2 h-px bg-gray-200" />
-          <div>
-            <div
-              onClick={() => setUserManagementModalOpen(true)}
-              className={cn(
-                "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50"
-              )}
-            >
-              <Shield className="size-5 flex-shrink-0 text-neutral-500" />
-              <span className="text-sm sm:text-base truncate">User Management</span>
-            </div>
-          </div>
-          <div>
-            <div
-              onClick={handleTaskAudit}
-              className={cn(
-                "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50",
-                isRunningAudit && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <RefreshCw className={cn("size-5 flex-shrink-0 text-neutral-500", isRunningAudit && "animate-spin")} />
-              <span className="text-sm sm:text-base truncate">
-                {isRunningAudit ? "Running Audit..." : "Run Task Audit"}
-              </span>
-            </div>
-          </div>
-        </>
-      )}
-    </ul>
+          </>
+        )}
+      </nav>
 
       {/* User Management Modal */}
       <UserManagementModal
