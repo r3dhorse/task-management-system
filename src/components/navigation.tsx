@@ -299,8 +299,8 @@ export const Navigation = () => {
               "size-5 flex-shrink-0 transition-colors",
               servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-500 group-hover:text-primary"
             )} />
-            <span className="text-sm truncate flex-1 text-left">
-              All Services
+            <span className="text-sm sm:text-base truncate flex-1 text-left">
+              Services
             </span>
             <div className="flex items-center gap-1">
               {canManageServices && (
@@ -312,10 +312,17 @@ export const Navigation = () => {
                   className="size-5 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200"
                 />
               )}
-              <ChevronDown className={cn(
-                "size-4 flex-shrink-0 transition-transform duration-200",
-                servicesExpanded || isInServiceContext ? "text-primary rotate-180" : "text-neutral-400 group-hover:text-neutral-600"
-              )} />
+              {servicesExpanded ? (
+                <ChevronDown className={cn(
+                  "size-4 flex-shrink-0 transition-transform duration-200",
+                  servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-400 group-hover:text-neutral-600"
+                )} />
+              ) : (
+                <ChevronRight className={cn(
+                  "size-4 flex-shrink-0 transition-transform duration-200",
+                  servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-400 group-hover:text-neutral-600"
+                )} />
+              )}
             </div>
           </button>
 
