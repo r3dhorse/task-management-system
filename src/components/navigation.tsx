@@ -74,20 +74,48 @@ const routes: Route[] = [
     ],
   },
   {
-    label: "Members",
-    href: "/members",
-    icon: UsersIcon,
-    activeIcon: UsersIcon,
-    serviceAware: true,
-    restrictedForVisitors: true,
-  },
-  {
     label: "Settings",
     href: "/settings",
     icon: SettingsIcon,
     activeIcon: SettingsIcon,
     serviceAware: true,
     restrictedForVisitors: true,
+    children: [
+      {
+        label: "Members",
+        href: "/members",
+        icon: UsersIcon,
+        activeIcon: UsersIcon,
+        serviceAware: true,
+        restrictedForVisitors: true,
+      },
+      {
+        label: "Workspace Settings",
+        href: "/settings",
+        icon: SettingsIcon,
+        activeIcon: SettingsIcon,
+        serviceAware: true,
+        restrictedForVisitors: true,
+      },
+      {
+        label: "User Management",
+        href: "#user-management",
+        icon: Shield,
+        activeIcon: Shield,
+        serviceAware: false,
+        restrictedForVisitors: true,
+        isModal: true,
+      },
+      {
+        label: "Run Task Audit",
+        href: "#run-task-audit",
+        icon: RefreshCw,
+        activeIcon: RefreshCw,
+        serviceAware: false,
+        restrictedForVisitors: true,
+        isModal: true,
+      },
+    ],
   },
 ];
 
@@ -98,6 +126,7 @@ export const Navigation = () => {
   const [isRunningAudit, setIsRunningAudit] = useState(false);
   const [tasksExpanded, setTasksExpanded] = useState(false);
   const [servicesExpanded, setServicesExpanded] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(false);
   const queryClient = useQueryClient();
   const router = useRouter();
   const { open: openCreatedTasks } = useCreatedTasksModal();
@@ -180,22 +209,41 @@ export const Navigation = () => {
       const handleModalClick = () => {
         if (item.href === "#created-tasks") {
           openCreatedTasks();
+        } else if (item.href === "#user-management") {
+          setUserManagementModalOpen(true);
+        } else if (item.href === "#run-task-audit") {
+          handleTaskAudit();
         }
       };
+
+      // Check visibility restrictions for super-admin only items
+      const isSuperAdminOnly = item.href === "#user-management" || item.href === "#run-task-audit";
+      if (isSuperAdminOnly && !isSuperAdmin) {
+        return null;
+      }
 
       return (
         <button
           key={item.href}
           onClick={handleModalClick}
+          disabled={item.href === "#run-task-audit" && isRunningAudit}
           className={cn(
             "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
             "hover:bg-white/70 text-neutral-500 hover:text-primary",
             "focus:outline-none focus:ring-2 focus:ring-primary/20",
-            isChild && "pl-3"
+            isChild && "pl-3",
+            item.href === "#run-task-audit" && isRunningAudit && "opacity-50 cursor-not-allowed hover:bg-transparent"
           )}
         >
-          <Icon className="size-4 flex-shrink-0 text-neutral-500 group-hover:text-primary transition-colors" />
-          <span className="text-sm truncate text-left">{item.label}</span>
+          <Icon className={cn(
+            "size-4 flex-shrink-0 transition-colors",
+            item.href === "#run-task-audit" && isRunningAudit
+              ? "animate-spin text-neutral-500"
+              : "text-neutral-500 group-hover:text-primary"
+          )} />
+          <span className="text-sm truncate text-left">
+            {item.href === "#run-task-audit" && isRunningAudit ? "Running Audit..." : item.label}
+          </span>
         </button>
       );
     }
@@ -212,12 +260,18 @@ export const Navigation = () => {
         return pathname === childHref || pathname.startsWith(childHref);
       });
 
-      const ChevronIcon = tasksExpanded ? ChevronDown : ChevronRight;
+      // Determine which expansion state to use based on item label
+      const isExpanded = item.label === "Tasks" ? tasksExpanded : settingsExpanded;
+      const toggleExpanded = item.label === "Tasks"
+        ? () => setTasksExpanded(!tasksExpanded)
+        : () => setSettingsExpanded(!settingsExpanded);
+
+      const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
 
       return (
         <div key={item.href} className="relative">
           <button
-            onClick={() => setTasksExpanded(!tasksExpanded)}
+            onClick={toggleExpanded}
             className={cn(
               "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation",
               "hover:bg-white/70 group",
@@ -237,7 +291,7 @@ export const Navigation = () => {
               hasActiveChild ? "text-primary" : "text-neutral-400 group-hover:text-neutral-600"
             )} />
           </button>
-          {tasksExpanded && (
+          {isExpanded && (
             <div className="mt-1 ml-3 space-y-0.5 border-l-2 border-neutral-200 pl-2">
               {item.children.map(child => renderMenuItem(child, true))}
             </div>
@@ -398,43 +452,6 @@ export const Navigation = () => {
           ))}
         </div>
 
-        {/* Super Admin Section */}
-        {isSuperAdmin && (
-          <div className="my-3 border-t border-neutral-200 pt-3 space-y-0.5">
-            <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">
-              Super Admin
-            </div>
-            <button
-              onClick={() => setUserManagementModalOpen(true)}
-              className={cn(
-                "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
-                "text-neutral-500 hover:bg-white/70 hover:text-primary",
-                "focus:outline-none focus:ring-2 focus:ring-primary/20"
-              )}
-            >
-              <Shield className="size-5 flex-shrink-0 text-neutral-500 group-hover:text-primary transition-colors" />
-              <span className="text-sm sm:text-base truncate text-left">User Management</span>
-            </button>
-            <button
-              onClick={handleTaskAudit}
-              disabled={isRunningAudit}
-              className={cn(
-                "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
-                "text-neutral-500 hover:bg-white/70 hover:text-primary",
-                "focus:outline-none focus:ring-2 focus:ring-primary/20",
-                isRunningAudit && "opacity-50 cursor-not-allowed hover:bg-transparent"
-              )}
-            >
-              <RefreshCw className={cn(
-                "size-5 flex-shrink-0 transition-colors",
-                isRunningAudit ? "animate-spin text-neutral-500" : "text-neutral-500 group-hover:text-primary"
-              )} />
-              <span className="text-sm sm:text-base truncate text-left">
-                {isRunningAudit ? "Running Audit..." : "Run Task Audit"}
-              </span>
-            </button>
-          </div>
-        )}
       </nav>
 
       {/* User Management Modal */}

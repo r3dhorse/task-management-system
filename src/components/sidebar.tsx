@@ -33,7 +33,7 @@ export const Sidebar = () => {
 
   return (
     <aside
-      className="h-full w-64 sm:w-72 lg:w-64 bg-neutral-100 p-4 sm:p-6 border-r"
+      className="h-full w-[268px] sm:w-[302px] lg:w-[268px] bg-neutral-100 p-4 sm:p-6 border-r"
       aria-label="Sidebar"
     >
       <div>
