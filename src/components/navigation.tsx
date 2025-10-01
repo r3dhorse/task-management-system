@@ -318,31 +318,57 @@ export const Navigation = () => {
       </button>
 
       {servicesExpanded && (
-        <div className="mt-1 ml-3 space-y-0.5 border-l-2 border-neutral-200 pl-2">
+        <div className={cn(
+          "mt-1 ml-3 space-y-0.5 border-l-2 border-neutral-200 pl-2",
+          services?.documents && services.documents.length > 5 ? "max-h-[220px] overflow-y-auto" : ""
+        )}>
           {services?.documents?.map((service) => {
-            const serviceHref = `/workspaces/${workspaceId}/services/${service.id}`;
+            const serviceHref = `/workspaces/${workspaceId}/services/${service.id}/settings`;
             const isActiveService = pathname.includes(`/services/${service.id}`);
 
+            // Only render as clickable link for admins
+            if (canManageServices) {
+              return (
+                <Link key={service.id} href={serviceHref} className="block">
+                  <button
+                    className={cn(
+                      "w-full flex items-center gap-2 p-2 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
+                      isActiveService
+                        ? "bg-white shadow-sm text-primary"
+                        : "text-neutral-500 hover:bg-white/70 hover:text-primary",
+                      "focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0",
+                      isActiveService ? "bg-primary text-white" : "bg-blue-600 text-white group-hover:bg-primary"
+                    )}>
+                      {service.name.charAt(0)}
+                    </div>
+                    <span className="text-sm truncate text-left">{service.name}</span>
+                  </button>
+                </Link>
+              );
+            }
+
+            // For non-admins, render as non-clickable text
             return (
-              <Link key={service.id} href={serviceHref} className="block">
-                <button
-                  className={cn(
-                    "w-full flex items-center gap-2 p-2 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
-                    isActiveService
-                      ? "bg-white shadow-sm text-primary"
-                      : "text-neutral-500 hover:bg-white/70 hover:text-primary",
-                    "focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  )}
-                >
-                  <div className={cn(
-                    "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0",
-                    isActiveService ? "bg-primary text-white" : "bg-blue-600 text-white group-hover:bg-primary"
-                  )}>
-                    {service.name.charAt(0)}
-                  </div>
-                  <span className="text-sm truncate text-left">{service.name}</span>
-                </button>
-              </Link>
+              <div
+                key={service.id}
+                className={cn(
+                  "w-full flex items-center gap-2 p-2 rounded-md min-h-[44px]",
+                  isActiveService ? "text-primary" : "text-neutral-500",
+                  "cursor-default"
+                )}
+              >
+                <div className={cn(
+                  "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0",
+                  isActiveService ? "bg-primary text-white" : "bg-blue-600 text-white"
+                )}>
+                  {service.name.charAt(0)}
+                </div>
+                <span className="text-sm truncate text-left">{service.name}</span>
+              </div>
             );
           })}
           {(!services?.documents || services.documents.length === 0) && (
