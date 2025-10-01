@@ -67,6 +67,9 @@ export const UserInfoCard = () => {
 
   const roleBadge = getRoleBadge();
 
+  // Get first letter of name
+  const firstLetter = user.name?.charAt(0).toUpperCase() || "U";
+
   return (
     <div className="w-full">
       <DropdownMenu>
@@ -77,6 +80,7 @@ export const UserInfoCard = () => {
                 {/* Circular Profile Photo */}
                 <div className="relative">
                   <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md ring-2 ring-white">
+                    <span className="text-white text-xl font-bold">{firstLetter}</span>
                   </div>
                   <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
