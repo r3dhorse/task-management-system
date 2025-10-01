@@ -176,17 +176,19 @@ export const Navigation = () => {
       };
 
       return (
-        <div
+        <button
           key={item.href}
           onClick={handleModalClick}
           className={cn(
-            "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50",
-            isChild && "pl-10"
+            "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
+            "hover:bg-white/70 text-neutral-500 hover:text-primary",
+            "focus:outline-none focus:ring-2 focus:ring-primary/20",
+            isChild && "pl-3"
           )}
         >
-          <Icon className="size-4 flex-shrink-0 text-neutral-500" />
-          <span className="text-sm truncate">{item.label}</span>
-        </div>
+          <Icon className="size-4 flex-shrink-0 text-neutral-500 group-hover:text-primary transition-colors" />
+          <span className="text-sm truncate text-left">{item.label}</span>
+        </button>
       );
     }
 
@@ -205,20 +207,30 @@ export const Navigation = () => {
       const ChevronIcon = tasksExpanded ? ChevronDown : ChevronRight;
 
       return (
-        <div key={item.href}>
-          <div
+        <div key={item.href} className="relative">
+          <button
             onClick={() => setTasksExpanded(!tasksExpanded)}
             className={cn(
-              "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer",
-              hasActiveChild && "bg-white/70 text-primary"
+              "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation",
+              "hover:bg-white/70 group",
+              hasActiveChild ? "bg-white/70 text-primary shadow-sm" : "text-neutral-500",
+              "focus:outline-none focus:ring-2 focus:ring-primary/20"
             )}
           >
-            <Icon className={cn("size-5 flex-shrink-0", hasActiveChild ? "text-primary" : "text-neutral-500")} />
-            <span className="text-sm sm:text-base truncate flex-1">{item.label}</span>
-            <ChevronIcon className="size-4 flex-shrink-0 text-neutral-400" />
-          </div>
+            <Icon className={cn(
+              "size-5 flex-shrink-0 transition-colors",
+              hasActiveChild ? "text-primary" : "text-neutral-500 group-hover:text-primary"
+            )} />
+            <span className="text-sm sm:text-base truncate flex-1 text-left">
+              {item.label}
+            </span>
+            <ChevronIcon className={cn(
+              "size-4 flex-shrink-0 transition-transform duration-200",
+              hasActiveChild ? "text-primary" : "text-neutral-400 group-hover:text-neutral-600"
+            )} />
+          </button>
           {tasksExpanded && (
-            <div className="mt-1 space-y-1">
+            <div className="mt-1 ml-3 space-y-0.5 border-l-2 border-neutral-200 pl-2">
               {item.children.map(child => renderMenuItem(child, true))}
             </div>
           )}
@@ -228,17 +240,29 @@ export const Navigation = () => {
 
     // Regular menu items
     return (
-      <Link key={item.href} href={fullHref}>
-        <div
+      <Link key={item.href} href={fullHref} className="block">
+        <button
           className={cn(
-            "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation",
-            isActive && "bg-white shadow-sm hover:opacity-100 text-primary",
-            isChild && "pl-10"
+            "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
+            isActive
+              ? "bg-white shadow-sm text-primary"
+              : "text-neutral-500 hover:bg-white/70 hover:text-primary",
+            "focus:outline-none focus:ring-2 focus:ring-primary/20",
+            isChild && "pl-3"
           )}
         >
-          <Icon className={cn(isChild ? "size-4" : "size-5", "flex-shrink-0", isActive ? "text-primary" : "text-neutral-500")} />
-          <span className={cn(isChild ? "text-sm" : "text-sm sm:text-base", "truncate")}>{item.label}</span>
-        </div>
+          <Icon className={cn(
+            isChild ? "size-4" : "size-5",
+            "flex-shrink-0 transition-colors",
+            isActive ? "text-primary" : "text-neutral-500 group-hover:text-primary"
+          )} />
+          <span className={cn(
+            isChild ? "text-sm" : "text-sm sm:text-base",
+            "truncate text-left"
+          )}>
+            {item.label}
+          </span>
+        </button>
       </Link>
     );
   };
@@ -250,34 +274,40 @@ export const Navigation = () => {
 
         {/* Super Admin Section */}
         {isSuperAdmin && (
-          <>
-            <div className="my-3 border-t border-neutral-200 pt-3">
-              <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">
-                Super Admin
-              </div>
-              <div
-                onClick={() => setUserManagementModalOpen(true)}
-                className={cn(
-                  "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50"
-                )}
-              >
-                <Shield className="size-5 flex-shrink-0 text-neutral-500" />
-                <span className="text-sm sm:text-base truncate">User Management</span>
-              </div>
-              <div
-                onClick={handleTaskAudit}
-                className={cn(
-                  "flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium hover:text-primary transition text-neutral-500 min-h-[44px] touch-manipulation cursor-pointer hover:bg-white/50",
-                  isRunningAudit && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                <RefreshCw className={cn("size-5 flex-shrink-0 text-neutral-500", isRunningAudit && "animate-spin")} />
-                <span className="text-sm sm:text-base truncate">
-                  {isRunningAudit ? "Running Audit..." : "Run Task Audit"}
-                </span>
-              </div>
+          <div className="my-3 border-t border-neutral-200 pt-3 space-y-0.5">
+            <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">
+              Super Admin
             </div>
-          </>
+            <button
+              onClick={() => setUserManagementModalOpen(true)}
+              className={cn(
+                "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
+                "text-neutral-500 hover:bg-white/70 hover:text-primary",
+                "focus:outline-none focus:ring-2 focus:ring-primary/20"
+              )}
+            >
+              <Shield className="size-5 flex-shrink-0 text-neutral-500 group-hover:text-primary transition-colors" />
+              <span className="text-sm sm:text-base truncate text-left">User Management</span>
+            </button>
+            <button
+              onClick={handleTaskAudit}
+              disabled={isRunningAudit}
+              className={cn(
+                "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
+                "text-neutral-500 hover:bg-white/70 hover:text-primary",
+                "focus:outline-none focus:ring-2 focus:ring-primary/20",
+                isRunningAudit && "opacity-50 cursor-not-allowed hover:bg-transparent"
+              )}
+            >
+              <RefreshCw className={cn(
+                "size-5 flex-shrink-0 transition-colors",
+                isRunningAudit ? "animate-spin text-neutral-500" : "text-neutral-500 group-hover:text-primary"
+              )} />
+              <span className="text-sm sm:text-base truncate text-left">
+                {isRunningAudit ? "Running Audit..." : "Run Task Audit"}
+              </span>
+            </button>
+          </div>
         )}
       </nav>
 
