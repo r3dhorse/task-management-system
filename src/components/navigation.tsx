@@ -275,6 +275,86 @@ export const Navigation = () => {
     );
   };
 
+  const renderServicesButton = () => (
+    <>
+      <button
+        onClick={() => setServicesExpanded(!servicesExpanded)}
+        className={cn(
+          "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation",
+          "hover:bg-white/70 group",
+          servicesExpanded || isInServiceContext ? "bg-white/70 text-primary shadow-sm" : "text-neutral-500",
+          "focus:outline-none focus:ring-2 focus:ring-primary/20"
+        )}
+      >
+        <Briefcase className={cn(
+          "size-5 flex-shrink-0 transition-colors",
+          servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-500 group-hover:text-primary"
+        )} />
+        <span className="text-sm sm:text-base truncate flex-1 text-left">
+          Services
+        </span>
+        <div className="flex items-center gap-1">
+          {canManageServices && (
+            <RiAddCircleFill
+              onClick={(e) => {
+                e.stopPropagation();
+                openCreateService();
+              }}
+              className="size-5 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200"
+            />
+          )}
+          {servicesExpanded ? (
+            <ChevronDown className={cn(
+              "size-4 flex-shrink-0 transition-transform duration-200",
+              servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-400 group-hover:text-neutral-600"
+            )} />
+          ) : (
+            <ChevronRight className={cn(
+              "size-4 flex-shrink-0 transition-transform duration-200",
+              servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-400 group-hover:text-neutral-600"
+            )} />
+          )}
+        </div>
+      </button>
+
+      {servicesExpanded && (
+        <div className="mt-1 ml-3 space-y-0.5 border-l-2 border-neutral-200 pl-2">
+          {services?.documents?.map((service) => {
+            const serviceHref = `/workspaces/${workspaceId}/services/${service.id}`;
+            const isActiveService = pathname.includes(`/services/${service.id}`);
+
+            return (
+              <Link key={service.id} href={serviceHref} className="block">
+                <button
+                  className={cn(
+                    "w-full flex items-center gap-2 p-2 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
+                    isActiveService
+                      ? "bg-white shadow-sm text-primary"
+                      : "text-neutral-500 hover:bg-white/70 hover:text-primary",
+                    "focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  )}
+                >
+                  <div className={cn(
+                    "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0",
+                    isActiveService ? "bg-primary text-white" : "bg-blue-600 text-white group-hover:bg-primary"
+                  )}>
+                    {service.name.charAt(0)}
+                  </div>
+                  <span className="text-sm truncate text-left">{service.name}</span>
+                </button>
+              </Link>
+            );
+          })}
+          {(!services?.documents || services.documents.length === 0) && (
+            <div className="p-2 text-sm text-neutral-400 text-center">
+              No services
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <>
       <nav className="flex flex-col space-y-1">
@@ -283,84 +363,13 @@ export const Navigation = () => {
           <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">
             Menu
           </div>
-          {routes.map((item) => renderMenuItem(item))}
-
-          {/* Services Section - Right after Tasks */}
-          <button
-            onClick={() => setServicesExpanded(!servicesExpanded)}
-            className={cn(
-              "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation mt-0.5",
-              "hover:bg-white/70 group",
-              servicesExpanded || isInServiceContext ? "bg-white/70 text-primary shadow-sm" : "text-neutral-500",
-              "focus:outline-none focus:ring-2 focus:ring-primary/20"
-            )}
-          >
-            <Briefcase className={cn(
-              "size-5 flex-shrink-0 transition-colors",
-              servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-500 group-hover:text-primary"
-            )} />
-            <span className="text-sm sm:text-base truncate flex-1 text-left">
-              Services
-            </span>
-            <div className="flex items-center gap-1">
-              {canManageServices && (
-                <RiAddCircleFill
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openCreateService();
-                  }}
-                  className="size-5 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200"
-                />
-              )}
-              {servicesExpanded ? (
-                <ChevronDown className={cn(
-                  "size-4 flex-shrink-0 transition-transform duration-200",
-                  servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-400 group-hover:text-neutral-600"
-                )} />
-              ) : (
-                <ChevronRight className={cn(
-                  "size-4 flex-shrink-0 transition-transform duration-200",
-                  servicesExpanded || isInServiceContext ? "text-primary" : "text-neutral-400 group-hover:text-neutral-600"
-                )} />
-              )}
+          {routes.map((item, index) => (
+            <div key={item.href || index}>
+              {renderMenuItem(item)}
+              {/* Insert Services button after Tasks (index 1) */}
+              {index === 1 && renderServicesButton()}
             </div>
-          </button>
-
-          {servicesExpanded && (
-            <div className="mt-1 ml-3 space-y-0.5 border-l-2 border-neutral-200 pl-2">
-              {services?.documents?.map((service) => {
-                const serviceHref = `/workspaces/${workspaceId}/services/${service.id}`;
-                const isActiveService = pathname.includes(`/services/${service.id}`);
-
-                return (
-                  <Link key={service.id} href={serviceHref} className="block">
-                    <button
-                      className={cn(
-                        "w-full flex items-center gap-2 p-2 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
-                        isActiveService
-                          ? "bg-white shadow-sm text-primary"
-                          : "text-neutral-500 hover:bg-white/70 hover:text-primary",
-                        "focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold uppercase flex-shrink-0",
-                        isActiveService ? "bg-primary text-white" : "bg-blue-600 text-white group-hover:bg-primary"
-                      )}>
-                        {service.name.charAt(0)}
-                      </div>
-                      <span className="text-sm truncate text-left">{service.name}</span>
-                    </button>
-                  </Link>
-                );
-              })}
-              {(!services?.documents || services.documents.length === 0) && (
-                <div className="p-2 text-sm text-neutral-400 text-center">
-                  No services
-                </div>
-              )}
-            </div>
-          )}
+          ))}
         </div>
 
         {/* Super Admin Section */}
