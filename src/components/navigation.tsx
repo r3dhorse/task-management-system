@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon, ChevronDown, ChevronRight, Briefcase } from "@/lib/lucide-icons";
+import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon, ChevronDown, ChevronRight, Briefcase, Building2 } from "@/lib/lucide-icons";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -90,10 +90,10 @@ const routes: Route[] = [
         restrictedForVisitors: true,
       },
       {
-        label: "Workspace Settings",
+        label: "Workspace",
         href: "/settings",
-        icon: SettingsIcon,
-        activeIcon: SettingsIcon,
+        icon: Building2,
+        activeIcon: Building2,
         serviceAware: true,
         restrictedForVisitors: true,
       },
