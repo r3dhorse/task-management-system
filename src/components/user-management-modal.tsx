@@ -408,6 +408,7 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl h-[80vh] p-0">
+          <DialogTitle className="sr-only">User Management Error</DialogTitle>
           <div className="p-6">
             <p className="text-red-500">Error loading users: {error.message}</p>
           </div>

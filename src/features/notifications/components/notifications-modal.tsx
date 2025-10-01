@@ -200,6 +200,7 @@ export function NotificationsModal({ open, onOpenChange }: NotificationsModalPro
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl h-[80vh] p-0">
+          <DialogTitle className="sr-only">Notifications Error</DialogTitle>
           <div className="p-6">
             <p className="text-red-500">Error loading notifications: {error.message}</p>
             <Button variant="outline" onClick={() => window.location.reload()} className="mt-4">
