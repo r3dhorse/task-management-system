@@ -65,7 +65,7 @@ const routes: Route[] = [
         icon: FileTextIcon,
         activeIcon: FileTextIcon,
         serviceAware: false,
-        restrictedForVisitors: true,
+        restrictedForVisitors: false,
         isModal: true,
       },
     ],
