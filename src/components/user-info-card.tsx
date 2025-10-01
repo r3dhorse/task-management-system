@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { User, Key, Building2, LogOut, SlidersHorizontal } from "@/lib/lucide-icons";
+import { Key, Building2, LogOut } from "@/lib/lucide-icons";
 import { Badge } from "@/components/ui/badge";
 import { ChangePasswordModal } from "@/features/auth/components/change-password-modal";
 import { DefaultWorkspaceModal } from "@/features/auth/components/default-workspace-modal";
@@ -69,63 +69,53 @@ export const UserInfoCard = () => {
 
   return (
     <div className="w-full">
-      <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-neutral-200 shadow-sm">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            {/* Circular Profile Photo */}
-            <div className="relative">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md ring-2 ring-white">
-                <User className="w-7 h-7 text-white" />
-              </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-            </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-neutral-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                {/* Circular Profile Photo */}
+                <div className="relative">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md ring-2 ring-white">
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
 
-            {/* User Info */}
-            <div className="space-y-1.5 flex-1 min-w-0">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-neutral-900 text-base block truncate">{user.name}</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 p-0 hover:bg-white/50 rounded-md"
-                    >
-                      <SlidersHorizontal className="h-4 w-4 text-neutral-600" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem
-                      onClick={() => setIsChangePasswordOpen(true)}
-                      className="cursor-pointer"
-                    >
-                      <Key className="w-4 h-4 mr-2" />
-                      Change Password
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setIsDefaultWorkspaceOpen(true)}
-                      className="cursor-pointer"
-                    >
-                      <Building2 className="w-4 h-4 mr-2" />
-                      Default Workspace
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => logout()}
-                      className="cursor-pointer text-amber-700 focus:text-amber-700"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Log out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {/* User Info */}
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <span className="font-semibold text-neutral-900 text-sm block truncate">{user.name}</span>
+                  <Badge className={`${roleBadge.className} text-xs px-2.5 py-0.5 font-medium shadow-sm`}>
+                    {roleBadge.label}
+                  </Badge>
+                </div>
               </div>
-              <Badge className={`${roleBadge.className} text-xs px-2.5 py-0.5 font-medium shadow-sm`}>
-                {roleBadge.label}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" side="right" className="w-56">
+          <DropdownMenuItem
+            onClick={() => setIsChangePasswordOpen(true)}
+            className="cursor-pointer"
+          >
+            <Key className="w-4 h-4 mr-2" />
+            Change Password
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setIsDefaultWorkspaceOpen(true)}
+            className="cursor-pointer"
+          >
+            <Building2 className="w-4 h-4 mr-2" />
+            Default Workspace
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => logout()}
+            className="cursor-pointer text-amber-700 focus:text-amber-700"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Log out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <ChangePasswordModal
         isOpen={isChangePasswordOpen}
