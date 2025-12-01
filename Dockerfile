@@ -26,7 +26,11 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Build the application
+# Build the application with required env vars for static generation
+# These are dummy values used only during build time
+ENV DOCKER_BUILD=true
+ENV NEXTAUTH_URL=http://localhost:3000
+ENV NEXTAUTH_SECRET=build-time-secret-not-used-in-runtime
 RUN npm run build
 
 # Stage 3: Runner

@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Important: Don't use standalone output for Amplify SSR
+  // Enable standalone output only for Docker builds
   // Amplify needs the default output mode for SSR to work
+  ...(process.env.DOCKER_BUILD === 'true' ? { output: 'standalone' } : {}),
 
   // Remove env config - it doesn't work for server-side in Amplify
   // Environment variables should be set in Amplify Console and are
