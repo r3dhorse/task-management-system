@@ -2,6 +2,7 @@ import * as cron from 'node-cron';
 import { prisma } from '@/lib/prisma';
 import { TaskStatus } from '@/features/tasks/types';
 import { TaskHistoryAction } from '@/features/tasks/types/history';
+import { createRoutinaryTasks, getRoutinaryTasksStatus } from './routinary-tasks';
 
 // Store last execution info for monitoring
 let lastExecutionLog: {
@@ -107,18 +108,20 @@ export const updateOverdueTasks = async () => {
 };
 
 let cronJob: cron.ScheduledTask | null = null;
+let routinaryCronJob: cron.ScheduledTask | null = null;
 
 export const initializeCronJobs = () => {
-  if (cronJob) {
+  if (cronJob && routinaryCronJob) {
     console.log('[CRON] Cron jobs already initialized');
     return;
   }
 
-  const cronExpression = '0 0 * * *';
   const timezone = 'Asia/Manila';
 
+  // Overdue tasks job - runs at midnight
+  const overdueCronExpression = '0 0 * * *';
   cronJob = cron.schedule(
-    cronExpression,
+    overdueCronExpression,
     async () => {
       const currentTime = new Date().toLocaleString('en-US', {
         timeZone: timezone,
@@ -164,8 +167,41 @@ export const initializeCronJobs = () => {
 
   console.log(`[CRON] Initialized overdue tasks cron job. Will run at midnight ${timezone} time daily.`);
 
+  // Routinary tasks job - runs at 1 AM to create scheduled recurring tasks
+  const routinaryCronExpression = '0 1 * * *';
+  routinaryCronJob = cron.schedule(
+    routinaryCronExpression,
+    async () => {
+      const currentTime = new Date().toLocaleString('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      console.log(`[CRON] ⏰ Routinary tasks creation started at ${currentTime} (${timezone})`);
+
+      try {
+        const result = await createRoutinaryTasks();
+        console.log(`[CRON] ✅ Routinary tasks creation completed. Created ${result.created} tasks at ${currentTime}`);
+      } catch (error) {
+        console.error(`[CRON] ❌ Routinary tasks creation failed at ${currentTime}:`, error);
+      }
+    },
+    {
+      timezone: timezone
+    }
+  );
+
+  routinaryCronJob.start();
+
+  console.log(`[CRON] Initialized routinary tasks cron job. Will run at 1 AM ${timezone} time daily.`);
+
   if (process.env.NODE_ENV === 'development') {
-    console.log('[CRON] Development mode: You can manually trigger the job using the /api/cron/overdue-tasks endpoint');
+    console.log('[CRON] Development mode: You can manually trigger jobs using the /api/cron/* endpoints');
   }
 };
 
@@ -173,29 +209,47 @@ export const stopCronJobs = () => {
   if (cronJob) {
     cronJob.stop();
     cronJob = null;
-    console.log('[CRON] Cron jobs stopped');
   }
+  if (routinaryCronJob) {
+    routinaryCronJob.stop();
+    routinaryCronJob = null;
+  }
+  console.log('[CRON] All cron jobs stopped');
 };
 
 export const getCronJobStatus = () => {
   return {
-    isRunning: cronJob !== null,
-    cronExpression: '0 0 * * *',
-    timezone: 'Asia/Manila',
-    nextExecution: cronJob ? getNextExecution() : null,
-    lastExecution: lastExecutionLog
+    overdueTasks: {
+      isRunning: cronJob !== null,
+      cronExpression: '0 0 * * *',
+      timezone: 'Asia/Manila',
+      nextExecution: cronJob ? getNextExecution(0) : null,
+      lastExecution: lastExecutionLog
+    },
+    routinaryTasks: {
+      isRunning: routinaryCronJob !== null,
+      cronExpression: '0 1 * * *',
+      timezone: 'Asia/Manila',
+      nextExecution: routinaryCronJob ? getNextExecution(1) : null,
+      lastExecution: getRoutinaryTasksStatus().lastExecution
+    }
   };
 };
 
-const getNextExecution = () => {
+const getNextExecution = (hour: number = 0) => {
   try {
-    // Calculate next midnight in Manila timezone
+    // Calculate next execution time in Manila timezone
     const now = new Date();
     const manila = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
-    const nextMidnight = new Date(manila);
-    nextMidnight.setHours(24, 0, 0, 0); // Next midnight
+    const nextExecution = new Date(manila);
 
-    return nextMidnight.toLocaleString('en-US', {
+    // If the hour has already passed today, schedule for tomorrow
+    if (manila.getHours() >= hour) {
+      nextExecution.setDate(nextExecution.getDate() + 1);
+    }
+    nextExecution.setHours(hour, 0, 0, 0);
+
+    return nextExecution.toLocaleString('en-US', {
       timeZone: 'Asia/Manila',
       year: 'numeric',
       month: '2-digit',

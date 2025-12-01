@@ -144,6 +144,16 @@ model Member {
   @@map("members")
 }
 
+// Frequency options for routine task generation
+enum RoutinaryFrequency {
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
 model Service {
   id          String   @id @default(cuid())
   name        String
@@ -151,6 +161,14 @@ model Service {
   isPublic    Boolean  @default(false)
   slaDays     Int?     // Service Level Agreement in days
   includeWeekends Boolean @default(false) // Include Saturday and Sunday in SLA calculation
+
+  // Routinary (Routine Task) Configuration
+  isRoutinary           Boolean              @default(false)
+  routinaryFrequency    RoutinaryFrequency?
+  routinaryStartDate    DateTime?
+  routinaryNextRunDate  DateTime?            // Track next scheduled execution
+  routinaryLastRunDate  DateTime?            // Track last execution
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -160,6 +178,7 @@ model Service {
 
   @@index([workspaceId])
   @@index([isPublic])
+  @@index([isRoutinary, routinaryNextRunDate]) // Index for cron job queries
   @@map("services")
 }
 

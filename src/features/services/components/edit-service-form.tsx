@@ -7,6 +7,14 @@ import { DottedSeparator } from "@/components/dotted-separator";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { DatePicker } from "@/components/date-picker";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Service } from "../types";
@@ -14,6 +22,7 @@ import { ArrowLeftIcon } from "@/lib/lucide-icons";
 import { useUpdateService } from "../api/use-update-service";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useDeleteService } from "../api/use-delete-service";
+import { RoutinaryFrequency, routinaryFrequencyValues } from "../schemas";
 
 
 
@@ -22,6 +31,15 @@ interface EditServiceFormProps {
   onCancel?: () => void;
   initialValues: Service;
 }
+
+const frequencyLabels: Record<RoutinaryFrequency, string> = {
+  DAILY: "Daily",
+  WEEKLY: "Weekly",
+  BIWEEKLY: "Bi-Weekly",
+  MONTHLY: "Monthly",
+  QUARTERLY: "Quarterly",
+  YEARLY: "Yearly",
+};
 
 export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProps) => {
   const router = useRouter();
@@ -41,6 +59,9 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
     isPublic: boolean;
     slaDays?: number;
     includeWeekends: boolean;
+    isRoutinary: boolean;
+    routinaryFrequency?: RoutinaryFrequency;
+    routinaryStartDate?: Date;
   };
 
   const form = useForm<FormData>({
@@ -49,8 +70,13 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
       isPublic: initialValues.isPublic,
       slaDays: initialValues.slaDays || undefined,
       includeWeekends: initialValues.includeWeekends,
+      isRoutinary: initialValues.isRoutinary || false,
+      routinaryFrequency: initialValues.routinaryFrequency || undefined,
+      routinaryStartDate: initialValues.routinaryStartDate ? new Date(initialValues.routinaryStartDate) : undefined,
     },
   });
+
+  const isRoutinary = form.watch("isRoutinary");
 
   const handleDelete = async () => {
     const ok = await confirmDelete();
@@ -71,15 +97,31 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
 
 
   const onSubmit = (values: FormData) => {
-    const finalValues = {
+    // Build final values - only include routinary fields if isRoutinary is true
+    const finalValues: Record<string, string> = {
       name: values.name,
       isPublic: values.isPublic ? "true" : "false",
-      slaDays: values.slaDays?.toString(),
       includeWeekends: values.includeWeekends ? "true" : "false",
+      isRoutinary: values.isRoutinary ? "true" : "false",
     };
 
+    // Only include slaDays if it has a value
+    if (values.slaDays !== undefined) {
+      finalValues.slaDays = values.slaDays.toString();
+    }
+
+    // Only include routinary fields if isRoutinary is true and they have values
+    if (values.isRoutinary) {
+      if (values.routinaryFrequency) {
+        finalValues.routinaryFrequency = values.routinaryFrequency;
+      }
+      if (values.routinaryStartDate) {
+        finalValues.routinaryStartDate = values.routinaryStartDate.toISOString();
+      }
+    }
+
     mutate({
-      form: finalValues,
+      form: finalValues as typeof finalValues & { name: string },
       param: { serviceId: initialValues.id }
     }, {
       onSuccess: (data) => {
@@ -90,6 +132,9 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
             isPublic: data.data.isPublic,
             slaDays: data.data.slaDays || undefined,
             includeWeekends: data.data.includeWeekends,
+            isRoutinary: data.data.isRoutinary || false,
+            routinaryFrequency: data.data.routinaryFrequency || undefined,
+            routinaryStartDate: data.data.routinaryStartDate ? new Date(data.data.routinaryStartDate) : undefined,
           });
         }
       }
@@ -205,6 +250,92 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
                     </FormItem>
                   )}
                 />
+
+                {/* Routinary Toggle */}
+                <FormField
+                  control={form.control}
+                  name="isRoutinary"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-blue-50/50 dark:bg-blue-950/20">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-sm font-medium text-blue-700 dark:text-blue-300">Routinary</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Automatically create recurring tasks for this service
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {/* Conditional Routinary Settings */}
+                {isRoutinary && (
+                  <div className="space-y-4 rounded-lg border border-blue-200 dark:border-blue-800 p-4 bg-blue-50/30 dark:bg-blue-950/10">
+                    <FormField
+                      control={form.control}
+                      name="routinaryFrequency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-muted-foreground">Frequency</FormLabel>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {routinaryFrequencyValues.map((freq) => (
+                                <SelectItem key={freq} value={freq}>
+                                  {frequencyLabels[freq]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="text-sm text-muted-foreground">
+                            How often should tasks be automatically created
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="routinaryStartDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-muted-foreground">Start Date</FormLabel>
+                          <FormControl>
+                            <DatePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select start date"
+                            />
+                          </FormControl>
+                          <div className="text-sm text-muted-foreground">
+                            First task will be created on this date, then repeated based on frequency
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+
+                    {initialValues.routinaryNextRunDate && (
+                      <div className="text-sm text-muted-foreground bg-blue-100/50 dark:bg-blue-900/30 p-3 rounded-md">
+                        <span className="font-medium">Next scheduled run:</span>{" "}
+                        {new Date(initialValues.routinaryNextRunDate).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <DottedSeparator />

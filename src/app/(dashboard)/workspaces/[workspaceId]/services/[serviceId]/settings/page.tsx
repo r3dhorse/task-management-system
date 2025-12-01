@@ -37,6 +37,12 @@ const ServiceIdSettingsPage = async ({
       isPublic: serviceData.isPublic,
       slaDays: serviceData.slaDays,
       includeWeekends: serviceData.includeWeekends,
+      // Routinary fields
+      isRoutinary: serviceData.isRoutinary,
+      routinaryFrequency: serviceData.routinaryFrequency,
+      routinaryStartDate: serviceData.routinaryStartDate,
+      routinaryNextRunDate: serviceData.routinaryNextRunDate,
+      routinaryLastRunDate: serviceData.routinaryLastRunDate,
       createdAt: serviceData.createdAt,
       updatedAt: serviceData.updatedAt,
     };

@@ -23,6 +23,12 @@ export const getService = async ({ serviceId }: GetServiceProps) => {
       isPublic: true,
       slaDays: true,
       includeWeekends: true,
+      // Routinary fields
+      isRoutinary: true,
+      routinaryFrequency: true,
+      routinaryStartDate: true,
+      routinaryNextRunDate: true,
+      routinaryLastRunDate: true,
       createdAt: true,
       updatedAt: true,
       workspace: true,

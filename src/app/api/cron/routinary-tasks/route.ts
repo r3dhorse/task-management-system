@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { updateOverdueTasks, getCronJobStatus } from "@/lib/cron-jobs";
+import { createRoutinaryTasks } from "@/lib/routinary-tasks";
+import { getCronJobStatus } from "@/lib/cron-jobs";
 import { prisma } from "@/lib/prisma";
 
 export async function POST() {
@@ -27,19 +28,19 @@ export async function POST() {
       );
     }
 
-    console.log(`[CRON] Manual trigger by user ${session.user.email}`);
+    console.log(`[CRON] Manual routinary tasks trigger by user ${session.user.email}`);
 
-    const result = await updateOverdueTasks();
+    const result = await createRoutinaryTasks();
 
     return NextResponse.json({
       success: true,
-      message: "Overdue tasks update completed",
+      message: "Routinary tasks creation completed",
       result
     });
   } catch (error) {
-    console.error("[CRON] Manual trigger failed:", error);
+    console.error("[CRON] Manual routinary tasks trigger failed:", error);
     return NextResponse.json(
-      { error: "Failed to update overdue tasks" },
+      { error: "Failed to create routinary tasks" },
       { status: 500 }
     );
   }
@@ -71,24 +72,43 @@ export async function GET() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const overdueTasksCount = await prisma?.task.count({
+    // Get count of routinary services due for task creation
+    const routinaryServicesDueCount = await prisma?.service.count({
       where: {
-        AND: [
-          {
-            status: {
-              in: ['TODO', 'IN_PROGRESS', 'IN_REVIEW']
-            }
-          },
-          {
-            dueDate: {
-              lt: today
-            }
-          }
-        ]
+        isRoutinary: true,
+        routinaryFrequency: {
+          not: null
+        },
+        routinaryNextRunDate: {
+          lte: today
+        }
       }
     });
 
-    // Get cron job status from monitoring system
+    // Get all routinary services for overview
+    const routinaryServices = await prisma?.service.findMany({
+      where: {
+        isRoutinary: true
+      },
+      select: {
+        id: true,
+        name: true,
+        routinaryFrequency: true,
+        routinaryStartDate: true,
+        routinaryNextRunDate: true,
+        routinaryLastRunDate: true,
+        workspace: {
+          select: {
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        routinaryNextRunDate: 'asc'
+      }
+    });
+
+    // Get cron job status
     const cronStatus = getCronJobStatus();
 
     const currentTime = new Date().toLocaleString('en-US', {
@@ -104,19 +124,14 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       currentTime: `${currentTime} (Asia/Manila)`,
-      overdueTasksCount,
-      cronJob: {
-        isRunning: cronStatus.overdueTasks.isRunning,
-        schedule: cronStatus.overdueTasks.cronExpression,
-        timezone: cronStatus.overdueTasks.timezone,
-        nextExecution: cronStatus.overdueTasks.nextExecution,
-        lastExecution: cronStatus.overdueTasks.lastExecution
-      }
+      routinaryServicesDueCount,
+      routinaryServices,
+      cronJob: cronStatus.routinaryTasks
     });
   } catch (error) {
-    console.error("[CRON] Status check failed:", error);
+    console.error("[CRON] Routinary tasks status check failed:", error);
     return NextResponse.json(
-      { error: "Failed to get cron job status" },
+      { error: "Failed to get routinary tasks status" },
       { status: 500 }
     );
   }

@@ -15,7 +15,7 @@ const app = new Hono()
       try {
         const prisma = c.get("prisma");
         const user = c.get("user");
-        const { name, workspaceId, isPublic, slaDays, includeWeekends } = c.req.valid("form");
+        const { name, workspaceId, isPublic, slaDays, includeWeekends, isRoutinary, routinaryFrequency, routinaryStartDate } = c.req.valid("form");
 
         // Check if user is admin of the workspace
         const member = await prisma.member.findUnique({
@@ -54,6 +54,11 @@ const app = new Hono()
             isPublic: isPublic || false,
             slaDays,
             includeWeekends: includeWeekends || false,
+            // Routinary fields
+            isRoutinary: isRoutinary || false,
+            routinaryFrequency: isRoutinary ? routinaryFrequency : null,
+            routinaryStartDate: isRoutinary ? routinaryStartDate : null,
+            routinaryNextRunDate: isRoutinary && routinaryStartDate ? routinaryStartDate : null,
           },
         });
 
@@ -121,7 +126,7 @@ const app = new Hono()
       const prisma = c.get("prisma");
       const user = c.get("user");
       const { serviceId } = c.req.param();
-      const { name, isPublic, slaDays, includeWeekends } = c.req.valid("form");
+      const { name, isPublic, slaDays, includeWeekends, isRoutinary, routinaryFrequency, routinaryStartDate } = c.req.valid("form");
 
       const existingService = await prisma.service.findUnique({
         where: { id: serviceId },
@@ -162,6 +167,13 @@ const app = new Hono()
         return c.json({ error: "Service name already exists in this workspace" }, 400);
       }
 
+      // Determine if routinaryNextRunDate needs to be recalculated
+      const shouldRecalculateNextRun =
+        isRoutinary &&
+        routinaryStartDate &&
+        (routinaryStartDate.getTime() !== existingService.routinaryStartDate?.getTime() ||
+         !existingService.isRoutinary);
+
       const service = await prisma.service.update({
         where: { id: serviceId },
         data: {
@@ -169,6 +181,13 @@ const app = new Hono()
           isPublic: isPublic || false,
           slaDays,
           includeWeekends: includeWeekends || false,
+          // Routinary fields
+          isRoutinary: isRoutinary || false,
+          routinaryFrequency: isRoutinary ? routinaryFrequency : null,
+          routinaryStartDate: isRoutinary ? routinaryStartDate : null,
+          routinaryNextRunDate: shouldRecalculateNextRun
+            ? routinaryStartDate
+            : (isRoutinary ? existingService.routinaryNextRunDate : null),
         },
       });
 

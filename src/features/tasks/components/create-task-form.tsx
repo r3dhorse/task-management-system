@@ -35,6 +35,7 @@ type ServiceDocument = {
   isPublic: boolean;
   slaDays?: number | null;
   includeWeekends: boolean;
+  isRoutinary: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -139,16 +140,18 @@ export const CreateTaskForm = ({
   
   // Removed - we'll use workspace members for followers instead
 
-  // Create options from the loaded data
-  const serviceOptions = services?.documents?.map((service: ServiceDocument) => ({
-    id: service.id,
-    name: service.name,
-    slaDays: service.slaDays,
-    includeWeekends: service.includeWeekends,
-  })) || [];
+  // Create options from the loaded data (exclude routinary services - they auto-generate tasks)
+  const serviceOptions = (services?.documents as ServiceDocument[] | undefined)
+    ?.filter((service) => !service.isRoutinary)
+    ?.map((service) => ({
+      id: service.id,
+      name: service.name,
+      slaDays: service.slaDays,
+      includeWeekends: service.includeWeekends,
+    })) || [];
 
   // Get selected service for SLA calculations
-  const selectedService = services?.documents?.find((service: ServiceDocument) => service.id === selectedServiceId);
+  const selectedService = (services?.documents as ServiceDocument[] | undefined)?.find((service) => service.id === selectedServiceId);
 
   type MemberOption = {
     id: string;
