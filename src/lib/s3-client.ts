@@ -6,7 +6,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 const S3_REGION = process.env.AWS_REGION || process.env.BUCKET_REGION || 'ap-southeast-1';
 const S3_ACCESS_KEY = process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID || '';
 const S3_SECRET_KEY = process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY || '';
-const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || process.env.BUCKET_NAME || 's3-taskmanagement-bucket';
+const BUCKET_NAME = process.env.S3_BUCKET_NAME || process.env.AWS_S3_BUCKET_NAME || process.env.BUCKET_NAME || 's3-taskmanagement-bucket';
 
 console.log('🔧 S3 Client Configuration:', {
   region: S3_REGION,

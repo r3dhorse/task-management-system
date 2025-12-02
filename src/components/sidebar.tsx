@@ -1,17 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { DottedSeparator } from "./dotted-separator";
 import { Navigation } from "./navigation";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 import { UserInfoCard } from "./user-info-card";
 import { useCreateTaskModal } from "@/features/tasks/hooks/use-create-task-modal";
 import { Button } from "./ui/button";
-import { Plus } from "@/lib/lucide-icons";
+import { Plus, Play } from "@/lib/lucide-icons";
 import { NotificationDropdown } from "@/features/notifications/components/notification-dropdown";
 import { useCurrent } from "@/features/auth/api/use-current";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Member, MemberRole } from "@/features/members/types";
+import { toast } from "sonner";
 
 
 
@@ -19,6 +21,7 @@ import { Member, MemberRole } from "@/features/members/types";
 export const Sidebar = () => {
   const workspaceId = useWorkspaceId();
   const { open } = useCreateTaskModal();
+  const [isRunningCron, setIsRunningCron] = useState(false);
 
   // Get current user and member information to check visitor role
   const { data: currentUser } = useCurrent();
@@ -30,6 +33,26 @@ export const Sidebar = () => {
   ) as Member;
 
   const isVisitor = currentMember?.role === MemberRole.VISITOR;
+  const isSuperAdmin = currentUser?.isSuperAdmin;
+
+  // Handler for running routinary tasks cron job
+  const handleRunRoutinaryCron = async () => {
+    setIsRunningCron(true);
+    try {
+      const response = await fetch('/api/cron/routinary-tasks', { method: 'POST' });
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(`Routinary tasks created: ${data.result?.created || 0} tasks`);
+      } else {
+        toast.error(data.error || 'Failed to run routinary tasks');
+      }
+    } catch (error) {
+      toast.error('Failed to run routinary tasks');
+    } finally {
+      setIsRunningCron(false);
+    }
+  };
 
   return (
     <aside
@@ -55,6 +78,22 @@ export const Sidebar = () => {
           <WorkspaceSwitcher />
           <DottedSeparator className="my-3 sm:my-4" />
           <Navigation />
+
+          {/* Temporary: Routinary Tasks Cron Trigger (Super Admin Only) */}
+          {isSuperAdmin && (
+            <>
+              <DottedSeparator className="my-3 sm:my-4" />
+              <Button
+                onClick={handleRunRoutinaryCron}
+                disabled={isRunningCron}
+                variant="outline"
+                className="w-full bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 hover:text-orange-800 justify-start"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {isRunningCron ? "Running..." : "Run Routinary Cron"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </aside>

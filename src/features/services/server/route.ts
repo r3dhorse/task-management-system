@@ -211,40 +211,61 @@ const app = new Hono()
         return c.json({ error: "Service not found" }, 404);
       }
 
-      // Check if user is admin of the workspace
-      const member = await prisma.member.findUnique({
-        where: {
-          userId_workspaceId: {
-            userId: user.id,
-            workspaceId: existingService.workspaceId,
-          },
-        },
-      });
-
-      if (!member) {
-        return c.json({ error: "Unauthorized" }, 401);
+      // Only Super Admins can delete services (cascade deletes all tasks)
+      if (!user.isSuperAdmin) {
+        return c.json({ error: "Only Super Admins can delete services" }, 403);
       }
 
-      if (member.role !== MemberRole.ADMIN) {
-        return c.json({ error: "Only workspace administrators can delete services" }, 403);
-      }
-
-      // Check if there are tasks associated with this service
+      // Get task count for logging
       const taskCount = await prisma.task.count({
         where: { serviceId },
       });
 
-      if (taskCount > 0) {
-        return c.json({ 
-          error: `Cannot delete service with ${taskCount} associated tasks. Please reassign or delete the tasks first.` 
-        }, 400);
-      }
+      // Cascade delete: Delete all related records in transaction
+      await prisma.$transaction(async (tx) => {
+        // Get all task IDs for this service
+        const tasks = await tx.task.findMany({
+          where: { serviceId },
+          select: { id: true },
+        });
+        const taskIds = tasks.map(t => t.id);
 
-      await prisma.service.delete({
-        where: { id: serviceId },
+        if (taskIds.length > 0) {
+          // Delete task-related records first
+          await tx.taskHistory.deleteMany({
+            where: { taskId: { in: taskIds } },
+          });
+          await tx.taskAttachment.deleteMany({
+            where: { taskId: { in: taskIds } },
+          });
+          await tx.notification.deleteMany({
+            where: { taskId: { in: taskIds } },
+          });
+          await tx.taskMessage.deleteMany({
+            where: { taskId: { in: taskIds } },
+          });
+          await tx.taskReview.deleteMany({
+            where: { taskId: { in: taskIds } },
+          });
+          // Delete sub-tasks first (tasks with parentTaskId)
+          await tx.task.deleteMany({
+            where: { parentTaskId: { in: taskIds } },
+          });
+          // Delete main tasks
+          await tx.task.deleteMany({
+            where: { serviceId },
+          });
+        }
+
+        // Finally delete the service
+        await tx.service.delete({
+          where: { id: serviceId },
+        });
       });
 
-      return c.json({ data: { id: serviceId } });
+      console.log(`Service ${serviceId} deleted with ${taskCount} associated tasks (cascade)`);
+
+      return c.json({ data: { id: serviceId, deletedTasks: taskCount } });
     }
   );
 

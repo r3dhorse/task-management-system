@@ -82,8 +82,9 @@ export const createRoutinaryTasks = async () => {
       throw new Error('No superadmin user found to perform automated task creation');
     }
 
+    // Set to end of today to catch all dates on or before today
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(23, 59, 59, 999);
 
     // Find all services where:
     // 1. isRoutinary is true
