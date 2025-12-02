@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { MenuIcon, X, Plus, Play, Bell } from "@/lib/lucide-icons";
+import { MenuIcon, Plus, Play } from "@/lib/lucide-icons";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -240,7 +240,7 @@ function MobileSidebar({ className }: MobileSidebarProps) {
  * Desktop: Static sidebar (264px width)
  * Mobile: Sheet/drawer triggered by hamburger button
  */
-export function AppSidebar({ className, variant = "default" }: AppSidebarProps) {
+export function AppSidebar({ className, variant: _variant = "default" }: AppSidebarProps) {
   return (
     <>
       {/* Desktop sidebar - hidden on mobile */}

@@ -32,7 +32,7 @@ export const Sidebar = () => {
     (member as Member).userId === currentUser?.id
   ) as Member;
 
-  const isVisitor = currentMember?.role === MemberRole.VISITOR;
+  const _isVisitor = currentMember?.role === MemberRole.VISITOR;
   const isSuperAdmin = currentUser?.isSuperAdmin;
 
   // Handler for running routinary tasks cron job
@@ -47,7 +47,7 @@ export const Sidebar = () => {
       } else {
         toast.error(data.error || 'Failed to run routinary tasks');
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to run routinary tasks');
     } finally {
       setIsRunningCron(false);

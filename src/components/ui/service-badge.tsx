@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
 import { Briefcase } from "@/lib/lucide-icons";
 import { cn } from "@/lib/utils";
 
@@ -202,7 +201,7 @@ export function ServiceCard({
   detailed = false,
   stats,
 }: ServiceCardProps) {
-  const color = getServiceColor(name);
+  const _color = getServiceColor(name);
 
   return (
     <div

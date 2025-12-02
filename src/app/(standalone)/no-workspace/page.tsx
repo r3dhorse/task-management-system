@@ -1,6 +1,6 @@
 import { getCurrent } from "@/features/auth/queries";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { LogoutButton } from "./logout-button";
 import { RefreshButton } from "./refresh-button";

@@ -2,9 +2,8 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Bell, Search, Home, Settings } from "@/lib/lucide-icons";
+import { Search, Home } from "@/lib/lucide-icons";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MobileSidebarTrigger } from "./app-sidebar";
 import { NotificationDropdown } from "@/features/notifications/components/notification-dropdown";
@@ -199,7 +198,7 @@ interface CompactNavbarProps {
 export function CompactNavbar({
   title,
   className,
-  backHref,
+  backHref: _backHref,
   actions,
 }: CompactNavbarProps) {
   return (
