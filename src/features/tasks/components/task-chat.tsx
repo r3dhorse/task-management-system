@@ -687,10 +687,11 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                                   <Button
                                     size="icon"
                                     variant="ghost"
+                                    aria-label="Download file"
                                     className={cn(
                                       "h-8 w-8",
-                                      message.isOwn 
-                                        ? "text-white hover:bg-blue-400" 
+                                      message.isOwn
+                                        ? "text-white hover:bg-blue-400"
                                         : "text-gray-600 hover:bg-gray-200"
                                     )}
                                     onClick={() => handleDownloadFile(message.attachmentId!)}
@@ -763,6 +764,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                 size="icon"
                 variant="ghost"
                 onClick={() => setSelectedFile(null)}
+                aria-label="Remove file"
                 className="h-8 w-8 text-gray-400 hover:text-gray-600"
               >
                 <X className="h-4 w-4" />
@@ -777,6 +779,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
               variant="ghost"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingFile || isCreatingMessage}
+              aria-label="Attach file"
               className="h-10 w-10 text-gray-400 hover:text-gray-600"
             >
               <Paperclip className="h-4 w-4" />
@@ -845,6 +848,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                 <Button
                   size="icon"
                   variant="ghost"
+                  aria-label="Add emoji"
                   className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 text-gray-400 hover:text-gray-600"
                   type="button"
                 >
@@ -857,6 +861,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
               onClick={handleSendMessage}
               disabled={(!newMessage.trim() && !selectedFile) || isCreatingMessage || isUploadingFile}
               size="icon"
+              aria-label="Send message"
               className="h-10 w-10 rounded-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-200"
             >
               {isCreatingMessage || isUploadingFile ? (

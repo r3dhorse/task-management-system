@@ -26,9 +26,9 @@ const NoWorkspacePage = async () => {
             <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
               <Users className="w-8 h-8 text-blue-600" />
             </div>
-            <CardTitle className="text-3xl font-bold text-neutral-900">
+            <h1 className="text-3xl font-bold text-neutral-900">
               Welcome to Task Management
-            </CardTitle>
+            </h1>
             <CardDescription className="text-lg text-neutral-600 mt-2">
               You&apos;re successfully signed in as <span className="font-medium text-neutral-900">{user.name}</span>
               {isAdmin && (
@@ -51,9 +51,9 @@ const NoWorkspacePage = async () => {
                     <Shield className="w-4 h-4 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-blue-900 mb-1">
+                    <h2 className="font-semibold text-blue-900 mb-1">
                       Administrator Access
-                    </h3>
+                    </h2>
                     <p className="text-blue-800 text-sm leading-relaxed">
                       As an administrator, you can create new workspaces. Click the button below to get started with your first workspace.
                     </p>
@@ -67,9 +67,9 @@ const NoWorkspacePage = async () => {
                     <Mail className="w-4 h-4 text-amber-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-amber-900 mb-1">
+                    <h2 className="font-semibold text-amber-900 mb-1">
                       Workspace Access Pending
-                    </h3>
+                    </h2>
                     <p className="text-amber-800 text-sm leading-relaxed">
                       You&apos;re not currently a member of any workspace. To get started, you&apos;ll need to be invited by an administrator.
                     </p>
@@ -80,9 +80,9 @@ const NoWorkspacePage = async () => {
 
             {/* Next Steps */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-neutral-900 text-lg">
+              <h2 className="font-semibold text-neutral-900 text-lg">
                 {isAdmin ? "Get Started" : "What happens next?"}
-              </h3>
+              </h2>
               <div className="space-y-3">
                 {isAdmin ? (
                   <>

@@ -1,13 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/date-picker";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useGetAllMyTasks } from "@/features/tasks/api/use-get-all-my-tasks";
 import { TaskStatus } from "@/features/tasks/types";
-import { TaskListModal } from "@/features/tasks/components/task-list-modal";
+
+// Lazy load heavy modal component
+const TaskListModal = dynamic(
+  () => import("@/features/tasks/components/task-list-modal").then(mod => ({ default: mod.TaskListModal })),
+  { ssr: false }
+);
 
 interface TaskDocument {
   id: string;

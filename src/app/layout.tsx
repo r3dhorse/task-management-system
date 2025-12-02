@@ -7,7 +7,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/query-provider";
 import { NextAuthProvider } from "@/components/providers/session-provider";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  display: 'swap', // Prevents FOIT (Flash of Invisible Text)
+  preload: true,
+});
 
 export const metadata: Metadata = {
   title: "Task Management",
@@ -19,6 +23,13 @@ export const metadata: Metadata = {
     ],
     shortcut: '/favicon.png',
     apple: '/favicon.png',
+  },
+  // Performance optimizations
+  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    siteName: 'Task Management',
   },
 };
 

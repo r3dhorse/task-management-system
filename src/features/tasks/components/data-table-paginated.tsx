@@ -212,7 +212,7 @@ export function DataTablePaginated<TData, TValue>({
                 onPageSizeChange(Number(value));
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-[70px]" aria-label="Rows per page">
                 <SelectValue placeholder={pageSize} />
               </SelectTrigger>
               <SelectContent side="top">

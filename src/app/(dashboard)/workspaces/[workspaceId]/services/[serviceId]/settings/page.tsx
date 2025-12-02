@@ -61,7 +61,7 @@ const ServiceIdSettingsPage = async ({
           <div className="flex items-center gap-3 flex-1">
             <SettingsIcon className="h-6 w-6 text-blue-600" />
             <div>
-              <CardTitle className="text-xl font-bold">Service Settings</CardTitle>
+              <h1 className="text-xl font-bold">Service Settings</h1>
               <p className="text-sm text-muted-foreground mt-1">
                 Manage your service configuration and preferences
               </p>

@@ -33,9 +33,13 @@ export const WorkspaceSwitcher = () => {
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold uppercase text-neutral-700 tracking-wide">Workspaces</p>
         {isAdmin && (
-          <RiAddCircleFill 
-            onClick={open} 
-            className="size-7 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200" 
+          <RiAddCircleFill
+            onClick={open}
+            role="button"
+            tabIndex={0}
+            aria-label="Create new workspace"
+            onKeyDown={(e) => e.key === 'Enter' && open()}
+            className="size-7 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200"
           />
         )}
       </div>
@@ -48,7 +52,7 @@ export const WorkspaceSwitcher = () => {
         <p className="text-sm text-red-500">Failed to load workspaces.</p>
       ) : (
         <Select onValueChange={onSelect} value={workspaceId}>
-          <SelectTrigger className="w-full bg-neutral-200 font-medium p-1">
+          <SelectTrigger className="w-full bg-neutral-200 font-medium p-1" aria-label="Select workspace">
             <SelectValue placeholder="No workspace selected" />
           </SelectTrigger>
           <SelectContent>

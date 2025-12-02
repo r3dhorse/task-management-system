@@ -1,10 +1,28 @@
+import dynamic from "next/dynamic";
 import { Sidebar } from "@/components/sidebar";
 import { Navbar } from "@/components/navbar";
-import { CreateServiceModal } from "@/features/services/components/create-service-modal";
-import { CreateTaskModal } from "@/features/tasks/components/create-task-modal";
-import { EditTaskModal } from "@/features/tasks/components/edit-task-modal";
-import { CreatedTasksModal } from "@/features/tasks/components/created-tasks-modal";
-import { CreateWorkspaceModal } from "@/features/workspaces/components/create-workspace-modal";
+
+// Lazy load modals - they're only needed when opened
+const CreateWorkspaceModal = dynamic(
+  () => import("@/features/workspaces/components/create-workspace-modal").then(mod => ({ default: mod.CreateWorkspaceModal })),
+  { ssr: false }
+);
+const CreateServiceModal = dynamic(
+  () => import("@/features/services/components/create-service-modal").then(mod => ({ default: mod.CreateServiceModal })),
+  { ssr: false }
+);
+const CreateTaskModal = dynamic(
+  () => import("@/features/tasks/components/create-task-modal").then(mod => ({ default: mod.CreateTaskModal })),
+  { ssr: false }
+);
+const EditTaskModal = dynamic(
+  () => import("@/features/tasks/components/edit-task-modal").then(mod => ({ default: mod.EditTaskModal })),
+  { ssr: false }
+);
+const CreatedTasksModal = dynamic(
+  () => import("@/features/tasks/components/created-tasks-modal").then(mod => ({ default: mod.CreatedTasksModal })),
+  { ssr: false }
+);
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

@@ -67,6 +67,8 @@ export const DataFilters = () => {
           onClick={() => setShowFilters(!showFilters)}
           variant="outline"
           size="sm"
+          aria-label={showFilters ? "Hide filters" : "Show filters"}
+          aria-expanded={showFilters}
           className={`h-8 px-3 transition-all duration-200 ${
             showFilters
               ? 'bg-gray-700 hover:bg-gray-800 text-white border-gray-700'
@@ -85,7 +87,7 @@ export const DataFilters = () => {
         value={status || "all"}
         onValueChange={(value) => onStatusChange(value)}
       >
-        <SelectTrigger className="w-full lg:w-auto h-8">
+        <SelectTrigger className="w-full lg:w-auto h-8" aria-label="Filter by status">
           <div className="flex items-center pr-2">
             <ListChecksIcon className="size-4 mr-2" />
             <SelectValue placeholder="All statuses" />
@@ -142,7 +144,7 @@ export const DataFilters = () => {
         value={assigneeId || "all"}
         onValueChange={(value) => onAssigneeChange(value)}
       >
-        <SelectTrigger className="w-full lg:w-auto h-8">
+        <SelectTrigger className="w-full lg:w-auto h-8" aria-label="Filter by assignee">
           <div className="flex items-center pr-2">
             <UserIcon className="size-4 mr-2" />
             <SelectValue placeholder="All assignees" />
@@ -163,7 +165,7 @@ export const DataFilters = () => {
         value={serviceId || "all"}
         onValueChange={(value) => onServiceChange(value)}
       >
-        <SelectTrigger className="w-full lg:w-auto h-8">
+        <SelectTrigger className="w-full lg:w-auto h-8" aria-label="Filter by service">
           <div className="flex items-center pr-2">
             <Package className="size-4 mr-2" />
             <SelectValue placeholder="All services" />
@@ -196,6 +198,7 @@ export const DataFilters = () => {
           onClick={clearFilters}
           variant="outline"
           size="sm"
+          aria-label="Clear all filters"
           className="h-8 px-2 lg:px-3 bg-white hover:bg-gray-50 hover:text-red-600 hover:border-red-200 transition-all duration-200 group"
         >
           <FilterX className="h-4 w-4 mr-0 lg:mr-2 group-hover:rotate-12 transition-transform duration-200" />

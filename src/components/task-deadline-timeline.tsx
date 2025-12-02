@@ -463,7 +463,7 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
 
                     {/* Empty state for days with no tasks */}
                     {day.tasks.length === 0 && (
-                      <div className="text-center py-4 text-gray-300 text-xs">
+                      <div className="text-center py-4 text-gray-500 text-xs">
                         -
                       </div>
                     )}

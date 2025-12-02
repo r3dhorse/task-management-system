@@ -76,9 +76,13 @@ export const ServiceSwitcher = () => {
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold uppercase text-neutral-700 tracking-wide">Services</p>
         {canManageServices && (
-          <RiAddCircleFill 
-            onClick={open} 
-            className="size-7 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200" 
+          <RiAddCircleFill
+            onClick={open}
+            role="button"
+            tabIndex={0}
+            aria-label="Create new service"
+            onKeyDown={(e) => e.key === 'Enter' && open()}
+            className="size-7 text-blue-600 cursor-pointer hover:text-blue-700 hover:scale-110 transition-all duration-200"
           />
         )}
       </div>
@@ -121,6 +125,7 @@ export const ServiceSwitcher = () => {
                           variant="ghost"
                           size="sm"
                           className="h-6 w-6 p-0 hover:bg-neutral-200"
+                          aria-label="Service options"
                         >
                           <MoreVertical className="h-3 w-3 text-neutral-600" />
                         </Button>
