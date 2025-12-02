@@ -22,6 +22,7 @@ export const useGetTask = ({ taskId }: UseGetTaskProps) => {
       const { data } = await response.json();
       return data;
     },
+    enabled: !!taskId,
   });
 
   return query;

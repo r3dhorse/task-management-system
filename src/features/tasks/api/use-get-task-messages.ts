@@ -7,8 +7,8 @@ export const useGetTaskMessages = ({ taskId, workspaceId }: GetTaskMessagesReque
     queryKey: ["task-messages", taskId, workspaceId],
     queryFn: async () => {
       const response = await client.api.tasks.messages.$get({
-        query: { 
-          workspaceId: workspaceId || '', 
+        query: {
+          workspaceId: workspaceId || '',
           taskId: taskId || ''
         },
       });
@@ -20,6 +20,8 @@ export const useGetTaskMessages = ({ taskId, workspaceId }: GetTaskMessagesReque
       const { data } = await response.json();
       return data;
     },
+    // Only fetch when both taskId and workspaceId are available
+    enabled: !!taskId && !!workspaceId,
     // Poll for new messages every 2 seconds for live chat experience
     refetchInterval: 2000,
     // Keep polling even when window loses focus
