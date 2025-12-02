@@ -199,7 +199,7 @@ function ServiceSelector({
   serviceOptions,
   isLoading,
   disabled,
-  selectedService,
+  selectedService: _selectedService,
 }: ServiceSelectorProps) {
   return (
     <FormField

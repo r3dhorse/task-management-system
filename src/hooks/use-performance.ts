@@ -75,9 +75,10 @@ export function useSafeTimeout(): (callback: () => void, delay: number) => void 
 
   // Cleanup all timeouts on unmount
   useEffect(() => {
+    const ids = timeoutIds.current;
     return () => {
-      timeoutIds.current.forEach((id) => clearTimeout(id));
-      timeoutIds.current.clear();
+      ids.forEach((id) => clearTimeout(id));
+      ids.clear();
     };
   }, []);
 
@@ -105,9 +106,10 @@ export function useSafeInterval(): (callback: () => void, delay: number) => () =
   const intervalIds = useRef<Set<NodeJS.Timeout>>(new Set());
 
   useEffect(() => {
+    const ids = intervalIds.current;
     return () => {
-      intervalIds.current.forEach((id) => clearInterval(id));
-      intervalIds.current.clear();
+      ids.forEach((id) => clearInterval(id));
+      ids.clear();
     };
   }, []);
 

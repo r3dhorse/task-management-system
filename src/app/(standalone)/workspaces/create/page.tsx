@@ -3,6 +3,8 @@ import { CreateWorkspaceForm } from "@/features/workspaces/components/create-wor
 import { redirect } from "next/navigation";
 import { canCreateWorkspace } from "@/features/auth/utils";
 
+export const dynamic = 'force-dynamic';
+
 const WorkspaceCreatePage = async () => {
   const user = await getCurrent();
   if (!user) { redirect("/sign-in"); }

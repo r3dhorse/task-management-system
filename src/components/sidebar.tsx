@@ -10,29 +10,17 @@ import { Button } from "./ui/button";
 import { Plus, Play } from "@/lib/lucide-icons";
 import { NotificationDropdown } from "@/features/notifications/components/notification-dropdown";
 import { useCurrent } from "@/features/auth/api/use-current";
-import { useGetMembers } from "@/features/members/api/use-get-members";
-import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
-import { Member, MemberRole } from "@/features/members/types";
 import { toast } from "sonner";
 
 
 
 
 export const Sidebar = () => {
-  const workspaceId = useWorkspaceId();
   const { open } = useCreateTaskModal();
   const [isRunningCron, setIsRunningCron] = useState(false);
 
-  // Get current user and member information to check visitor role
+  // Get current user information
   const { data: currentUser } = useCurrent();
-  const { data: members } = useGetMembers({ workspaceId });
-
-  // Find current user's member record to check role
-  const currentMember = members?.documents.find(member =>
-    (member as Member).userId === currentUser?.id
-  ) as Member;
-
-  const _isVisitor = currentMember?.role === MemberRole.VISITOR;
   const isSuperAdmin = currentUser?.isSuperAdmin;
 
   // Handler for running routinary tasks cron job
@@ -47,7 +35,7 @@ export const Sidebar = () => {
       } else {
         toast.error(data.error || 'Failed to run routinary tasks');
       }
-    } catch (_error) {
+    } catch {
       toast.error('Failed to run routinary tasks');
     } finally {
       setIsRunningCron(false);

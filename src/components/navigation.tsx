@@ -148,8 +148,8 @@ export const Navigation = () => {
   const canManageServices = isAdmin || isSuperAdmin;
 
   // Check if we're currently in a service context
-  const isInServiceContext = pathname.includes('/services/');
-  const serviceId = isInServiceContext ? pathname.match(/\/services\/([^\/]+)/)?.[1] : null;
+  const isInServiceContext = pathname?.includes('/services/') ?? false;
+  const serviceId = isInServiceContext ? pathname?.match(/\/services\/([^\/]+)/)?.[1] : null;
 
   const handleTaskAudit = async () => {
     setIsRunningAudit(true);
@@ -201,7 +201,7 @@ export const Navigation = () => {
     }
 
     const isActive = pathname === fullHref ||
-      (item.serviceAware && isInServiceContext && pathname.startsWith(fullHref));
+      (item.serviceAware && isInServiceContext && pathname?.startsWith(fullHref));
     const Icon = isActive ? item.activeIcon : item.icon;
 
     // Handle modal items
@@ -257,7 +257,7 @@ export const Navigation = () => {
         } else {
           childHref = `/workspaces/${workspaceId}${child.href}`;
         }
-        return pathname === childHref || pathname.startsWith(childHref);
+        return pathname === childHref || pathname?.startsWith(childHref);
       });
 
       // Determine which expansion state to use based on item label
@@ -378,7 +378,7 @@ export const Navigation = () => {
         )}>
           {services?.documents?.map((service) => {
             const serviceHref = `/workspaces/${workspaceId}/services/${service.id}/settings`;
-            const isActiveService = pathname.includes(`/services/${service.id}`);
+            const isActiveService = pathname?.includes(`/services/${service.id}`) ?? false;
 
             // Only render as clickable link for admins
             if (canManageServices) {

@@ -99,7 +99,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
   // Handle refresh parameter from notifications
   useEffect(() => {
-    const refreshParam = searchParams.get('refresh');
+    const refreshParam = searchParams?.get('refresh');
     if (refreshParam) {
       // Invalidate and refetch task data when coming from notification
       queryClient.invalidateQueries({ queryKey: ["task", params.taskId] });

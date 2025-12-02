@@ -7,6 +7,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/query-provider";
 import { NextAuthProvider } from "@/components/providers/session-provider";
 
+// Force dynamic rendering for all pages to avoid SSG issues with providers
+export const dynamic = 'force-dynamic';
+
 const inter = Inter({
   subsets: ["latin"],
   display: 'swap', // Prevents FOIT (Flash of Invisible Text)

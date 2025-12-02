@@ -100,7 +100,7 @@ export function AppNavbar({
 }: AppNavbarProps) {
   const pathname = usePathname();
   const workspaceId = useWorkspaceId();
-  const breadcrumbItems = getBreadcrumbItems(pathname, workspaceId);
+  const breadcrumbItems = getBreadcrumbItems(pathname ?? '', workspaceId);
 
   return (
     <header

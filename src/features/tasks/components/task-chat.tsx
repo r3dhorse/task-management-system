@@ -644,13 +644,17 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                         {message.attachmentId && (
                           <div className="mt-2">
                             {isImage(message.attachmentType || '') ? (
-                              <div className="w-full max-w-sm max-h-80 overflow-hidden rounded-lg border-0 bg-gray-100">
-                                <img
+                              <div
+                                className="relative w-full max-w-sm h-48 overflow-hidden rounded-lg border-0 bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity duration-200"
+                                onClick={() => handleDownloadFile(message.attachmentId!)}
+                              >
+                                <Image
                                   src={`/api/download/${encodeURIComponent(message.attachmentId || '')}`}
                                   alt={message.attachmentName || "Image attachment"}
-                                  className="w-full h-auto object-contain cursor-pointer hover:opacity-90 transition-opacity duration-200"
-                                  onClick={() => handleDownloadFile(message.attachmentId!)}
-                                  loading="lazy"
+                                  fill
+                                  className="object-contain"
+                                  sizes="(max-width: 768px) 100vw, 384px"
+                                  unoptimized
                                 />
                               </div>
                             ) : (

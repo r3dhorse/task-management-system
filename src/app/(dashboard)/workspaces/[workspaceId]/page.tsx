@@ -30,7 +30,7 @@ const WorkspaceIdPage = () => {
   const [dateTo, setDateTo] = useState<Date | undefined>();
 
   // Get initial tab from URL or default to 'overview'
-  const tabFromUrl = searchParams.get('tab');
+  const tabFromUrl = searchParams?.get('tab') ?? null;
   const validTabs = useMemo(() => ['overview', 'deadlines', 'analytics'], []);
   const initialTab = tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : 'overview';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -55,7 +55,7 @@ const WorkspaceIdPage = () => {
 
   // Update activeTab state when URL changes
   useEffect(() => {
-    const tab = searchParams.get('tab');
+    const tab = searchParams?.get('tab');
     if (tab && validTabs.includes(tab) && tab !== activeTab) {
       setActiveTab(tab);
     }

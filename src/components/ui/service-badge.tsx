@@ -201,8 +201,6 @@ export function ServiceCard({
   detailed = false,
   stats,
 }: ServiceCardProps) {
-  const _color = getServiceColor(name);
-
   return (
     <div
       className={cn(
