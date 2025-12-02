@@ -38,6 +38,7 @@ export const MemberSearch = ({ value, onChange }: MemberSearchProps) => {
             "h-8 pl-9 pr-8 w-full lg:w-64",
             hasSearch && "ring-2 ring-blue-200 border-blue-300"
           )}
+          autoComplete="off"
         />
         {hasSearch && (
           <Button

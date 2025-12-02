@@ -14,10 +14,12 @@ interface DatePickerProps {
   className?: string;
   placeholder?: string;
   disabled?: boolean;
+  id?: string;
+  name?: string;
 };
 
 export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
-  ({ value, onChange, className, placeholder = "Select Date", disabled }, ref) => {
+  ({ value, onChange, className, placeholder = "Select Date", disabled, id, name }, ref) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const [mounted, setMounted] = React.useState(false);
     const [dropUp, setDropUp] = React.useState(false);
@@ -95,6 +97,8 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
 
     return (
       <div className="relative">
+        {/* Hidden input for form semantics and accessibility */}
+        <input type="hidden" name={name} value={value ? value.toISOString() : ""} />
         <Button
           ref={(el) => {
             if (ref) {
@@ -106,11 +110,14 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(
             }
             (buttonRef as React.MutableRefObject<HTMLButtonElement | null>).current = el;
           }}
+          id={id}
           variant="outline"
           size="lg"
           disabled={disabled}
           onClick={handleButtonClick}
           type="button"
+          aria-haspopup="dialog"
+          aria-expanded={isOpen}
           className={cn(
             "w-full justify-start text-left font-normal px-3",
             !value && "text-muted-foreground",

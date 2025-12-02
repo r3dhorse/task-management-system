@@ -423,6 +423,7 @@ export const EmojiPicker = ({ onEmojiSelect, children }: EmojiPickerProps) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 h-8 text-sm"
+                autoComplete="off"
               />
             </div>
           </div>

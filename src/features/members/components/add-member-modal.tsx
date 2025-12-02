@@ -95,6 +95,7 @@ export const AddMemberModal = ({ isOpen, onClose, workspaceId }: AddMemberModalP
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
                 autoFocus
+                autoComplete="off"
               />
             </div>
             {search.length > 0 && search.length < 2 && (

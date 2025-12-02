@@ -13,11 +13,14 @@ import { Task } from "../types";
 interface EditTaskFormWrapperProps {
   onCancel: () => void;
   id: string;
+  /** Callback when form actions are ready (for external footer) */
+  onFormReady?: (actions: { submit: () => void; isPending: boolean }) => void;
 };
 
 export const EditTaskFormWrapper = ({
   onCancel,
   id,
+  onFormReady,
 }: EditTaskFormWrapperProps) => {
   const workspaceId = useWorkspaceId();
 
@@ -69,6 +72,7 @@ export const EditTaskFormWrapper = ({
       serviceOptions={serviceOptions ?? []}
       membertOptions={memberOptions ?? []}
       followerOptions={followerOptions ?? []}
+      onFormReady={onFormReady}
     />
   );
 };

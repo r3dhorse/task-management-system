@@ -13,6 +13,8 @@ interface CreateTaskFormWrapperProps {
   initialWorkspaceId?: string;
   initialServiceId?: string;
   onSuccess?: (task: unknown) => void;
+  /** Callback when form actions are ready (for external footer) */
+  onFormReady?: (actions: { submit: () => void; isPending: boolean }) => void;
 };
 
 export const CreateTaskFormWrapper = ({
@@ -20,7 +22,8 @@ export const CreateTaskFormWrapper = ({
   parentTaskId: _parentTaskId,
   initialWorkspaceId,
   initialServiceId: _initialServiceId,
-  onSuccess: _onSuccess
+  onSuccess: _onSuccess,
+  onFormReady,
 }: CreateTaskFormWrapperProps) => {
   const workspaceId = useWorkspaceId();
 
@@ -49,6 +52,7 @@ export const CreateTaskFormWrapper = ({
       parentTaskId={_parentTaskId}
       initialServiceId={_initialServiceId}
       onSuccess={_onSuccess}
+      onFormReady={onFormReady}
     />
   );
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -22,10 +22,15 @@ import { useGetServices } from "@/features/services/api/use-get-services";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberRole } from "@/features/members/types";
 import { useCurrent } from "@/features/auth/api/use-current";
-import { useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
 import { EyeOff as EyeOffIcon, Clock as ClockIcon } from "@/lib/lucide-icons";
 import { calculateSLADueDate, formatSLAInfo } from "@/lib/sla-utils";
+
+/** Handle for imperative form control */
+export interface CreateTaskFormHandle {
+  submit: () => void;
+  isPending: boolean;
+}
 
 // Type definitions for API response data
 type ServiceDocument = {
@@ -64,6 +69,8 @@ interface CreateTaskFormProps {
   parentTaskId?: string;
   initialServiceId?: string;
   onSuccess?: (task: unknown) => void;
+  /** Callback when form actions are available (for external footer rendering) */
+  onFormReady?: (actions: { submit: () => void; isPending: boolean }) => void;
 }
 
 export const CreateTaskForm = ({
@@ -74,6 +81,7 @@ export const CreateTaskForm = ({
   parentTaskId,
   initialServiceId,
   onSuccess,
+  onFormReady,
 }: CreateTaskFormProps) => {
   const { mutate: createTask, isPending: isCreatingTask } = useCreateTask();
   const { mutate: createSubTask, isPending: isCreatingSubTask } = useCreateSubTask({
@@ -83,6 +91,22 @@ export const CreateTaskForm = ({
   const { data: currentUser } = useCurrent();
 
   const isPending = isCreatingTask || isCreatingSubTask;
+
+  // Notify parent of form actions for external footer rendering
+  useEffect(() => {
+    if (onFormReady) {
+      onFormReady({
+        submit: () => {
+          // Trigger form validation and submission
+          const formElement = document.querySelector('form[data-create-task-form]');
+          if (formElement) {
+            formElement.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          }
+        },
+        isPending,
+      });
+    }
+  }, [onFormReady, isPending]);
 
   const formSchema = z.object({
     name: z.string().trim().min(1, "Required"),
@@ -270,7 +294,7 @@ export const CreateTaskForm = ({
   };
 
   return (
-    <Card className="w-full h-full border-none shadow-none">
+    <Card className="w-full border-none shadow-none">
       <CardHeader className="flex p-4 sm:p-7">
         <CardTitle className="text-xl font-bold">
           Create a new task
@@ -281,7 +305,7 @@ export const CreateTaskForm = ({
       </div>
       <CardContent className="p-4 sm:p-7">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form data-create-task-form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="flex flex-col gap-y-4">
 
               {/* Confidential Toggle - Top of Form */}
@@ -526,32 +550,74 @@ export const CreateTaskForm = ({
               </FormItem>
 
 
-              <DottedSeparator />
-              <div className="flex flex-col sm:flex-row items-center gap-3 sm:justify-between">
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="secondary"
-                  onClick={onCancel}
-                  disabled={isPending}
-                  className={cn(!onCancel && "invisible", "w-full sm:w-auto min-h-[44px] touch-manipulation")}
-                >
-                  Cancel
-                </Button>
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full sm:w-auto min-h-[44px] touch-manipulation"
-                  disabled={isPending}
-                >
-                  Create Task
-                </Button>
-              </div>
             </div>
           </form>
         </Form>
       </CardContent>
+
+      {/* Inline footer - only show when external footer is not used */}
+      {!onFormReady && (
+        <div className="shrink-0 bg-white border-t p-4">
+          <div className="flex flex-col-reverse sm:flex-row items-center gap-3 sm:justify-between">
+            <Button
+              type="button"
+              size="lg"
+              variant="secondary"
+              onClick={onCancel}
+              disabled={isPending}
+              className={cn(!onCancel && "invisible", "w-full sm:w-auto min-h-[44px] touch-manipulation")}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="button"
+              size="lg"
+              className="w-full sm:w-auto min-h-[44px] touch-manipulation"
+              disabled={isPending}
+              onClick={form.handleSubmit(onSubmit)}
+            >
+              Create Task
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
+  );
+};
+
+/** Standalone footer component for use with ResponsiveModal footer prop */
+export const CreateTaskFormFooter = ({
+  onSubmit,
+  onCancel,
+  isPending,
+}: {
+  onSubmit: () => void;
+  onCancel?: () => void;
+  isPending: boolean;
+}) => {
+  return (
+    <div className="flex flex-col-reverse sm:flex-row items-center gap-3 sm:justify-between w-full">
+      <Button
+        type="button"
+        size="lg"
+        variant="secondary"
+        onClick={onCancel}
+        disabled={isPending}
+        className={cn(!onCancel && "invisible", "w-full sm:w-auto min-h-[44px] touch-manipulation")}
+      >
+        Cancel
+      </Button>
+
+      <Button
+        type="button"
+        size="lg"
+        className="w-full sm:w-auto min-h-[44px] touch-manipulation"
+        disabled={isPending}
+        onClick={onSubmit}
+      >
+        Create Task
+      </Button>
+    </div>
   );
 };

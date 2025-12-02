@@ -456,6 +456,7 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-10"
+                        autoComplete="off"
                       />
                     </div>
                     <Button onClick={handleCreateUser} className="flex items-center gap-2">

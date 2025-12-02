@@ -46,6 +46,8 @@ interface EditTaskFormProps {
   membertOptions: { id: string; name: string; role: MemberRole }[];
   followerOptions: MultiSelectOption[];
   initialValues: Task;
+  /** Callback when form actions are available (for external footer rendering) */
+  onFormReady?: (actions: { submit: () => void; isPending: boolean }) => void;
 }
 
 export const EditTaskForm = ({
@@ -53,10 +55,26 @@ export const EditTaskForm = ({
   serviceOptions,
   membertOptions,
   followerOptions,
-  initialValues
+  initialValues,
+  onFormReady,
 }: EditTaskFormProps) => {
   const workspaceId = useWorkspaceId();
   const { mutate, isPending } = useUpdateTask();
+
+  // Notify parent of form actions for external footer rendering
+  useEffect(() => {
+    if (onFormReady) {
+      onFormReady({
+        submit: () => {
+          const formElement = document.querySelector('form[data-edit-task-form]');
+          if (formElement) {
+            formElement.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+          }
+        },
+        isPending,
+      });
+    }
+  }, [onFormReady, isPending]);
 
   // Create assignee options for the AssigneeSelect component
   const assigneeOptions = membertOptions
@@ -151,16 +169,16 @@ export const EditTaskForm = ({
   };
 
   return (
-    <Card className="w-full h-full border-none shadow-none">
-      <CardHeader className="flex p-7">
+    <Card className="w-full h-full border-none shadow-none flex flex-col">
+      <CardHeader className="flex p-4 sm:p-7 shrink-0">
         <CardTitle className="text-xl font-bold">Update Task</CardTitle>
       </CardHeader>
-      <div className="px-7">
+      <div className="px-4 sm:px-7 shrink-0">
         <DottedSeparator />
       </div>
-      <CardContent className="p-7">
+      <CardContent className="p-4 sm:p-7 flex-1 overflow-y-auto">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form data-edit-task-form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="flex flex-col gap-y-4">
               
               {/* Confidential Toggle - Top of Form */}
@@ -338,27 +356,74 @@ export const EditTaskForm = ({
                 </p>
               </FormItem>
 
-              <DottedSeparator />
-              <div className="flex items-center justify-between">
-                <Button
-                  type="button"
-                  size="lg"
-                  variant="secondary"
-                  onClick={onCancel}
-                  disabled={isPending}
-                  className={cn(!onCancel && "invisible")}
-                >
-                  Cancel
-                </Button>
-
-                <Button type="submit" size="lg" disabled={isPending}>
-                  Update Task
-                </Button>
-              </div>
             </div>
           </form>
         </Form>
       </CardContent>
+
+      {/* Inline footer - only show when external footer is not used */}
+      {!onFormReady && (
+        <div className="shrink-0 bg-white border-t p-4">
+          <div className="flex flex-col-reverse sm:flex-row items-center gap-3 sm:justify-between">
+            <Button
+              type="button"
+              size="lg"
+              variant="secondary"
+              onClick={onCancel}
+              disabled={isPending}
+              className={cn(!onCancel && "invisible", "w-full sm:w-auto min-h-[44px] touch-manipulation")}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              type="button"
+              size="lg"
+              className="w-full sm:w-auto min-h-[44px] touch-manipulation"
+              disabled={isPending}
+              onClick={form.handleSubmit(onSubmit)}
+            >
+              Update Task
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
+  );
+};
+
+/** Standalone footer component for use with ResponsiveModal footer prop */
+export const EditTaskFormFooter = ({
+  onSubmit,
+  onCancel,
+  isPending,
+}: {
+  onSubmit: () => void;
+  onCancel?: () => void;
+  isPending: boolean;
+}) => {
+  return (
+    <div className="flex flex-col-reverse sm:flex-row items-center gap-3 sm:justify-between w-full">
+      <Button
+        type="button"
+        size="lg"
+        variant="secondary"
+        onClick={onCancel}
+        disabled={isPending}
+        className={cn(!onCancel && "invisible", "w-full sm:w-auto min-h-[44px] touch-manipulation")}
+      >
+        Cancel
+      </Button>
+
+      <Button
+        type="button"
+        size="lg"
+        className="w-full sm:w-auto min-h-[44px] touch-manipulation"
+        disabled={isPending}
+        onClick={onSubmit}
+      >
+        Update Task
+      </Button>
+    </div>
   );
 };

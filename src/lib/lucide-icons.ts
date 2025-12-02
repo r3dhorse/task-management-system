@@ -148,6 +148,7 @@ export const UserCheck = getIcon('UserCheck', ['UserCheckIcon']);
 export const SlidersHorizontal = getIcon('SlidersHorizontal', ['SlidersHorizontalIcon', 'Sliders']);
 export const Play = getIcon('Play', ['PlayIcon']);
 export const PlayIcon = getIcon('Play', ['PlayIcon']);
+export const TrendingUp = getIcon('TrendingUp', ['TrendingUpIcon']);
 
 // Export all lucide icons as a namespace for direct access
 export * from "lucide-react";

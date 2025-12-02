@@ -21,6 +21,8 @@ interface AssigneeSelectProps {
   className?: string;
   disabled?: boolean;
   allowUnassigned?: boolean;
+  id?: string;
+  name?: string;
 }
 
 export function AssigneeSelect({
@@ -31,6 +33,8 @@ export function AssigneeSelect({
   className,
   disabled = false,
   allowUnassigned = true,
+  id,
+  name,
 }: AssigneeSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -113,11 +117,15 @@ export function AssigneeSelect({
 
   return (
     <div className="relative">
+      {/* Hidden input for form semantics and accessibility */}
+      <input type="hidden" name={name} value={selected || ""} />
       <Button
         ref={buttonRef}
+        id={id}
         variant="outline"
         role="combobox"
         aria-expanded={open}
+        aria-haspopup="listbox"
         className={cn("w-full justify-between h-auto min-h-[2.5rem] py-1.5", className)}
         onClick={handleButtonClick}
         type="button"
@@ -175,6 +183,7 @@ export function AssigneeSelect({
                 onChange={(e) => setSearch(e.target.value)}
                 className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                 onClick={(e) => e.stopPropagation()}
+                autoComplete="off"
               />
             </div>
             <div className="max-h-[240px] overflow-auto">

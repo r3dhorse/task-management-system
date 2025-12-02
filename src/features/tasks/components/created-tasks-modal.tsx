@@ -165,6 +165,7 @@ export const CreatedTasksModal = () => {
                 value={search}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
+                autoComplete="off"
               />
             </div>
             <Button
