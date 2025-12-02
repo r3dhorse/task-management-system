@@ -788,6 +788,8 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
             <div className="flex-1 relative">
               <Input
                 ref={messageInputRef}
+                id="chat-message-input"
+                name="chat-message"
                 value={newMessage}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
@@ -795,6 +797,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                 className="pr-10 resize-none min-h-[40px] rounded-full border-2 border-gray-300/80 focus:border-blue-400/80 transition-colors shadow-sm"
                 maxLength={1000}
                 disabled={isUploadingFile}
+                autoComplete="off"
               />
               
               {/* Mention Dropdown */}
