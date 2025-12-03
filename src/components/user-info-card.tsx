@@ -70,7 +70,7 @@ export const UserInfoCard = () => {
   const firstLetter = user.name?.charAt(0).toUpperCase() || "U";
 
   return (
-    <div className="w-full">
+    <div className="w-full hidden lg:block">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-neutral-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow">
@@ -95,7 +95,13 @@ export const UserInfoCard = () => {
             </CardContent>
           </Card>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" side="right" className="w-56">
+        <DropdownMenuContent
+          align="start"
+          side="right"
+          sideOffset={5}
+          className="w-56 z-[100]"
+          collisionPadding={16}
+        >
           <DropdownMenuItem
             onClick={() => setIsChangePasswordOpen(true)}
             className="cursor-pointer"
