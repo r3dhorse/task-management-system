@@ -37,16 +37,16 @@ function sanitizeName(name: string): string {
 }
 
 /**
- * Generate folder name in format: dd-mm-yyyy - task title
+ * Generate folder name in format: dd-mm-yyyy - task#
+ * Uses task number which is unique per task
  */
-export function generateFolderName(taskName: string, date?: Date): string {
+export function generateFolderName(taskNumber: string, date?: Date): string {
   const dateObj = date || new Date()
   const day = String(dateObj.getDate()).padStart(2, '0')
   const month = String(dateObj.getMonth() + 1).padStart(2, '0')
   const year = dateObj.getFullYear()
 
-  const sanitizedTaskName = sanitizeName(taskName)
-  return `${day}-${month}-${year} - ${sanitizedTaskName}`
+  return `${day}-${month}-${year} - ${taskNumber}`
 }
 
 /**
@@ -69,12 +69,12 @@ async function ensureUploadDir(): Promise<void> {
 
 /**
  * Upload a file to local storage with organized folder structure
- * Folder format: dd-mm-yyyy - task title
+ * Folder format: dd-mm-yyyy - task#
  */
 export async function uploadFile(
   file: File,
   fileType: FileType = "task",
-  taskName?: string
+  taskNumber?: string
 ): Promise<UploadResult> {
   await ensureUploadDir()
 
@@ -106,9 +106,9 @@ export async function uploadFile(
 
   // Determine folder path
   let folderPath: string
-  if (taskName) {
-    // Use task-specific folder: uploads/dd-mm-yyyy - task title/
-    const folderName = generateFolderName(taskName)
+  if (taskNumber) {
+    // Use task-specific folder: uploads/dd-mm-yyyy - task#/
+    const folderName = generateFolderName(taskNumber)
     folderPath = path.join(UPLOAD_DIR, folderName)
   } else {
     // Fallback: use date-only folder: uploads/dd-mm-yyyy/

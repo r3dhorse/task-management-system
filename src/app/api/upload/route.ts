@@ -64,23 +64,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get task name for folder organization
-    let taskName: string | undefined;
+    // Get task number for folder organization
+    let taskNumber: string | undefined;
 
     if (taskId) {
       const task = await prisma.task.findUnique({
         where: { id: taskId },
-        select: { name: true }
+        select: { taskNumber: true }
       });
       if (task) {
-        taskName = task.name;
+        taskNumber = task.taskNumber;
       }
     }
 
     // Upload to local storage with organized folder structure
-    console.log('📁 Uploading to local storage with folder:', taskName ? `${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')} - ${taskName}` : 'date-only folder');
+    console.log('📁 Uploading to local storage with folder:', taskNumber ? `${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')} - ${taskNumber}` : 'date-only folder');
 
-    const localResult = await uploadToLocal(file, fileType, taskName);
+    const localResult = await uploadToLocal(file, fileType, taskNumber);
 
     const uploadResult = {
       id: localResult.id,
