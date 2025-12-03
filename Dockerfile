@@ -40,8 +40,13 @@ WORKDIR /app
 # Set environment to production
 ENV NODE_ENV=production
 
-# Install PostgreSQL client and bash for database operations
-RUN apk update && apk add --no-cache postgresql-client bash
+# Set timezone to Asia/Manila for cron jobs
+ENV TZ=Asia/Manila
+
+# Install PostgreSQL client, bash, and timezone data
+RUN apk update && apk add --no-cache postgresql-client bash tzdata \
+    && cp /usr/share/zoneinfo/Asia/Manila /etc/localtime \
+    && echo "Asia/Manila" > /etc/timezone
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs

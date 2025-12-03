@@ -8,6 +8,9 @@ const nextConfig = {
   // Environment variables should be set in Amplify Console and are
   // automatically available to server-side code via process.env
 
+  // Enable source maps in production for better debugging and Lighthouse score
+  productionBrowserSourceMaps: true,
+
   // Performance optimizations
   compress: true,
   poweredByHeader: false,
@@ -46,9 +49,9 @@ const nextConfig = {
     ],
   },
   
-  // Bundle analyzer for development
-  webpack: (config, { dev, isServer }) => {
-    // Reduce bundle size
+  // Webpack configuration
+  webpack: (config, { isServer }) => {
+    // Polyfill fallbacks for client-side
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -58,42 +61,7 @@ const nextConfig = {
         crypto: false,
       };
     }
-    
-    // Optimize builds
-    if (!dev && !isServer) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            default: {
-              minChunks: 2,
-              priority: -20,
-              reuseExistingChunk: true,
-            },
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              priority: -10,
-              chunks: 'all',
-            },
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-              name: 'react',
-              priority: 20,
-              chunks: 'all',
-            },
-            lib: {
-              test: /[\\/]node_modules[\\/](@radix-ui|@tanstack|lucide-react)[\\/]/,
-              name: 'lib',
-              priority: 15,
-              chunks: 'all',
-            },
-          },
-        },
-      };
-    }
-    
+
     return config;
   },
   
