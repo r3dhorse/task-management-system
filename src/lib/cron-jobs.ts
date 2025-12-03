@@ -167,8 +167,8 @@ export const initializeCronJobs = () => {
 
   console.log(`[CRON] Initialized overdue tasks cron job. Will run at midnight ${timezone} time daily.`);
 
-  // Routinary tasks job - runs at 1 AM to create scheduled recurring tasks
-  const routinaryCronExpression = '0 1 * * *';
+  // Routinary tasks job - runs every 12 hours (1 AM and 1 PM) to ensure scheduled recurring tasks are created
+  const routinaryCronExpression = '0 1,13 * * *';
   routinaryCronJob = cron.schedule(
     routinaryCronExpression,
     async () => {
@@ -186,7 +186,7 @@ export const initializeCronJobs = () => {
 
       try {
         const result = await createRoutinaryTasks();
-        console.log(`[CRON] ✅ Routinary tasks creation completed. Created ${result.created} tasks at ${currentTime}`);
+        console.log(`[CRON] ✅ Routinary tasks creation completed. Created ${result.created} tasks, skipped ${result.skipped} at ${currentTime}`);
       } catch (error) {
         console.error(`[CRON] ❌ Routinary tasks creation failed at ${currentTime}:`, error);
       }
@@ -198,7 +198,7 @@ export const initializeCronJobs = () => {
 
   routinaryCronJob.start();
 
-  console.log(`[CRON] Initialized routinary tasks cron job. Will run at 1 AM ${timezone} time daily.`);
+  console.log(`[CRON] Initialized routinary tasks cron job. Will run every 12 hours (1 AM and 1 PM) ${timezone} time.`);
 
   if (process.env.NODE_ENV === 'development') {
     console.log('[CRON] Development mode: You can manually trigger jobs using the /api/cron/* endpoints');
@@ -228,9 +228,10 @@ export const getCronJobStatus = () => {
     },
     routinaryTasks: {
       isRunning: routinaryCronJob !== null,
-      cronExpression: '0 1 * * *',
+      cronExpression: '0 1,13 * * *',
       timezone: 'Asia/Manila',
-      nextExecution: routinaryCronJob ? getNextExecution(1) : null,
+      description: 'Runs every 12 hours at 1 AM and 1 PM',
+      nextExecution: routinaryCronJob ? getNextRoutinaryExecution() : null,
       lastExecution: getRoutinaryTasksStatus().lastExecution
     }
   };
@@ -248,6 +249,41 @@ const getNextExecution = (hour: number = 0) => {
       nextExecution.setDate(nextExecution.getDate() + 1);
     }
     nextExecution.setHours(hour, 0, 0, 0);
+
+    return nextExecution.toLocaleString('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  } catch {
+    return 'Unable to calculate';
+  }
+};
+
+// Get next execution for routinary tasks (runs at 1 AM and 1 PM)
+const getNextRoutinaryExecution = () => {
+  try {
+    const now = new Date();
+    const manila = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
+    const currentHour = manila.getHours();
+    const nextExecution = new Date(manila);
+
+    // Determine next run: 1 AM or 1 PM (13:00)
+    if (currentHour < 1) {
+      // Before 1 AM - next run is 1 AM today
+      nextExecution.setHours(1, 0, 0, 0);
+    } else if (currentHour < 13) {
+      // Between 1 AM and 1 PM - next run is 1 PM today
+      nextExecution.setHours(13, 0, 0, 0);
+    } else {
+      // After 1 PM - next run is 1 AM tomorrow
+      nextExecution.setDate(nextExecution.getDate() + 1);
+      nextExecution.setHours(1, 0, 0, 0);
+    }
 
     return nextExecution.toLocaleString('en-US', {
       timeZone: 'Asia/Manila',

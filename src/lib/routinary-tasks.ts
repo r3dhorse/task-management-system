@@ -16,21 +16,6 @@ let lastRoutinaryExecutionLog: {
   error?: string;
 } | null = null;
 
-// Get today's date at start of day in Philippine timezone (for comparison)
-// This returns a Date object representing the START of today in PHT (as UTC timestamp)
-const getTodayStartInPHT = (): Date => {
-  const now = new Date();
-  // Get current time in PHT by adding offset
-  const phtNow = new Date(now.getTime() + (PHT_OFFSET_HOURS * 60 * 60 * 1000));
-  // Get the date components in PHT
-  const year = phtNow.getUTCFullYear();
-  const month = phtNow.getUTCMonth();
-  const day = phtNow.getUTCDate();
-  // Create start of day in PHT, converted back to UTC
-  // PHT midnight = UTC 16:00 previous day
-  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0) - (PHT_OFFSET_HOURS * 60 * 60 * 1000));
-};
-
 // Get today's date at end of day in Philippine timezone (for comparison)
 const getTodayEndInPHT = (): Date => {
   const now = new Date();
