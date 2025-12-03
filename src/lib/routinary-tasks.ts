@@ -5,6 +5,9 @@ import { generateTaskNumber } from '@/lib/task-number-generator';
 import { addDays, addWeeks, addMonths, addYears, format } from 'date-fns';
 import { RoutinaryFrequency } from '@/features/services/schemas';
 
+// Philippine timezone offset (UTC+8)
+const PHT_OFFSET_HOURS = 8;
+
 // Store last execution info for monitoring
 let lastRoutinaryExecutionLog: {
   timestamp: Date;
@@ -13,24 +16,70 @@ let lastRoutinaryExecutionLog: {
   error?: string;
 } | null = null;
 
-// Helper to calculate next run date based on frequency
-const calculateNextRunDate = (currentDate: Date, frequency: RoutinaryFrequency): Date => {
+// Get today's date at start of day in Philippine timezone (for comparison)
+// This returns a Date object representing the START of today in PHT (as UTC timestamp)
+const getTodayStartInPHT = (): Date => {
+  const now = new Date();
+  // Get current time in PHT by adding offset
+  const phtNow = new Date(now.getTime() + (PHT_OFFSET_HOURS * 60 * 60 * 1000));
+  // Get the date components in PHT
+  const year = phtNow.getUTCFullYear();
+  const month = phtNow.getUTCMonth();
+  const day = phtNow.getUTCDate();
+  // Create start of day in PHT, converted back to UTC
+  // PHT midnight = UTC 16:00 previous day
+  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0) - (PHT_OFFSET_HOURS * 60 * 60 * 1000));
+};
+
+// Get today's date at end of day in Philippine timezone (for comparison)
+const getTodayEndInPHT = (): Date => {
+  const now = new Date();
+  // Get current time in PHT by adding offset
+  const phtNow = new Date(now.getTime() + (PHT_OFFSET_HOURS * 60 * 60 * 1000));
+  // Get the date components in PHT
+  const year = phtNow.getUTCFullYear();
+  const month = phtNow.getUTCMonth();
+  const day = phtNow.getUTCDate();
+  // Create end of day in PHT, converted back to UTC
+  // PHT 23:59:59.999 = UTC 15:59:59.999 same day
+  return new Date(Date.UTC(year, month, day, 23, 59, 59, 999) - (PHT_OFFSET_HOURS * 60 * 60 * 1000));
+};
+
+// Helper to add one frequency interval to a date
+const addFrequencyInterval = (date: Date, frequency: RoutinaryFrequency): Date => {
   switch (frequency) {
     case "DAILY":
-      return addDays(currentDate, 1);
+      return addDays(date, 1);
     case "WEEKLY":
-      return addWeeks(currentDate, 1);
+      return addWeeks(date, 1);
     case "BIWEEKLY":
-      return addWeeks(currentDate, 2);
+      return addWeeks(date, 2);
     case "MONTHLY":
-      return addMonths(currentDate, 1);
+      return addMonths(date, 1);
     case "QUARTERLY":
-      return addMonths(currentDate, 3);
+      return addMonths(date, 3);
     case "YEARLY":
-      return addYears(currentDate, 1);
+      return addYears(date, 1);
     default:
-      return addMonths(currentDate, 1);
+      return addMonths(date, 1);
   }
+};
+
+// Helper to calculate next run date based on frequency
+// Ensures the next run date is always in the future (after today in PHT)
+const calculateNextRunDate = (currentDate: Date, frequency: RoutinaryFrequency): Date => {
+  // Use end of today in PHT for comparison
+  const todayEndPHT = getTodayEndInPHT();
+
+  let nextDate = addFrequencyInterval(currentDate, frequency);
+
+  // Keep adding intervals until the date is in the future (after today in PHT)
+  // This handles cases where routinaryNextRunDate was in the past
+  while (nextDate <= todayEndPHT) {
+    nextDate = addFrequencyInterval(nextDate, frequency);
+  }
+
+  return nextDate;
 };
 
 // Generate task title based on service name and current date
@@ -82,14 +131,16 @@ export const createRoutinaryTasks = async () => {
       throw new Error('No superadmin user found to perform automated task creation');
     }
 
-    // Set to end of today to catch all dates on or before today
-    const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    // Get end of today in Philippine timezone for comparison
+    // This ensures we only process services due on or before today in PHT
+    const todayEndPHT = getTodayEndInPHT();
+
+    console.log(`[CRON] Using PHT timezone. Today ends at: ${todayEndPHT.toISOString()} (UTC)`);
 
     // Find all services where:
     // 1. isRoutinary is true
     // 2. routinaryFrequency is set
-    // 3. routinaryNextRunDate is today or in the past
+    // 3. routinaryNextRunDate is today or in the past (in PHT)
     const routinaryServices = await prisma.service.findMany({
       where: {
         isRoutinary: true,
@@ -97,7 +148,7 @@ export const createRoutinaryTasks = async () => {
           not: null
         },
         routinaryNextRunDate: {
-          lte: today
+          lte: todayEndPHT
         }
       },
       include: {
@@ -109,13 +160,45 @@ export const createRoutinaryTasks = async () => {
 
     let createdCount = 0;
     let failedCount = 0;
+    let skippedCount = 0;
 
     for (const service of routinaryServices) {
       try {
         const frequency = service.routinaryFrequency as RoutinaryFrequency;
-        const taskNumber = await generateTaskNumber(prisma);
         const taskDate = new Date(); // Current date for task title
         const taskName = generateTaskTitle(service.name, taskDate);
+
+        // Check if a task with the same name already exists for this service
+        // This prevents duplicate creation when manual cron is triggered
+        const existingTask = await prisma.task.findFirst({
+          where: {
+            serviceId: service.id,
+            name: taskName
+          }
+        });
+
+        if (existingTask) {
+          console.log(`[CRON] Skipping service ${service.name} - task "${taskName}" already exists (ID: ${existingTask.id})`);
+
+          // Still update the next run date to prevent this service from being picked up again
+          const nextRunDate = calculateNextRunDate(
+            service.routinaryNextRunDate || new Date(),
+            frequency
+          );
+
+          await prisma.service.update({
+            where: { id: service.id },
+            data: {
+              routinaryLastRunDate: new Date(),
+              routinaryNextRunDate: nextRunDate
+            }
+          });
+
+          skippedCount++;
+          continue;
+        }
+
+        const taskNumber = await generateTaskNumber(prisma);
         const dueDate = calculateDueDate(service.slaDays, service.includeWeekends);
 
         await prisma.$transaction(async (tx) => {
@@ -169,7 +252,7 @@ export const createRoutinaryTasks = async () => {
       }
     }
 
-    console.log(`[CRON] Routinary tasks job completed. Created: ${createdCount}, Failed: ${failedCount}`);
+    console.log(`[CRON] Routinary tasks job completed. Created: ${createdCount}, Skipped: ${skippedCount}, Failed: ${failedCount}`);
 
     // Update execution log
     lastRoutinaryExecutionLog = {
@@ -181,6 +264,7 @@ export const createRoutinaryTasks = async () => {
     return {
       total: routinaryServices.length,
       created: createdCount,
+      skipped: skippedCount,
       failed: failedCount
     };
   } catch (error) {
