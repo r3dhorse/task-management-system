@@ -1,50 +1,53 @@
 import { NextResponse } from 'next/server';
-import { uploadToS3 } from '@/lib/s3-client';
+import { listAllFiles } from '@/lib/file-storage';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Test endpoint for local file storage
+ * Lists all files in the uploads directory
+ */
 export async function GET() {
   try {
-    // Test S3 configuration
-    const config = {
-      hasAccessKey: !!(process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID),
-      hasSecretKey: !!(process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY),
-      hasRegion: !!(process.env.AWS_REGION || process.env.BUCKET_REGION),
-      region: process.env.AWS_REGION || process.env.BUCKET_REGION,
-      bucket: process.env.AWS_S3_BUCKET_NAME || process.env.BUCKET_NAME,
-      accessKeyPrefix: (process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID || '').substring(0, 8),
-    };
+    const files = await listAllFiles();
 
-    console.log('Testing S3 configuration:', config);
+    // Group files by folder
+    const folderStats: Record<string, { count: number; totalSize: number }> = {};
 
-    // Try a test upload
-    const testBuffer = Buffer.from('test file content');
-    const testKey = `test-uploads/test-${Date.now()}.txt`;
-
-    const result = await uploadToS3(testBuffer, testKey, 'text/plain');
+    for (const file of files) {
+      const folder = file.folder || '(root)';
+      if (!folderStats[folder]) {
+        folderStats[folder] = { count: 0, totalSize: 0 };
+      }
+      folderStats[folder].count++;
+      folderStats[folder].totalSize += file.size;
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'S3 upload test successful!',
-      config,
-      uploadResult: result,
+      message: 'Local file storage is active',
+      storageType: 'local',
+      uploadDirectory: process.env.UPLOAD_DIR || './uploads',
+      folderFormat: 'dd-mm-yyyy - task title',
+      totalFiles: files.length,
+      totalSize: files.reduce((sum, f) => sum + f.size, 0),
+      folderStats,
+      recentFiles: files.slice(0, 10).map(f => ({
+        path: f.path,
+        folder: f.folder,
+        size: f.size,
+        createdAt: f.createdAt
+      }))
     });
 
   } catch (error) {
-    console.error('S3 test failed:', error);
+    console.error('Storage test failed:', error);
 
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : String(error),
-      errorName: error instanceof Error ? error.name : 'Unknown',
-      config: {
-        hasAccessKey: !!(process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID),
-        hasSecretKey: !!(process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY),
-        hasRegion: !!(process.env.AWS_REGION || process.env.BUCKET_REGION),
-        region: process.env.AWS_REGION || process.env.BUCKET_REGION,
-        bucket: process.env.AWS_S3_BUCKET_NAME || process.env.BUCKET_NAME,
-        accessKeyPrefix: (process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID || '').substring(0, 8),
-      }
+      storageType: 'local',
+      uploadDirectory: process.env.UPLOAD_DIR || './uploads',
     }, { status: 500 });
   }
 }

@@ -44,3 +44,7 @@ next-env.d.ts
 # Markdown files
 *.md
 /src/generated/prisma
+
+# Uploads directory (files are stored locally, not in git)
+/uploads/*
+!/uploads/.gitkeep

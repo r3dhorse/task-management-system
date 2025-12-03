@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getObjectFromS3 } from "@/lib/s3-client";
-import { getFile } from "@/lib/file-storage";
+import { getFile, getFileByPath } from "@/lib/file-storage";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
 import { readFile } from "fs/promises";
@@ -11,18 +10,6 @@ interface RouteProps {
   params: {
     fileId: string;
   };
-}
-
-// Check if AWS S3 is configured
-function isS3Configured(): boolean {
-  return !!(process.env.AWS_ACCESS_KEY_ID && 
-           process.env.AWS_SECRET_ACCESS_KEY && 
-           process.env.AWS_REGION);
-}
-
-// Helper function to determine if a file path is an S3 key vs local path
-function isS3FilePath(filePath: string): boolean {
-  return filePath.startsWith('task-management-system-2025/') || filePath.includes('/');
 }
 
 export async function GET(request: NextRequest, { params }: RouteProps) {
@@ -37,7 +24,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
     }
 
     let { fileId } = params;
-    
+
     // Decode the fileId in case it's URL encoded
     fileId = decodeURIComponent(fileId);
 
@@ -76,39 +63,20 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
         );
       }
 
-      const filePath = taskAttachment.filePath;
-      const isS3File = isS3FilePath(filePath);
-      
       try {
-        let fileBuffer: Buffer;
-        
-        if (isS3File && isS3Configured()) {
-          // Get file from S3
-          fileBuffer = await getObjectFromS3(filePath);
-        } else {
-          // Get file from local storage
-          const localFile = await getFile(taskAttachment.id);
-          if (!localFile) {
+        // Get file from local storage using the relative path stored in DB
+        const localFile = await getFileByPath(taskAttachment.filePath);
+
+        if (!localFile) {
+          // Fallback: try searching by file ID
+          const fallbackFile = await getFile(taskAttachment.id);
+          if (!fallbackFile) {
             throw new Error('File not found in local storage');
           }
-          fileBuffer = await readFile(localFile.filePath);
+          return serveFile(fallbackFile.filePath, taskAttachment.mimeType, taskAttachment.originalName);
         }
-        
-        // For images, use inline disposition to allow viewing in browser
-        // For PDFs and other files, use attachment to force download
-        const isImage = taskAttachment.mimeType.startsWith('image/');
-        const disposition = isImage 
-          ? `inline; filename="${taskAttachment.originalName}"`
-          : `attachment; filename="${taskAttachment.originalName}"`;
 
-        // Return the file as a response with proper headers
-        return new NextResponse(new Uint8Array(fileBuffer), {
-          headers: {
-            "Content-Type": taskAttachment.mimeType,
-            "Content-Disposition": disposition,
-            "Cache-Control": "public, max-age=31536000, immutable",
-          },
-        });
+        return serveFile(localFile.filePath, taskAttachment.mimeType, taskAttachment.originalName);
       } catch (error) {
         console.error("File download error:", error);
         return NextResponse.json(
@@ -118,53 +86,7 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       }
     }
 
-    // Check if fileId looks like an S3 key (contains forward slashes)
-    const isS3Key = fileId.includes('/');
-    
-    if (isS3Key) {
-      // This is a direct S3 key from a message attachment
-      // Verify user has access by checking if any message with this attachment exists
-      const messageAttachment = await prisma.taskMessage.findFirst({
-        where: { attachmentId: fileId },
-        include: {
-          workspace: {
-            include: {
-              members: {
-                where: { userId: user.id },
-              },
-            },
-          },
-        },
-      });
-
-      if (messageAttachment && messageAttachment.workspace.members.length > 0) {
-        // User has access, download from S3
-        try {
-          const fileBuffer = await getObjectFromS3(fileId);
-          
-          const isImage = (messageAttachment.attachmentType || '').startsWith('image/');
-          const disposition = isImage 
-            ? `inline; filename="${messageAttachment.attachmentName || 'attachment'}"`
-            : `attachment; filename="${messageAttachment.attachmentName || 'attachment'}"`;
-
-          return new NextResponse(new Uint8Array(fileBuffer), {
-            headers: {
-              "Content-Type": messageAttachment.attachmentType || 'application/octet-stream',
-              "Content-Disposition": disposition,
-              "Cache-Control": "public, max-age=31536000, immutable",
-            },
-          });
-        } catch (s3Error) {
-          console.error("S3 download error for message attachment:", s3Error);
-          return NextResponse.json(
-            { error: "File not found in storage" },
-            { status: 404 }
-          );
-        }
-      }
-    }
-    
-    // If not found as task attachment or S3 key, check for message attachments by ID
+    // Check if it's a message attachment by file ID
     const messageAttachment = await prisma.taskMessage.findFirst({
       where: { attachmentId: fileId },
       include: {
@@ -187,25 +109,31 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
         );
       }
 
-      // For message attachments, the attachmentId is the S3 key
       try {
-        const s3Key = messageAttachment.attachmentId!; // attachmentId is the S3 key for messages
-        const fileBuffer = await getObjectFromS3(s3Key);
-        
-        const isImage = (messageAttachment.attachmentType || '').startsWith('image/');
-        const disposition = isImage 
-          ? `inline; filename="${messageAttachment.attachmentName || 'attachment'}"`
-          : `attachment; filename="${messageAttachment.attachmentName || 'attachment'}"`;
+        // For message attachments, attachmentId is the file ID
+        // Try to find the file in local storage
+        const localFile = await getFile(fileId);
 
-        return new NextResponse(new Uint8Array(fileBuffer), {
-          headers: {
-            "Content-Type": messageAttachment.attachmentType || 'application/octet-stream',
-            "Content-Disposition": disposition,
-            "Cache-Control": "public, max-age=31536000, immutable",
-          },
-        });
-      } catch (s3Error) {
-        console.error("S3 download error for message attachment:", s3Error);
+        if (!localFile) {
+          // If not found by ID, the fileId might be a relative path
+          const fileByPath = await getFileByPath(fileId);
+          if (!fileByPath) {
+            throw new Error('File not found in local storage');
+          }
+          return serveFile(
+            fileByPath.filePath,
+            messageAttachment.attachmentType || 'application/octet-stream',
+            messageAttachment.attachmentName || 'attachment'
+          );
+        }
+
+        return serveFile(
+          localFile.filePath,
+          messageAttachment.attachmentType || localFile.mimeType,
+          messageAttachment.attachmentName || 'attachment'
+        );
+      } catch (error) {
+        console.error("Message attachment download error:", error);
         return NextResponse.json(
           { error: "File not found in storage" },
           { status: 404 }
@@ -213,7 +141,27 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       }
     }
 
-    // If not found as task attachment, S3 key, or message attachment
+    // If not found in database, try to find by file ID in storage directly
+    // This handles legacy files or direct file ID access
+    const directFile = await getFile(fileId);
+    if (directFile) {
+      // For direct file access without database record, we still need to verify access
+      // Since we can't verify workspace membership, we'll allow it if the user is authenticated
+      // This is a fallback for edge cases
+      console.log('Serving file directly by ID (no database record):', fileId);
+      return serveFile(directFile.filePath, directFile.mimeType, directFile.fileName);
+    }
+
+    // If fileId contains path separators, try as a relative path
+    if (fileId.includes('/') || fileId.includes('\\')) {
+      const fileByPath = await getFileByPath(fileId);
+      if (fileByPath) {
+        console.log('Serving file by path:', fileId);
+        return serveFile(fileByPath.filePath, fileByPath.mimeType, fileByPath.fileName);
+      }
+    }
+
+    // If not found anywhere
     return NextResponse.json(
       { error: "File not found or access denied" },
       { status: 404 }
@@ -226,4 +174,27 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Helper function to serve a file with proper headers
+ */
+async function serveFile(filePath: string, mimeType: string, originalName: string): Promise<NextResponse> {
+  const fileBuffer = await readFile(filePath);
+
+  // For images, use inline disposition to allow viewing in browser
+  // For PDFs and other files, use attachment to force download
+  const isImage = mimeType.startsWith('image/');
+  const disposition = isImage
+    ? `inline; filename="${encodeURIComponent(originalName)}"`
+    : `attachment; filename="${encodeURIComponent(originalName)}"`;
+
+  // Return the file as a response with proper headers
+  return new NextResponse(new Uint8Array(fileBuffer), {
+    headers: {
+      "Content-Type": mimeType,
+      "Content-Disposition": disposition,
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
+  });
 }

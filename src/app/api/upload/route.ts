@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadToS3, generateS3Key, S3UploadResult } from "@/lib/s3-client";
 import { uploadFile as uploadToLocal, FileStorageError } from "@/lib/file-storage";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { prisma } from "@/lib/prisma";
-import { randomUUID } from "crypto";
 
 export const dynamic = 'force-dynamic';
 
 const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE || "10485760"); // 10MB default
 
 type FileType = "task" | "message";
-
-// Check if AWS S3 is configured
-function isS3Configured(): boolean {
-  return !!((process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID) &&
-           (process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY) &&
-           (process.env.AWS_REGION || process.env.BUCKET_REGION));
-}
-
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +32,7 @@ export async function POST(request: NextRequest) {
     const workspaceId = formData.get("workspaceId") as string;
 
     console.log('📋 Upload details:', { source, taskId, workspaceId, fileName: file?.name, fileSize: file?.size });
-    
+
     if (!file) {
       return NextResponse.json(
         { error: "No file provided" },
@@ -74,105 +64,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const useS3 = isS3Configured();
-    console.log('🔧 S3 configured:', useS3, {
-      hasAccessKey: !!(process.env.AWS_ACCESS_KEY_ID || process.env.BUCKET_ACCESS_KEY_ID),
-      hasSecretKey: !!(process.env.AWS_SECRET_ACCESS_KEY || process.env.BUCKET_SECRET_ACCESS_KEY),
-      hasRegion: !!(process.env.AWS_REGION || process.env.BUCKET_REGION),
-    });
+    // Get task name for folder organization
+    let taskName: string | undefined;
 
-    // IMPORTANT: Amplify deployment requires S3 (no persistent filesystem)
-    // Fail early if S3 is not configured in production
-    if (!useS3 && process.env.NODE_ENV === 'production') {
-      console.error('❌ S3 not configured in production environment');
-      return NextResponse.json(
-        {
-          error: "File storage not properly configured. Please contact system administrator.",
-          details: "S3 credentials are required for production deployment"
-        },
-        { status: 500 }
-      );
-    }
-
-    let uploadResult: {
-      id: string;
-      filePath: string;
-      location: string;
-      isS3: boolean;
-    };
-    let fileId: string = randomUUID();
-
-    if (useS3) {
-      // S3 Upload Logic
-      let workspaceName = "unknown-workspace";
-      let taskName: string | undefined;
-
-      if (taskId) {
-        // Get task and workspace details
-        const task = await prisma.task.findUnique({
-          where: { id: taskId },
-          include: { workspace: { select: { name: true } } }
-        });
-        if (task) {
-          taskName = task.name;
-          workspaceName = task.workspace.name;
-        }
-      } else if (workspaceId) {
-        // Get workspace name if task is not provided
-        const workspace = await prisma.workspace.findUnique({
-          where: { id: workspaceId },
-          select: { name: true }
-        });
-        if (workspace) {
-          workspaceName = workspace.name;
-        }
+    if (taskId) {
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        select: { name: true }
+      });
+      if (task) {
+        taskName = task.name;
       }
-
-      // Generate S3 key
-      const extension = file.name.split('.').pop() || '';
-      const fileName = `${fileId}.${extension}`;
-      const s3Key = generateS3Key(workspaceName, fileName, taskName);
-
-
-      // Convert File to Buffer and upload to S3
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const s3Result: S3UploadResult = await uploadToS3(buffer, s3Key, file.type);
-
-      uploadResult = {
-        id: fileType === 'message' ? s3Result.key : fileId,
-        filePath: s3Result.key,
-        location: s3Result.location,
-        isS3: true
-      };
-    } else {
-      // Local Storage Upload Logic (development only)
-      console.log('⚠️  Using local storage (development mode only)');
-      const localResult = await uploadToLocal(file, fileType);
-
-      uploadResult = {
-        id: localResult.id,
-        filePath: localResult.filePath,
-        location: `/api/download/${localResult.id}`,
-        isS3: false
-      };
-      fileId = localResult.id;
     }
+
+    // Upload to local storage with organized folder structure
+    console.log('📁 Uploading to local storage with folder:', taskName ? `${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')} - ${taskName}` : 'date-only folder');
+
+    const localResult = await uploadToLocal(file, fileType, taskName);
+
+    const uploadResult = {
+      id: localResult.id,
+      filePath: localResult.filePath,
+      location: `/api/download/${localResult.id}`,
+    };
 
     // If this is a task attachment, save to database
     if (fileType === 'task' && taskId) {
       await prisma.taskAttachment.create({
         data: {
-          id: fileId,
+          id: localResult.id,
           taskId,
-          fileName: uploadResult.isS3 ? `${fileId}.${file.name.split('.').pop() || ''}` : file.name,
+          fileName: localResult.fileName,
           originalName: file.name,
           fileSize: file.size,
           mimeType: file.type,
-          filePath: uploadResult.filePath,
+          filePath: localResult.filePath,
         },
       });
     }
+
+    console.log('✅ Upload successful:', {
+      id: uploadResult.id,
+      filePath: uploadResult.filePath,
+      location: uploadResult.location,
+    });
 
     return NextResponse.json({
       data: {
@@ -183,7 +118,7 @@ export async function POST(request: NextRequest) {
         mimeType: file.type,
         filePath: uploadResult.filePath,
         location: uploadResult.location,
-        storageType: uploadResult.isS3 ? 's3' : 'local'
+        storageType: 'local'
       },
     });
   } catch (error) {
