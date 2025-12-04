@@ -25,18 +25,6 @@ export class FileStorageError extends Error {
 }
 
 /**
- * Sanitize a string for use as a folder/file name
- * Removes special characters and replaces spaces with dashes
- */
-function sanitizeName(name: string): string {
-  return name
-    .replace(/[<>:"/\\|?*]/g, '') // Remove invalid file system characters
-    .replace(/\s+/g, ' ')          // Normalize spaces
-    .trim()
-    .substring(0, 100)             // Limit length
-}
-
-/**
  * Generate folder name in format: dd-mm-yyyy - task#
  * Uses task number which is unique per task
  */
