@@ -94,7 +94,7 @@ const routes: Route[] = [
         href: "/settings",
         icon: Building2,
         activeIcon: Building2,
-        serviceAware: true,
+        serviceAware: false,
         restrictedForVisitors: true,
       },
       {

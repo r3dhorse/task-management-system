@@ -22,6 +22,7 @@ import { ArrowLeftIcon } from "@/lib/lucide-icons";
 import { useUpdateService } from "../api/use-update-service";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useDeleteService } from "../api/use-delete-service";
+import { useCurrent } from "@/features/auth/api/use-current";
 import { RoutinaryFrequency, routinaryFrequencyValues } from "../schemas";
 
 
@@ -44,9 +45,9 @@ const frequencyLabels: Record<RoutinaryFrequency, string> = {
 export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProps) => {
   const router = useRouter();
   const { mutate, isPending } = useUpdateService();
-  const {
-    mutate: deleteService,
-  } = useDeleteService();
+  const { mutate: deleteService } = useDeleteService();
+  const { data: currentUser } = useCurrent();
+  const isSuperAdmin = currentUser?.isSuperAdmin;
 
   const [DeleteDialog, confirmDelete] = useConfirm(
     "Delete Service",
@@ -93,8 +94,6 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
       }
     );
   };
-
-
 
   const onSubmit = (values: FormData) => {
     // Build final values - only include routinary fields if isRoutinary is true
@@ -366,28 +365,29 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
         </CardContent>
       </Card>
 
-      <Card className="w-full h-full border-none shadow-none">
-        <CardContent className="p-7">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <h3 className="font-bold text-red-600">Danger Zone</h3>
-              <p className="text-sm text-muted-foreground">
-                Deleting a service is a permanent action and will result in the loss of all associated data.
-              </p>
+      {isSuperAdmin && (
+        <Card className="w-full h-full border-none shadow-none">
+          <CardContent className="p-7">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <h3 className="font-bold text-red-600">Danger Zone</h3>
+                <p className="text-sm text-muted-foreground">
+                  Deleting a service is a permanent action and will result in the loss of all associated data.
+                </p>
+              </div>
+              <Button
+                className="mt-4 sm:mt-0 sm:ml-4 w-fit"
+                size="sm"
+                variant="secondary"
+                disabled={isPending}
+                onClick={handleDelete}
+              >
+                Delete Service
+              </Button>
             </div>
-            <Button
-              className="mt-4 sm:mt-0 sm:ml-4 w-fit"
-              size="sm"
-              variant="secondary"
-              disabled={isPending}
-              onClick={handleDelete}
-            >
-              Delete Service
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 
