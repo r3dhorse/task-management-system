@@ -1,12 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable standalone output only for Docker builds
-  // Amplify needs the default output mode for SSR to work
+  // Enable standalone output for Docker production builds
+  // This creates a minimal production bundle in .next/standalone
   ...(process.env.DOCKER_BUILD === 'true' ? { output: 'standalone' } : {}),
-
-  // Remove env config - it doesn't work for server-side in Amplify
-  // Environment variables should be set in Amplify Console and are
-  // automatically available to server-side code via process.env
 
   // Enable source maps in production for better debugging and Lighthouse score
   productionBrowserSourceMaps: true,

@@ -1,0 +1,47 @@
+# =============================================================================
+# Task Management System - Initial HTTP-only Configuration
+# =============================================================================
+# Use this configuration BEFORE obtaining SSL certificates
+# After getting certificates, replace with app.conf
+# =============================================================================
+
+# Upstream to Next.js application
+upstream nextjs_upstream {
+    server app:3000;
+    keepalive 64;
+}
+
+# HTTP Server (temporary, before SSL)
+server {
+    listen 80;
+    listen [::]:80;
+    server_name _;
+
+    # Let's Encrypt challenge
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # Request size limit (for file uploads)
+    client_max_body_size 20M;
+
+    # Proxy settings
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_cache_bypass $http_upgrade;
+
+    # Health check endpoint
+    location /api/health {
+        proxy_pass http://nextjs_upstream;
+    }
+
+    # All other requests
+    location / {
+        proxy_pass http://nextjs_upstream;
+    }
+}

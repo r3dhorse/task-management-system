@@ -32,7 +32,7 @@ This is a **multi-tenant task management system** built with:
 - **Backend**: Next.js API routes with PostgreSQL database
 - **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: NextAuth.js with credentials provider and JWT sessions
-- **File Storage**: AWS S3 for task attachments
+- **File Storage**: Local storage with organized folder structure
 
 ## Project Structure
 
@@ -78,36 +78,58 @@ RESTful APIs under `/api/`:
 - **Port 3001** for development (configurable in package.json)
 - **TypeScript strict mode** is enabled
 - **Path aliases**: `@/*` maps to `src/*`
-- **Environment variables** required: DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL, AWS credentials for S3
+- **Environment variables** required: DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL
 - **Prisma migrations** must be run after schema changes
 - **Docker development** includes PostgreSQL container with automatic migrations
 
-## AWS Deployment (Amplify)
+## Production Deployment (Docker)
 
-**Production Database (AWS RDS):**
-- Database: `task-management-db.cb6iwoqygjtu.ap-southeast-1.rds.amazonaws.com`
-- Username: `postgres_db`
-- Port: `5432`
-- Database name: `taskmanagement`
+**Deployment Commands:**
+```bash
+# Configure environment
+cp .env.production.example .env.production
+nano .env.production
 
-**Required Amplify Environment Variables:**
-- `DATABASE_URL`: `postgresql://postgres_db:PASSWORD@task-management-db.cb6iwoqygjtu.ap-southeast-1.rds.amazonaws.com:5432/taskmanagement`
+# Deploy application
+./deploy-prod.sh deploy
+
+# Setup SSL certificates
+./deploy-prod.sh ssl
+
+# Check status and cron jobs
+./deploy-prod.sh status
+
+# View logs
+./deploy-prod.sh logs app
+
+# Manual database backup
+./deploy-prod.sh backup
+```
+
+**Required Environment Variables:**
+- `POSTGRES_PASSWORD`: Secure database password
+- `DATABASE_URL`: PostgreSQL connection string
 - `NEXTAUTH_SECRET`: Generate with `openssl rand -base64 32`
-- `NEXTAUTH_URL`: `https://main.d3qi2q2yf1ufwe.amplifyapp.com`
-- `NODE_ENV`: `production`
-- AWS S3 credentials (if using file uploads)
+- `NEXTAUTH_URL`: Your production domain (e.g., `https://your-domain.com`)
+- `NEXT_PUBLIC_APP_URL`: Same as NEXTAUTH_URL
+- `DOMAIN`: Your domain for SSL certificate
+- `SSL_EMAIL`: Email for Let's Encrypt notifications
 
-**Build Configuration:**
-- Build script includes `prisma generate` before `next build`
-- Custom `amplify.yml` configured for Prisma support
-- Migrations applied to RDS database
+**Cron Jobs (Asia/Manila timezone):**
+- Midnight: Move overdue tasks to Backlog
+- 1 AM & 1 PM: Create routinary (recurring) tasks
+- 2 AM: Automated database backup
+
+**Documentation:**
+- See `docs/PRODUCTION-DEPLOYMENT.md` for complete deployment guide
+- See `docs/CHANGELOG.md` for version history
 
 ## Task Workflow Features
 
 - **SLA Management**: Service-level agreements with weekend handling
 - **Task Reviews**: Assignee/reviewer workflow with status transitions
 - **Confidential Tasks**: Restricted visibility based on assignment
-- **File Attachments**: S3 integration with access control
+- **File Attachments**: Local storage with access control
 - **Task History**: Complete audit trail of all changes
 - **Performance KPIs**: Weighted metrics configuration per service
 
