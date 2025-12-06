@@ -322,10 +322,10 @@ export const RegisterUserModal = ({ isOpen, onClose, workspaceId }: RegisterUser
                           <span className="text-xs text-gray-500">- Full access</span>
                         </div>
                       </SelectItem>
-                      <SelectItem value={MemberRole.VISITOR}>
+                      <SelectItem value={MemberRole.CUSTOMER}>
                         <div className="flex items-center gap-2">
                           <UserIcon className="h-4 w-4" />
-                          <span>Visitor</span>
+                          <span>Customer</span>
                           <span className="text-xs text-gray-500">- Limited access</span>
                         </div>
                       </SelectItem>

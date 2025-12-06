@@ -24,7 +24,7 @@ interface Route {
   icon: React.ComponentType<{ className?: string }>;
   activeIcon: React.ComponentType<{ className?: string }>;
   serviceAware: boolean;
-  restrictedForVisitors: boolean;
+  restrictedForCustomers: boolean;
   isModal?: boolean;
   children?: Route[];
 }
@@ -36,7 +36,7 @@ const routes: Route[] = [
     icon: GoHome,
     activeIcon: GoHomeFill,
     serviceAware: false,
-    restrictedForVisitors: true,
+    restrictedForCustomers: true,
   },
   {
     label: "Tasks",
@@ -44,7 +44,7 @@ const routes: Route[] = [
     icon: ListTodo,
     activeIcon: ListTodo,
     serviceAware: false,
-    restrictedForVisitors: false,
+    restrictedForCustomers: false,
     children: [
       {
         label: "Workspace Tasks",
@@ -52,7 +52,7 @@ const routes: Route[] = [
         icon: ListTodo,
         activeIcon: ListTodo,
         serviceAware: false,
-        restrictedForVisitors: false,
+        restrictedForCustomers: false,
       },
       {
         label: "My Tasks",
@@ -60,7 +60,7 @@ const routes: Route[] = [
         icon: GoCheckCircle,
         activeIcon: GoCheckCircleFill,
         serviceAware: true,
-        restrictedForVisitors: true,
+        restrictedForCustomers: true,
       },
       {
         label: "Created Tasks",
@@ -68,7 +68,7 @@ const routes: Route[] = [
         icon: FileTextIcon,
         activeIcon: FileTextIcon,
         serviceAware: false,
-        restrictedForVisitors: false,
+        restrictedForCustomers: false,
         isModal: true,
       },
     ],
@@ -79,7 +79,7 @@ const routes: Route[] = [
     icon: SettingsIcon,
     activeIcon: SettingsIcon,
     serviceAware: true,
-    restrictedForVisitors: true,
+    restrictedForCustomers: true,
     children: [
       {
         label: "Members",
@@ -87,7 +87,7 @@ const routes: Route[] = [
         icon: UsersIcon,
         activeIcon: UsersIcon,
         serviceAware: true,
-        restrictedForVisitors: true,
+        restrictedForCustomers: true,
       },
       {
         label: "Workspace",
@@ -95,7 +95,7 @@ const routes: Route[] = [
         icon: Building2,
         activeIcon: Building2,
         serviceAware: false,
-        restrictedForVisitors: true,
+        restrictedForCustomers: true,
       },
       {
         label: "User Management",
@@ -103,7 +103,7 @@ const routes: Route[] = [
         icon: Shield,
         activeIcon: Shield,
         serviceAware: false,
-        restrictedForVisitors: true,
+        restrictedForCustomers: true,
         isModal: true,
       },
       {
@@ -112,7 +112,7 @@ const routes: Route[] = [
         icon: RefreshCw,
         activeIcon: RefreshCw,
         serviceAware: false,
-        restrictedForVisitors: true,
+        restrictedForCustomers: true,
         isModal: true,
       },
     ],
@@ -142,7 +142,7 @@ export const Navigation = () => {
     (member as Member).userId === currentUser?.id
   ) as Member;
 
-  const isVisitor = currentMember?.role === MemberRole.VISITOR;
+  const isCustomer = currentMember?.role === MemberRole.CUSTOMER;
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
   const isAdmin = currentMember?.role === MemberRole.ADMIN;
   const canManageServices = isAdmin || isSuperAdmin;
@@ -187,7 +187,7 @@ export const Navigation = () => {
   };
 
   const renderMenuItem = (item: Route, isChild: boolean = false) => {
-    const isRestrictedForCurrentUser = isVisitor && item.restrictedForVisitors;
+    const isRestrictedForCurrentUser = isCustomer && item.restrictedForCustomers;
 
     if (isRestrictedForCurrentUser) {
       return null;

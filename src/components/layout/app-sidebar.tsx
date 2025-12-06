@@ -55,7 +55,7 @@ function SidebarContent({ onClose, isMobile = false }: SidebarContentProps) {
     (member) => (member as Member).userId === currentUser?.id
   ) as Member | undefined;
 
-  const isVisitor = currentMember?.role === MemberRole.VISITOR;
+  const isCustomer = currentMember?.role === MemberRole.CUSTOMER;
   const isSuperAdmin = currentUser?.isSuperAdmin;
 
   // Handle new task button click
@@ -109,7 +109,7 @@ function SidebarContent({ onClose, isMobile = false }: SidebarContentProps) {
           <NotificationDropdown />
 
           {/* New Task Button */}
-          {!isVisitor && (
+          {!isCustomer && (
             <Button
               onClick={handleNewTask}
               className="w-full mt-2 bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition-all duration-200 justify-start"

@@ -237,7 +237,7 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
                       <div className="space-y-0.5">
                         <FormLabel className="text-sm font-medium text-muted-foreground">Public Service</FormLabel>
                         <div className="text-sm text-muted-foreground">
-                          Allow workspace visitors to see this service when creating tasks
+                          Allow workspace customers to see this service when creating tasks
                         </div>
                       </div>
                       <FormControl>

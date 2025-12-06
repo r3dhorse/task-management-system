@@ -1,7 +1,7 @@
 export enum MemberRole {
   ADMIN = "ADMIN",
   MEMBER = "MEMBER",
-  VISITOR = "VISITOR"
+  CUSTOMER = "CUSTOMER"
 };
 
 export interface Member {

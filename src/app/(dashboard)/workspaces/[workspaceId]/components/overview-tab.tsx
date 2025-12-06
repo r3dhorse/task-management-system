@@ -79,10 +79,10 @@ interface OverviewTabProps {
 function calculateMemberPerformance(
   tasks: PopulatedTask[],
   members: Member[],
-  includeVisitors: boolean = false
+  includeCustomers: boolean = false
 ): MemberPerformance[] {
   const memberStats = members
-    .filter((member) => includeVisitors || member.role !== MemberRole.VISITOR)
+    .filter((member) => includeCustomers || member.role !== MemberRole.CUSTOMER)
     .map((member) => {
       const memberTasks = tasks.filter((task) => task.assigneeId === member.id);
       const completedTasks = memberTasks.filter(
@@ -258,13 +258,13 @@ export function OverviewTab({
     };
   }, [tasks]);
 
-  // Calculate performance metrics (excluding visitors for top performers)
+  // Calculate performance metrics (excluding customers for top performers)
   const memberPerformance = useMemo(
     () => calculateMemberPerformance(tasks, members, false),
     [tasks, members]
   );
 
-  // Calculate all members performance (including visitors for modal)
+  // Calculate all members performance (including customers for modal)
   const allMembersPerformance = useMemo(
     () => calculateMemberPerformance(tasks, members, true),
     [tasks, members]

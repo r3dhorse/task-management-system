@@ -98,9 +98,9 @@ const app = new Hono()
       }
 
       // Filter services based on user role
-      // Visitors can only see public services
+      // Customers can only see public services
       const whereCondition: { workspaceId: string; isPublic?: boolean } = { workspaceId };
-      if (member.role === MemberRole.VISITOR) {
+      if (member.role === MemberRole.CUSTOMER) {
         whereCondition.isPublic = true;
       }
 

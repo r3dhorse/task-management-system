@@ -374,7 +374,7 @@ export const TaskPropertiesModal = ({
                       </SelectItem>
                     )}
                     {members?.documents
-                      .filter(member => (member as Member).role !== MemberRole.VISITOR)
+                      .filter(member => (member as Member).role !== MemberRole.CUSTOMER)
                       .map((member) => (
                       <SelectItem key={member.id} value={member.id}>
                         <span className="text-sm">👤 {member.name}</span>
@@ -447,7 +447,7 @@ export const TaskPropertiesModal = ({
                         <span className="text-sm">👁️ No reviewer</span>
                       </SelectItem>
                       {members?.documents
-                        .filter(member => (member as Member).role !== MemberRole.VISITOR)
+                        .filter(member => (member as Member).role !== MemberRole.CUSTOMER)
                         .map((member) => (
                         <SelectItem key={member.id} value={member.id}>
                           <span className="text-sm">👁️ {member.name}</span>

@@ -24,7 +24,7 @@ const app = new Hono()
         },
         orderBy: [
           {
-            // First, prioritize by role (ADMIN first, then MEMBER, then VISITOR)
+            // First, prioritize by role (ADMIN first, then MEMBER, then CUSTOMER)
             role: 'asc', // Since ADMIN comes first in enum, this puts ADMIN first
           },
           {

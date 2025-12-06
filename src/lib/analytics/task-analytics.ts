@@ -266,9 +266,9 @@ export function calculateMemberAnalytics(
   weights: KPIWeights,
   withReviewStage: boolean = true
 ): MemberAnalytics[] {
-  // Calculate base metrics for each member (excluding visitors)
+  // Calculate base metrics for each member (excluding customers)
   const memberStats = members
-    .filter(member => member.role !== MemberRole.VISITOR)
+    .filter(member => member.role !== MemberRole.CUSTOMER)
     .map(member => calculateMemberMetrics(member, tasks, withReviewStage));
 
   // Find the maximum contribution score in the team for normalization

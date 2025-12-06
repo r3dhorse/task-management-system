@@ -675,8 +675,8 @@ const app = new Hono()
         { isConfidential: true, followers: { some: { id: member.id } } }, // User is following the task
       ];
 
-      // For visitors, add additional filtering to only show tasks they are following
-      if (member.role === MemberRole.VISITOR) {
+      // For customers, add additional filtering to only show tasks they are following
+      if (member.role === MemberRole.CUSTOMER) {
         where.followers = { some: { id: member.id } };
       } else {
         // Combine search filter with confidential filter using AND
@@ -1022,11 +1022,11 @@ const app = new Hono()
         const isFollower = existingTask.followers.some(f => f.id === member.id);
         const isWorkspaceAdmin = member.role === MemberRole.ADMIN;
         const isWorkspaceMember = member.role === MemberRole.MEMBER;
-        const isVisitor = member.role === MemberRole.VISITOR;
+        const isCustomer = member.role === MemberRole.CUSTOMER;
 
-        // Global restriction: Visitors cannot change task status at all
-        if (isVisitor && status !== undefined && status !== existingTask.status) {
-          return c.json({ error: "Visitors cannot change task status" }, 403);
+        // Global restriction: Customers cannot change task status at all
+        if (isCustomer && status !== undefined && status !== existingTask.status) {
+          return c.json({ error: "Customers cannot change task status" }, 403);
         }
 
         // Check if trying to mark task as DONE when it has incomplete sub-tasks
@@ -1049,7 +1049,7 @@ const app = new Hono()
 
         // Check if user can update task based on current status
         if (existingTask.status === TaskStatus.TODO) {
-          // TODO status: all workspace members and visitors can update (except status change for visitors, handled above)
+          // TODO status: all workspace members and customers can update (except status change for customers, handled above)
           // No additional restrictions needed - everyone can update TODO tasks
         } else if (existingTask.status === TaskStatus.IN_REVIEW) {
           // In Review status: reviewers have full edit permissions, other workspace members can also update
@@ -1084,7 +1084,7 @@ const app = new Hono()
           }
         } else {
           // For other statuses (BACKLOG, ARCHIVED), no special restrictions
-          // All members can update, visitors can update fields but not status (handled above)
+          // All members can update, customers can update fields but not status (handled above)
         }
 
         // Assignee transfer restrictions
@@ -1177,15 +1177,15 @@ const app = new Hono()
               },
             });
 
-            if (!targetAssignee || targetAssignee.workspaceId !== workspaceId || targetAssignee.role === MemberRole.VISITOR) {
-              return c.json({ error: "Assignee must be a member (not visitor) of the target workspace for confidential tasks" }, 400);
+            if (!targetAssignee || targetAssignee.workspaceId !== workspaceId || targetAssignee.role === MemberRole.CUSTOMER) {
+              return c.json({ error: "Assignee must be a member (not customer) of the target workspace for confidential tasks" }, 400);
             }
           } else {
             // For non-confidential tasks, reset assignee to null (unassigned)
             updateData.assigneeId = null;
           }
 
-          // Auto-register followers as visitors to the target workspace if they're not already members
+          // Auto-register followers as customers to the target workspace if they're not already members
           // Optimized batch processing to avoid N+1 queries
           const followerIds = existingTask.followers.map(f => f.id);
 
@@ -1211,19 +1211,19 @@ const app = new Hono()
           // Add existing memberships
           targetFollowerMembershipIds.push(...existingMemberships.map(m => m.id));
 
-          // Identify users who need visitor memberships
+          // Identify users who need customer memberships
           const usersNeedingMembership = followerMembers.filter(
             fm => !existingUserIds.has(fm.userId)
           );
 
-          // Batch create visitor memberships for users not in target workspace
+          // Batch create customer memberships for users not in target workspace
           if (usersNeedingMembership.length > 0) {
             try {
               await prisma.member.createMany({
                 data: usersNeedingMembership.map(fm => ({
                   userId: fm.userId,
                   workspaceId: workspaceId,
-                  role: MemberRole.VISITOR,
+                  role: MemberRole.CUSTOMER,
                 })),
                 skipDuplicates: true, // Handle concurrent creation attempts
               });
@@ -1238,7 +1238,7 @@ const app = new Hono()
 
               targetFollowerMembershipIds.push(...createdMemberships.map(m => m.id));
             } catch (error) {
-              console.error("Failed to batch create visitor memberships:", error);
+              console.error("Failed to batch create customer memberships:", error);
               // Fallback: try to find existing memberships in case of race condition
               const fallbackMemberships = await prisma.member.findMany({
                 where: {
@@ -1276,8 +1276,8 @@ const app = new Hono()
         if (attachmentId !== undefined) updateData.attachmentId = attachmentId === 'undefined' || !attachmentId ? null : attachmentId;
         if (isConfidential !== undefined) updateData.isConfidential = isConfidential;
 
-        // Only include status if user is not a visitor
-        if (member.role !== MemberRole.VISITOR && status !== undefined) {
+        // Only include status if user is not a customer
+        if (member.role !== MemberRole.CUSTOMER && status !== undefined) {
           updateData.status = status;
         }
 
@@ -1709,9 +1709,9 @@ const app = new Hono()
         return c.json({ error: "Unauthorized" }, 401)
       }
 
-      // Hide archived tasks from visitors (treat as not found)
+      // Hide archived tasks from customers (treat as not found)
       // Admins and members can view archived tasks
-      if (task.status === TaskStatus.ARCHIVED && currentMember.role === MemberRole.VISITOR) {
+      if (task.status === TaskStatus.ARCHIVED && currentMember.role === MemberRole.CUSTOMER) {
         return c.json({ error: "Task not found" }, 404);
       }
 
@@ -1877,7 +1877,7 @@ const app = new Hono()
         },
       });
 
-      if (!targetMember || targetMember.role === MemberRole.VISITOR) {
+      if (!targetMember || targetMember.role === MemberRole.CUSTOMER) {
         return c.json({ error: "Insufficient permissions to create tasks in the target workspace" }, 403);
       }
 

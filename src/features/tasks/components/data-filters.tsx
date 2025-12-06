@@ -25,7 +25,7 @@ export const DataFilters = () => {
   }));
 
   const memberOptions = members?.documents
-    .filter((member) => (member as Member).role !== MemberRole.VISITOR)
+    .filter((member) => (member as Member).role !== MemberRole.CUSTOMER)
     .map((member) => ({
       value: member.id,
       label: member.name,

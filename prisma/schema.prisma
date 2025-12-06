@@ -116,7 +116,7 @@ model Workspace {
 enum MemberRole {
   ADMIN
   MEMBER
-  VISITOR
+  CUSTOMER
 }
 
 model Member {

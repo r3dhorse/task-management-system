@@ -200,13 +200,13 @@ interface RoleBadgeProps {
 const roleColors: Record<MemberRole, { bg: string; text: string }> = {
   [MemberRole.ADMIN]: { bg: "bg-purple-100", text: "text-purple-700" },
   [MemberRole.MEMBER]: { bg: "bg-blue-100", text: "text-blue-700" },
-  [MemberRole.VISITOR]: { bg: "bg-gray-100", text: "text-gray-700" },
+  [MemberRole.CUSTOMER]: { bg: "bg-gray-100", text: "text-gray-700" },
 };
 
 const roleLabels: Record<MemberRole, string> = {
   [MemberRole.ADMIN]: "Admin",
   [MemberRole.MEMBER]: "Member",
-  [MemberRole.VISITOR]: "Visitor",
+  [MemberRole.CUSTOMER]: "Customer",
 };
 
 /**

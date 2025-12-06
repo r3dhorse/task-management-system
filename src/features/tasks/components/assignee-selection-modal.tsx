@@ -35,7 +35,7 @@ export const AssigneeSelectionModal = ({
     }
   };
 
-  const eligibleAssignees = members.filter(member => member.role !== MemberRole.VISITOR);
+  const eligibleAssignees = members.filter(member => member.role !== MemberRole.CUSTOMER);
 
   // Set current user as default when modal opens
   React.useEffect(() => {

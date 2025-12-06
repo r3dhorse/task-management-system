@@ -454,7 +454,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     (member as Member).userId === currentUser?.id
   ) as Member;
   
-  // Visitors can edit tasks but cannot change status
+  // Customers can edit tasks but cannot change status
   // DONE tasks can only be edited by workspace admins
   const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
 
@@ -470,7 +470,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     : (isCreator || isAssignee || isSuperAdmin);
   const isAlreadyArchived = task?.status === "ARCHIVED";
 
-  // Update permission: Allow creators/visitors to edit details, exclude TO DO stage from restrictions
+  // Update permission: Allow creators/customers to edit details, exclude TO DO stage from restrictions
   // Reviewers can edit tasks in IN_REVIEW status
   const canEdit = task?.status === TaskStatus.DONE
     ? isWorkspaceAdmin
@@ -478,13 +478,13 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       ? true // All workspace members can edit TO DO tasks (since this is where they get their tasks)
       : task?.status === TaskStatus.IN_REVIEW && isReviewer
         ? true // Reviewers can edit tasks in IN_REVIEW status
-      : currentMember?.role === MemberRole.VISITOR
-        ? false // Visitors cannot edit tasks that are not in TO DO status
+      : currentMember?.role === MemberRole.CUSTOMER
+        ? false // Customers cannot edit tasks that are not in TO DO status
         : (isCreator || isAssignee || (isFollower && currentMember?.role === MemberRole.MEMBER) || isWorkspaceAdmin || isSuperAdmin);
 
   const canEditStatus = task?.status === TaskStatus.IN_REVIEW && isReviewer
     ? true // Reviewers can change status of IN_REVIEW tasks
-    : (currentMember?.role !== MemberRole.VISITOR || isCreator); // Non-visitors and creators can edit status
+    : (currentMember?.role !== MemberRole.CUSTOMER || isCreator); // Non-customers and creators can edit status
 
   // Access restriction: Only assignee, creator, reviewer, followers, and workspace admins can view task details
   // Exception: All workspace members can view TO DO tasks (since this is where they get their tasks)
@@ -613,7 +613,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       isConfidential: editForm.isConfidential,
     };
 
-    // Only include status if user can edit status (not a visitor)
+    // Only include status if user can edit status (not a customer)
     if (canEditStatus) {
       updatePayload.status = editForm.status;
     }

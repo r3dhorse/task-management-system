@@ -78,7 +78,7 @@ export const EditTaskForm = ({
 
   // Create assignee options for the AssigneeSelect component
   const assigneeOptions = membertOptions
-    .filter(member => member.role !== MemberRole.VISITOR)
+    .filter(member => member.role !== MemberRole.CUSTOMER)
     .map((member) => ({
       value: member.id,
       label: member.name,

@@ -137,7 +137,7 @@ export const ManageFollowersModal = ({
                 <p className="font-medium mb-1">About Task Followers</p>
                 <ul className="space-y-1 text-xs">
                   <li>• Followers receive notifications about task updates</li>
-                  <li>• Visitors can only see tasks they are following</li>
+                  <li>• Customers can only see tasks they are following</li>
                   <li>• All workspace members can be added as followers</li>
                 </ul>
               </div>

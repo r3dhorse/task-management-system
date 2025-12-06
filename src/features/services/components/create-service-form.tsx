@@ -174,7 +174,7 @@ export const CreateServiceForm = ({ onCancel }: CreateServiceFormProps) => {
                     <div className="space-y-0.5">
                       <FormLabel>Public Service</FormLabel>
                       <div className="text-sm text-muted-foreground">
-                        Allow workspace visitors to see this service when creating tasks
+                        Allow workspace customers to see this service when creating tasks
                       </div>
                     </div>
                     <FormControl>

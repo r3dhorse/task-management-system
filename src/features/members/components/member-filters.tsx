@@ -63,11 +63,11 @@ export const MemberFilters = ({
                 Member
               </div>
             </SelectItem>
-            <SelectItem value={MemberRole.VISITOR} className="flex items-center gap-2">
+            <SelectItem value={MemberRole.CUSTOMER} className="flex items-center gap-2">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-gray-500"></div>
                 <UserIcon className="w-3 h-3" />
-                Visitor
+                Customer
               </div>
             </SelectItem>
           </SelectContent>

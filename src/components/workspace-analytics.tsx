@@ -92,7 +92,7 @@ export const WorkspaceAnalytics = ({
   // Calculate member analytics with enhanced KPI metrics
   const memberAnalytics = useMemo(() => {
     const memberStats = members
-      .filter(member => member.role !== MemberRole.VISITOR) // Exclude visitors from performance metrics
+      .filter(member => member.role !== MemberRole.CUSTOMER) // Exclude customers from performance metrics
       .map(member => {
         // Assigned tasks
         const memberTasks = tasks.filter(task => task.assigneeId === member.id);

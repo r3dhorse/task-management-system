@@ -18,7 +18,7 @@ export const getWorkspaces = async () => {
     },
     orderBy: [
       {
-        // First, prioritize by role (ADMIN first, then MEMBER, then VISITOR)
+        // First, prioritize by role (ADMIN first, then MEMBER, then CUSTOMER)
         role: 'asc', // Since ADMIN comes first in enum, this puts ADMIN first
       },
       {
@@ -98,11 +98,11 @@ export const getWorkspaceInfo = async ({ workspaceId }: GetWorkspaceInfoProps) =
 
 /**
  * Get the user's most recently joined workspace as MEMBER or ADMIN (latest default workspace)
- * Prioritizes MEMBER/ADMIN roles over VISITOR roles
+ * Prioritizes MEMBER/ADMIN roles over CUSTOMER roles
  */
 export const getUserLatestWorkspace = async () => {
   const user = await getCurrentUser();
-  
+
   if (!user) {
     throw new Error("Unauthorized");
   }
@@ -127,11 +127,11 @@ export const getUserLatestWorkspace = async () => {
     return latestMemberOrAdminMembership.workspace;
   }
 
-  // If no MEMBER/ADMIN memberships, fall back to latest VISITOR membership
-  const latestVisitorMembership = await prisma.member.findFirst({
+  // If no MEMBER/ADMIN memberships, fall back to latest CUSTOMER membership
+  const latestCustomerMembership = await prisma.member.findFirst({
     where: {
       userId: user.id,
-      role: 'VISITOR',
+      role: 'CUSTOMER',
     },
     include: {
       workspace: true,
@@ -141,9 +141,9 @@ export const getUserLatestWorkspace = async () => {
     },
   });
 
-  if (!latestVisitorMembership) {
+  if (!latestCustomerMembership) {
     return null;
   }
 
-  return latestVisitorMembership.workspace;
+  return latestCustomerMembership.workspace;
 };

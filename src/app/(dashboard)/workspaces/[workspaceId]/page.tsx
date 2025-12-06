@@ -90,9 +90,9 @@ const WorkspaceIdPage = () => {
     }) || []) as PopulatedTask[];
   }, [tasks?.documents, dateFrom, dateTo]);
 
-  // Redirect visitors to workspace tasks page automatically
+  // Redirect customers to workspace tasks page automatically
   useEffect(() => {
-    if (currentMember && currentMember.role === MemberRole.VISITOR) {
+    if (currentMember && currentMember.role === MemberRole.CUSTOMER) {
       router.push(`/workspaces/${workspaceId}/workspace-tasks`);
     }
   }, [currentMember, workspaceId, router]);

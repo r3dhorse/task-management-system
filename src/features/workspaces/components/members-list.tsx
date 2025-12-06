@@ -224,10 +224,10 @@ export const MembersList = () => {
                               <ShieldIcon className="h-3 w-3 mr-1" />
                               Admin
                             </Badge>
-                          ) : populatedMember.role === MemberRole.VISITOR ? (
+                          ) : populatedMember.role === MemberRole.CUSTOMER ? (
                             <Badge className="bg-gray-100 text-gray-700 border-gray-300 text-xs">
                               <UserIcon className="h-3 w-3 mr-1" />
-                              Visitor
+                              Customer
                             </Badge>
                           ) : (
                             <Badge variant="secondary" className="text-xs">
@@ -275,14 +275,14 @@ export const MembersList = () => {
                               Make Member
                             </DropdownMenuItem>
                           )}
-                          {populatedMember.role !== MemberRole.VISITOR && (
+                          {populatedMember.role !== MemberRole.CUSTOMER && (
                             <DropdownMenuItem
-                              onClick={() => handleUpdateMember(populatedMember.id, MemberRole.VISITOR)}
+                              onClick={() => handleUpdateMember(populatedMember.id, MemberRole.CUSTOMER)}
                               disabled={isUpdatingMember}
                               className="flex items-center gap-2"
                             >
                               <UserIcon className="h-4 w-4" />
-                              Make Visitor
+                              Make Customer
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem

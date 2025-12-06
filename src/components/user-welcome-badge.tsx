@@ -38,7 +38,7 @@ export const UserWelcomeBadge = () => {
             }`}>
               {currentMember.role === MemberRole.ADMIN && '👑'}
               {currentMember.role === MemberRole.MEMBER && '👤'}
-              {currentMember.role === MemberRole.VISITOR && '👁️'}
+              {currentMember.role === MemberRole.CUSTOMER && '👁️'}
               {currentMember.role.charAt(0).toUpperCase() + currentMember.role.slice(1).toLowerCase()}
             </span>
           ) : (

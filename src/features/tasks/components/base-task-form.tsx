@@ -406,11 +406,11 @@ export function BaseTaskForm({
     [serviceOptions, selectedServiceId]
   );
 
-  // Create assignee options (exclude visitors)
+  // Create assignee options (exclude customers)
   const assigneeOptions = useMemo(
     () =>
       memberOptions
-        .filter((member) => member.role !== MemberRole.VISITOR)
+        .filter((member) => member.role !== MemberRole.CUSTOMER)
         .map((member) => ({
           value: member.id,
           label: member.name,
