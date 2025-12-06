@@ -1,14 +1,20 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Activity,
   Briefcase,
   Trophy,
+  UsersIcon,
 } from "@/lib/lucide-icons";
 import { TaskStatus, PopulatedTask } from "@/features/tasks/types";
 import { Member, MemberRole } from "@/features/members/types";
@@ -64,7 +70,6 @@ interface OverviewTabProps {
   services: ServiceType[];
   workspaceId: string;
   workspaceName?: string;
-  onNavigateToMembers?: () => void;
 }
 
 // ============================================================================
@@ -73,10 +78,11 @@ interface OverviewTabProps {
 
 function calculateMemberPerformance(
   tasks: PopulatedTask[],
-  members: Member[]
+  members: Member[],
+  includeVisitors: boolean = false
 ): MemberPerformance[] {
   const memberStats = members
-    .filter((member) => member.role !== MemberRole.VISITOR)
+    .filter((member) => includeVisitors || member.role !== MemberRole.VISITOR)
     .map((member) => {
       const memberTasks = tasks.filter((task) => task.assigneeId === member.id);
       const completedTasks = memberTasks.filter(
@@ -222,9 +228,9 @@ export function OverviewTab({
   services,
   workspaceId,
   workspaceName: _workspaceName,
-  onNavigateToMembers,
 }: OverviewTabProps) {
   const router = useRouter();
+  const [showMembersModal, setShowMembersModal] = useState(false);
   // Calculate statistics
   const stats = useMemo(() => {
     const totalTasks = tasks.length;
@@ -252,9 +258,15 @@ export function OverviewTab({
     };
   }, [tasks]);
 
-  // Calculate performance metrics
+  // Calculate performance metrics (excluding visitors for top performers)
   const memberPerformance = useMemo(
-    () => calculateMemberPerformance(tasks, members),
+    () => calculateMemberPerformance(tasks, members, false),
+    [tasks, members]
+  );
+
+  // Calculate all members performance (including visitors for modal)
+  const allMembersPerformance = useMemo(
+    () => calculateMemberPerformance(tasks, members, true),
     [tasks, members]
   );
 
@@ -315,19 +327,17 @@ export function OverviewTab({
         </Card>
 
         {/* Top Performers */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card
+          className="border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+          onClick={() => setShowMembersModal(true)}
+        >
+          <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <div className="p-2 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg">
                 <Trophy className="h-5 w-5 text-white" />
               </div>
               Top Performers
             </CardTitle>
-            {onNavigateToMembers && (
-              <Button variant="outline" size="sm" onClick={onNavigateToMembers}>
-                View All
-              </Button>
-            )}
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -451,6 +461,89 @@ export function OverviewTab({
           </div>
         </CardContent>
       </Card>
+
+      {/* All Members Modal */}
+      <Dialog open={showMembersModal} onOpenChange={setShowMembersModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <div className="p-2 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg">
+                <UsersIcon className="h-5 w-5 text-white" />
+              </div>
+              All Members Performance
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                ({allMembersPerformance.length} members)
+              </span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className={cn(
+            "space-y-3 pr-2",
+            allMembersPerformance.length > 5 && "max-h-[340px] overflow-y-auto"
+          )}>
+              {allMembersPerformance.length > 0 ? (
+                allMembersPerformance.map((performer, index) => (
+                  <div
+                    key={performer.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white",
+                          index === 0
+                            ? "bg-gradient-to-r from-yellow-400 to-yellow-600"
+                            : index === 1
+                            ? "bg-gradient-to-r from-gray-300 to-gray-500"
+                            : index === 2
+                            ? "bg-gradient-to-r from-amber-500 to-amber-700"
+                            : "bg-gradient-to-r from-blue-400 to-blue-600"
+                        )}
+                      >
+                        {index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {performer.name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {performer.tasksCompleted}/{performer.tasksAssigned} tasks completed
+                          {performer.tasksOverdue > 0 && (
+                            <span className="text-red-500 ml-2">
+                              ({performer.tasksOverdue} overdue)
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right text-xs text-gray-500 hidden sm:block">
+                        <div>{Math.round(performer.completionRate)}% rate</div>
+                      </div>
+                      <Badge
+                        className={cn(
+                          "font-bold min-w-[50px] justify-center",
+                          performer.productivityScore >= 80
+                            ? "bg-green-100 text-green-700"
+                            : performer.productivityScore >= 60
+                            ? "bg-blue-100 text-blue-700"
+                            : performer.productivityScore >= 40
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-gray-100 text-gray-700"
+                        )}
+                      >
+                        {performer.productivityScore}%
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No members found
+                </div>
+              )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
