@@ -226,6 +226,7 @@ const WorkspaceIdPage = () => {
           tasks={filteredTasks}
           members={membersList}
           services={servicesList}
+          workspaceId={workspaceId}
           workspaceName={workspace?.name}
         />
       </TabsContent>

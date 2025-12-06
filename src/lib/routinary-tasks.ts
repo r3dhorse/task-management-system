@@ -192,7 +192,7 @@ export const createRoutinaryTasks = async () => {
             data: {
               taskNumber,
               name: taskName,
-              description: "Auto Generate Task",
+              description: "Auto Generated Task",
               status: TaskStatus.TODO,
               workspaceId: service.workspaceId,
               serviceId: service.id,

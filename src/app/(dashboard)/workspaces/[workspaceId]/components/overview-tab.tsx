@@ -1,14 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  UsersIcon,
-  CheckCircle2Icon,
-  Clock3Icon,
-  ListTodoIcon,
   Activity,
   Briefcase,
   Trophy,
@@ -65,8 +62,8 @@ interface OverviewTabProps {
   tasks: PopulatedTask[];
   members: Member[];
   services: ServiceType[];
+  workspaceId: string;
   workspaceName?: string;
-  onNavigateToTasks?: () => void;
   onNavigateToMembers?: () => void;
 }
 
@@ -216,38 +213,6 @@ function calculateServicePerformance(
 }
 
 // ============================================================================
-// STAT CARD COMPONENT
-// ============================================================================
-
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ReactNode;
-  gradient: string;
-  iconBg: string;
-}
-
-function StatCard({ title, value, subtitle, icon, gradient, iconBg }: StatCardProps) {
-  return (
-    <Card className={cn("border-0 shadow-lg", gradient)}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold">{value}</p>
-            {subtitle && <p className="text-xs opacity-80">{subtitle}</p>}
-          </div>
-          <div className={cn("p-3 rounded-full", iconBg)}>{icon}</div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -255,25 +220,14 @@ export function OverviewTab({
   tasks,
   members,
   services,
+  workspaceId,
   workspaceName: _workspaceName,
-  onNavigateToTasks,
   onNavigateToMembers,
 }: OverviewTabProps) {
+  const router = useRouter();
   // Calculate statistics
   const stats = useMemo(() => {
     const totalTasks = tasks.length;
-    const completedTasks = tasks.filter(
-      (task) => task.status === TaskStatus.DONE
-    ).length;
-    const inProgressTasks = tasks.filter(
-      (task) => task.status === TaskStatus.IN_PROGRESS
-    ).length;
-    const memberCount = members.filter(
-      (m) => m.role === MemberRole.MEMBER || m.role === MemberRole.ADMIN
-    ).length;
-    const visitorCount = members.filter(
-      (m) => m.role === MemberRole.VISITOR
-    ).length;
 
     const taskStatusCount = {
       [TaskStatus.BACKLOG]: tasks.filter(
@@ -281,23 +235,22 @@ export function OverviewTab({
       ).length,
       [TaskStatus.TODO]: tasks.filter((task) => task.status === TaskStatus.TODO)
         .length,
-      [TaskStatus.IN_PROGRESS]: inProgressTasks,
+      [TaskStatus.IN_PROGRESS]: tasks.filter(
+        (task) => task.status === TaskStatus.IN_PROGRESS
+      ).length,
       [TaskStatus.IN_REVIEW]: tasks.filter(
         (task) => task.status === TaskStatus.IN_REVIEW
       ).length,
-      [TaskStatus.DONE]: completedTasks,
+      [TaskStatus.DONE]: tasks.filter(
+        (task) => task.status === TaskStatus.DONE
+      ).length,
     };
 
     return {
       totalTasks,
-      completedTasks,
-      inProgressTasks,
-      memberCount,
-      visitorCount,
-      totalMembers: members.length,
       taskStatusCount,
     };
-  }, [tasks, members]);
+  }, [tasks]);
 
   // Calculate performance metrics
   const memberPerformance = useMemo(
@@ -315,66 +268,20 @@ export function OverviewTab({
 
   return (
     <div className="space-y-6">
-      {/* Quick Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Members"
-          value={stats.memberCount}
-          subtitle={
-            stats.visitorCount > 0
-              ? `+ ${stats.visitorCount} visitors`
-              : undefined
-          }
-          icon={<UsersIcon className="h-5 w-5 text-blue-600" />}
-          gradient="bg-gradient-to-br from-blue-50 to-indigo-50"
-          iconBg="bg-blue-100"
-        />
-        <StatCard
-          title="Total Tasks"
-          value={stats.totalTasks}
-          subtitle="in date range"
-          icon={<ListTodoIcon className="h-5 w-5 text-purple-600" />}
-          gradient="bg-gradient-to-br from-purple-50 to-pink-50"
-          iconBg="bg-purple-100"
-        />
-        <StatCard
-          title="Completed"
-          value={stats.completedTasks}
-          subtitle={`${
-            stats.totalTasks > 0
-              ? Math.round((stats.completedTasks / stats.totalTasks) * 100)
-              : 0
-          }% completion`}
-          icon={<CheckCircle2Icon className="h-5 w-5 text-emerald-600" />}
-          gradient="bg-gradient-to-br from-emerald-50 to-teal-50"
-          iconBg="bg-emerald-100"
-        />
-        <StatCard
-          title="In Progress"
-          value={stats.inProgressTasks}
-          subtitle="active tasks"
-          icon={<Clock3Icon className="h-5 w-5 text-amber-600" />}
-          gradient="bg-gradient-to-br from-amber-50 to-orange-50"
-          iconBg="bg-amber-100"
-        />
-      </div>
-
       {/* Task Status Breakdown & Top Performers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Task Status Breakdown */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card
+          className="border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+          onClick={() => router.push(`/workspaces/${workspaceId}/workspace-tasks`)}
+        >
+          <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
                 <Activity className="h-5 w-5 text-white" />
               </div>
               Task Status Breakdown
             </CardTitle>
-            {onNavigateToTasks && (
-              <Button variant="outline" size="sm" onClick={onNavigateToTasks}>
-                View Tasks
-              </Button>
-            )}
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
