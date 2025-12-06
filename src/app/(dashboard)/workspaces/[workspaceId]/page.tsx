@@ -19,7 +19,7 @@ import { subDays, isAfter, isBefore } from "date-fns";
 import { DottedSeparator } from "@/components/dotted-separator";
 
 // Extracted tab components
-import { OverviewTab, DeadlinesTab, AnalyticsTab } from "./components";
+import { OverviewTab, DeadlinesTab, AnalyticsTab, OverallKPISection } from "./components";
 
 
 const WorkspaceIdPage = () => {
@@ -240,7 +240,7 @@ const WorkspaceIdPage = () => {
       </TabsContent>
 
       {/* Analytics Tab Content */}
-      <TabsContent value="analytics" className="mt-6">
+      <TabsContent value="analytics" className="mt-6 space-y-6">
         <AnalyticsTab
           tasks={filteredTasks}
           members={membersList}
@@ -252,10 +252,15 @@ const WorkspaceIdPage = () => {
             kpiCompletionWeight: workspace.kpiCompletionWeight,
             kpiProductivityWeight: workspace.kpiProductivityWeight,
             kpiSlaWeight: workspace.kpiSlaWeight,
-            kpiFollowerWeight: workspace.kpiFollowerWeight,
+            kpiCollaborationWeight: workspace.kpiCollaborationWeight,
             kpiReviewWeight: workspace.kpiReviewWeight,
           } : undefined}
         />
+
+        {/* Overall KPI Section - Admin Only */}
+        {(currentMember?.role === MemberRole.ADMIN || currentUser?.isSuperAdmin) && (
+          <OverallKPISection workspaceId={workspaceId} />
+        )}
       </TabsContent>
       </Tabs>
     </div>

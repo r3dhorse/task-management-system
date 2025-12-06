@@ -10,7 +10,7 @@ export type Workspace = {
   kpiCompletionWeight: number;
   kpiProductivityWeight: number;
   kpiSlaWeight: number;
-  kpiFollowerWeight: number;
+  kpiCollaborationWeight: number;
   kpiReviewWeight: number;
 
   createdAt: Date | string;

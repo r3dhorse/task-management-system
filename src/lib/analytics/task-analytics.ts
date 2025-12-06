@@ -28,8 +28,8 @@ export interface KPIWeights {
   kpiProductivityWeight: number;
   /** Weight for SLA compliance (percentage) */
   kpiSlaWeight: number;
-  /** Weight for follower contribution (percentage) */
-  kpiFollowerWeight: number;
+  /** Weight for collaboration contribution (percentage) */
+  kpiCollaborationWeight: number;
   /** Weight for review score (percentage) */
   kpiReviewWeight: number;
 }
@@ -57,7 +57,7 @@ export interface MemberAnalytics {
   normalizedProductivityScore: number;
   completionRate: number;
   slaCompliance: number;
-  followerScore: number;
+  collaborationScore: number;
   reviewScore: number;
   kpiScore: number;
 }
@@ -118,7 +118,7 @@ export function getDefaultKPIWeights(withReviewStage: boolean = true): KPIWeight
     kpiCompletionWeight: withReviewStage ? 30.0 : 35.0,
     kpiProductivityWeight: withReviewStage ? 20.0 : 25.0,
     kpiSlaWeight: withReviewStage ? 20.0 : 25.0,
-    kpiFollowerWeight: 15.0,
+    kpiCollaborationWeight: 15.0,
     kpiReviewWeight: withReviewStage ? 15.0 : 0.0,
   };
 }
@@ -222,8 +222,8 @@ export function calculateMemberMetrics(
     ? tasksCompletedOnTime.length / tasksWithDueDate.length
     : 1; // If no tasks with due dates, consider fully compliant
 
-  // KPI Metric 4: Follower Score (FS) - collaboration effectiveness
-  const followerScore = followingTasks.length > 0
+  // KPI Metric 4: Collaboration Score (CS) - collaboration effectiveness
+  const collaborationScore = followingTasks.length > 0
     ? followingTasksCompleted.length / followingTasks.length
     : 0;
 
@@ -252,7 +252,7 @@ export function calculateMemberMetrics(
     },
     completionRate,
     slaCompliance,
-    followerScore,
+    collaborationScore,
     reviewScore,
   };
 }
@@ -284,7 +284,7 @@ export function calculateMemberAnalytics(
       member.completionRate * (weights.kpiCompletionWeight / 100) +
       normalizedProductivityScore * (weights.kpiProductivityWeight / 100) +
       member.slaCompliance * (weights.kpiSlaWeight / 100) +
-      member.followerScore * (weights.kpiFollowerWeight / 100) +
+      member.collaborationScore * (weights.kpiCollaborationWeight / 100) +
       (withReviewStage ? member.reviewScore * (weights.kpiReviewWeight / 100) : 0)
     );
 
@@ -398,7 +398,7 @@ export function calculateTeamSummary(
       ? Math.round(memberAnalytics.reduce((sum, m) => sum + m.slaCompliance, 0) / memberCount * 100)
       : 0,
     avgCollaborationScore: memberCount > 0
-      ? Math.round(memberAnalytics.reduce((sum, m) => sum + m.followerScore, 0) / memberCount * 100)
+      ? Math.round(memberAnalytics.reduce((sum, m) => sum + m.collaborationScore, 0) / memberCount * 100)
       : 0,
     avgReviewScore: memberCount > 0 && withReviewStage
       ? Math.round(memberAnalytics.reduce((sum, m) => sum + m.reviewScore, 0) / memberCount * 100)
@@ -446,7 +446,7 @@ export function formatKPIBreakdown(
     `(${(member.completionRate * 100).toFixed(0)}×${(weights.kpiCompletionWeight / 100).toFixed(2)})`,
     `(${(member.normalizedProductivityScore * 100).toFixed(0)}×${(weights.kpiProductivityWeight / 100).toFixed(2)})`,
     `(${(member.slaCompliance * 100).toFixed(0)}×${(weights.kpiSlaWeight / 100).toFixed(2)})`,
-    `(${(member.followerScore * 100).toFixed(0)}×${(weights.kpiFollowerWeight / 100).toFixed(2)})`,
+    `(${(member.collaborationScore * 100).toFixed(0)}×${(weights.kpiCollaborationWeight / 100).toFixed(2)})`,
   ];
 
   if (withReviewStage) {

@@ -139,7 +139,7 @@ const app = new Hono()
         kpiCompletionWeight,
         kpiProductivityWeight,
         kpiSlaWeight,
-        kpiFollowerWeight,
+        kpiCollaborationWeight,
         kpiReviewWeight
       } = c.req.valid("json");
 
@@ -168,7 +168,7 @@ const app = new Hono()
           ...(kpiCompletionWeight !== undefined && { kpiCompletionWeight }),
           ...(kpiProductivityWeight !== undefined && { kpiProductivityWeight }),
           ...(kpiSlaWeight !== undefined && { kpiSlaWeight }),
-          ...(kpiFollowerWeight !== undefined && { kpiFollowerWeight }),
+          ...(kpiCollaborationWeight !== undefined && { kpiCollaborationWeight }),
           ...(kpiReviewWeight !== undefined && { kpiReviewWeight }),
         },
       });

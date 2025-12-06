@@ -112,7 +112,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
       kpiCompletionWeight: initialValues.kpiCompletionWeight || 30.0,
       kpiProductivityWeight: initialValues.kpiProductivityWeight || 20.0,
       kpiSlaWeight: initialValues.kpiSlaWeight || 20.0,
-      kpiFollowerWeight: initialValues.kpiFollowerWeight || 15.0,
+      kpiCollaborationWeight: initialValues.kpiCollaborationWeight || 15.0,
       kpiReviewWeight: initialValues.kpiReviewWeight || 15.0,
     },
   });
@@ -157,7 +157,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
       kpiCompletionWeight: Number(values.kpiCompletionWeight) || 0,
       kpiProductivityWeight: Number(values.kpiProductivityWeight) || 0,
       kpiSlaWeight: Number(values.kpiSlaWeight) || 0,
-      kpiFollowerWeight: Number(values.kpiFollowerWeight) || 0,
+      kpiCollaborationWeight: Number(values.kpiCollaborationWeight) || 0,
       kpiReviewWeight: Number(values.kpiReviewWeight) || 0,
     };
 
@@ -570,7 +570,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
 
                       <FormField
                         control={kpiForm.control}
-                        name="kpiFollowerWeight"
+                        name="kpiCollaborationWeight"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-sm font-medium flex items-center gap-2">
@@ -666,21 +666,21 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
                           Math.abs((kpiForm.watch("kpiCompletionWeight") || 0) +
                                    (kpiForm.watch("kpiProductivityWeight") || 0) +
                                    (kpiForm.watch("kpiSlaWeight") || 0) +
-                                   (kpiForm.watch("kpiFollowerWeight") || 0) +
+                                   (kpiForm.watch("kpiCollaborationWeight") || 0) +
                                    (initialValues.withReviewStage ? (kpiForm.watch("kpiReviewWeight") || 0) : 0) - 100) < 0.01
                             ? 'text-green-600' : 'text-red-600'
                         }`}>
                           {((kpiForm.watch("kpiCompletionWeight") || 0) +
                             (kpiForm.watch("kpiProductivityWeight") || 0) +
                             (kpiForm.watch("kpiSlaWeight") || 0) +
-                            (kpiForm.watch("kpiFollowerWeight") || 0) +
+                            (kpiForm.watch("kpiCollaborationWeight") || 0) +
                             (initialValues.withReviewStage ? (kpiForm.watch("kpiReviewWeight") || 0) : 0)).toFixed(1)}%
                         </span>
                       </div>
                       {Math.abs((kpiForm.watch("kpiCompletionWeight") || 0) +
                                (kpiForm.watch("kpiProductivityWeight") || 0) +
                                (kpiForm.watch("kpiSlaWeight") || 0) +
-                               (kpiForm.watch("kpiFollowerWeight") || 0) +
+                               (kpiForm.watch("kpiCollaborationWeight") || 0) +
                                (initialValues.withReviewStage ? (kpiForm.watch("kpiReviewWeight") || 0) : 0) - 100) >= 0.01 && (
                         <p className="text-xs text-red-600 mt-2">
                           ⚠️ All weights must sum to exactly 100%
@@ -723,7 +723,7 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
                               kpiCompletionWeight: initialValues.withReviewStage ? 30.0 : 35.0,
                               kpiProductivityWeight: initialValues.withReviewStage ? 20.0 : 25.0,
                               kpiSlaWeight: initialValues.withReviewStage ? 20.0 : 25.0,
-                              kpiFollowerWeight: 15.0,
+                              kpiCollaborationWeight: 15.0,
                               kpiReviewWeight: initialValues.withReviewStage ? 15.0 : 0.0,
                             });
                           }}

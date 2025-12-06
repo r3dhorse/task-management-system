@@ -89,11 +89,11 @@ model Workspace {
   withReviewStage Boolean @default(true) // Toggle for IN_REVIEW stage visibility
 
   // KPI Configuration - Percentage weights for performance metrics
-  kpiCompletionWeight    Float @default(30.0)  // Completion Rate weight (0-100)
-  kpiProductivityWeight  Float @default(20.0)  // Productivity Score weight (0-100)
-  kpiSlaWeight          Float @default(20.0)  // SLA Compliance weight (0-100)
-  kpiFollowerWeight     Float @default(15.0)  // Follower Score weight (0-100)
-  kpiReviewWeight       Float @default(15.0)  // Review Score weight (0-100)
+  kpiCompletionWeight      Float @default(30.0)  // Completion Rate weight (0-100)
+  kpiProductivityWeight    Float @default(20.0)  // Productivity Score weight (0-100)
+  kpiSlaWeight             Float @default(20.0)  // SLA Compliance weight (0-100)
+  kpiCollaborationWeight   Float @default(15.0)  // Collaboration Score weight (0-100)
+  kpiReviewWeight          Float @default(15.0)  // Review Score weight (0-100)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

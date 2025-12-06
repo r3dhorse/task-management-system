@@ -149,6 +149,10 @@ export const SlidersHorizontal = getIcon('SlidersHorizontal', ['SlidersHorizonta
 export const Play = getIcon('Play', ['PlayIcon']);
 export const PlayIcon = getIcon('Play', ['PlayIcon']);
 export const TrendingUp = getIcon('TrendingUp', ['TrendingUpIcon']);
+export const GlobeIcon = getIcon('Globe', ['GlobeIcon', 'Globe2']);
+export const TrophyIcon = getIcon('Trophy', ['TrophyIcon']);
+export const BuildingIcon = getIcon('Building', ['BuildingIcon', 'Building2']);
+export const ChevronRightIcon = getIcon('ChevronRight', ['ChevronRightIcon']);
 
 // Export all lucide icons as a namespace for direct access
 export * from "lucide-react";

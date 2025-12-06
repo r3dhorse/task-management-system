@@ -21,7 +21,7 @@ interface KPIWeights {
   kpiCompletionWeight: number;
   kpiProductivityWeight: number;
   kpiSlaWeight: number;
-  kpiFollowerWeight: number;
+  kpiCollaborationWeight: number;
   kpiReviewWeight: number;
 }
 

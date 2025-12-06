@@ -39,7 +39,7 @@ interface WorkspaceAnalyticsProps {
     kpiCompletionWeight: number;
     kpiProductivityWeight: number;
     kpiSlaWeight: number;
-    kpiFollowerWeight: number;
+    kpiCollaborationWeight: number;
     kpiReviewWeight: number;
   };
 }
@@ -60,7 +60,7 @@ export const WorkspaceAnalytics = ({
     kpiCompletionWeight: withReviewStage ? 30.0 : 35.0,
     kpiProductivityWeight: withReviewStage ? 20.0 : 25.0,
     kpiSlaWeight: withReviewStage ? 20.0 : 25.0,
-    kpiFollowerWeight: 15.0,
+    kpiCollaborationWeight: 15.0,
     kpiReviewWeight: withReviewStage ? 15.0 : 0.0,
   };
 
@@ -149,8 +149,8 @@ export const WorkspaceAnalytics = ({
           ? tasksCompletedOnTime.length / tasksWithDueDate.length
           : 1; // If no tasks with due dates, consider fully compliant
 
-        // KPI Metric 4: Follower Score (FS) - collaboration effectiveness
-        const followerScore = followingTasks.length > 0
+        // KPI Metric 4: Collaboration Score (CS) - collaboration effectiveness
+        const collaborationScore = followingTasks.length > 0
           ? followingTasksCompleted.length / followingTasks.length
           : 0;
 
@@ -182,7 +182,7 @@ export const WorkspaceAnalytics = ({
           productivityScore: 0, // Will be calculated after normalizing
           completionRate,
           slaCompliance,
-          followerScore,
+          collaborationScore,
           reviewScore,
           kpiScore: 0 // Will be calculated based on weighted formula
         };
@@ -201,7 +201,7 @@ export const WorkspaceAnalytics = ({
         member.completionRate * (weights.kpiCompletionWeight / 100) +
         normalizedProductivityScore * (weights.kpiProductivityWeight / 100) +
         member.slaCompliance * (weights.kpiSlaWeight / 100) +
-        member.followerScore * (weights.kpiFollowerWeight / 100) +
+        member.collaborationScore * (weights.kpiCollaborationWeight / 100) +
         (withReviewStage ? member.reviewScore * (weights.kpiReviewWeight / 100) : 0)
       );
 
@@ -218,7 +218,7 @@ export const WorkspaceAnalytics = ({
       };
     })
     .sort((a, b) => b.kpiScore - a.kpiScore); // Sort by KPI score instead of productivity
-  }, [tasks, members, withReviewStage, weights.kpiCompletionWeight, weights.kpiProductivityWeight, weights.kpiSlaWeight, weights.kpiFollowerWeight, weights.kpiReviewWeight]);
+  }, [tasks, members, withReviewStage, weights.kpiCompletionWeight, weights.kpiProductivityWeight, weights.kpiSlaWeight, weights.kpiCollaborationWeight, weights.kpiReviewWeight]);
 
   // Calculate service analytics
   const serviceAnalytics = useMemo(() => {
@@ -500,10 +500,10 @@ export const WorkspaceAnalytics = ({
           <CardContent>
             <p className="text-2xl font-bold text-yellow-700">
               {memberAnalytics.length > 0
-                ? Math.round(memberAnalytics.reduce((sum, m) => sum + m.followerScore, 0) / memberAnalytics.length * 100)
+                ? Math.round(memberAnalytics.reduce((sum, m) => sum + m.collaborationScore, 0) / memberAnalytics.length * 100)
                 : 0}%
             </p>
-            <p className="text-xs text-yellow-700 mt-1">Follower Score</p>
+            <p className="text-xs text-yellow-700 mt-1">Collaboration Score</p>
           </CardContent>
         </Card>
 
@@ -552,7 +552,7 @@ export const WorkspaceAnalytics = ({
                       <div>• Completion Rate (CR): {weights.kpiCompletionWeight.toFixed(1)}%</div>
                       <div>• Productivity (PS): {weights.kpiProductivityWeight.toFixed(1)}%</div>
                       <div>• SLA Compliance (SLA): {weights.kpiSlaWeight.toFixed(1)}%</div>
-                      <div>• Follower Contribution (FS): {weights.kpiFollowerWeight.toFixed(1)}%</div>
+                      <div>• Collaboration (CS): {weights.kpiCollaborationWeight.toFixed(1)}%</div>
                       {withReviewStage && <div>• Review Score (RS): {weights.kpiReviewWeight.toFixed(1)}%</div>}
                     </div>
                     <div className="mt-2 pt-2 border-t text-xs text-gray-600">
@@ -624,10 +624,10 @@ export const WorkspaceAnalytics = ({
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span className="cursor-help">FS</span>
+                            <span className="cursor-help">CS</span>
                           </TooltipTrigger>
                           <TooltipContent>
-                            <p>Follower Score: Collaboration effectiveness</p>
+                            <p>Collaboration Score: Collaboration effectiveness</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -652,7 +652,7 @@ export const WorkspaceAnalytics = ({
                 </thead>
                 <tbody>
                 {memberAnalytics.map((member, index) => {
-                  const kpiBreakdown = `(${(member.completionRate * 100).toFixed(0)}×${(weights.kpiCompletionWeight/100).toFixed(2)}) + (${(member.normalizedProductivityScore * 100).toFixed(0)}×${(weights.kpiProductivityWeight/100).toFixed(2)}) + (${(member.slaCompliance * 100).toFixed(0)}×${(weights.kpiSlaWeight/100).toFixed(2)}) + (${(member.followerScore * 100).toFixed(0)}×${(weights.kpiFollowerWeight/100).toFixed(2)})${withReviewStage ? ` + (${(member.reviewScore * 100).toFixed(0)}×${(weights.kpiReviewWeight/100).toFixed(2)})` : ''}`;
+                  const kpiBreakdown = `(${(member.completionRate * 100).toFixed(0)}×${(weights.kpiCompletionWeight/100).toFixed(2)}) + (${(member.normalizedProductivityScore * 100).toFixed(0)}×${(weights.kpiProductivityWeight/100).toFixed(2)}) + (${(member.slaCompliance * 100).toFixed(0)}×${(weights.kpiSlaWeight/100).toFixed(2)}) + (${(member.collaborationScore * 100).toFixed(0)}×${(weights.kpiCollaborationWeight/100).toFixed(2)})${withReviewStage ? ` + (${(member.reviewScore * 100).toFixed(0)}×${(weights.kpiReviewWeight/100).toFixed(2)})` : ''}`;
 
                   return (
                     <tr key={member.id} className="border-b hover:bg-gray-50">
@@ -703,7 +703,7 @@ export const WorkspaceAnalytics = ({
                                     <div>CR: {(member.completionRate * 100).toFixed(0)}% × {weights.kpiCompletionWeight.toFixed(1)}% = {(member.completionRate * weights.kpiCompletionWeight).toFixed(1)}%</div>
                                     <div>PS: {(member.normalizedProductivityScore * 100).toFixed(0)}% × {weights.kpiProductivityWeight.toFixed(1)}% = {(member.normalizedProductivityScore * weights.kpiProductivityWeight).toFixed(1)}%</div>
                                     <div>SLA: {(member.slaCompliance * 100).toFixed(0)}% × {weights.kpiSlaWeight.toFixed(1)}% = {(member.slaCompliance * weights.kpiSlaWeight).toFixed(1)}%</div>
-                                    <div>FS: {(member.followerScore * 100).toFixed(0)}% × {weights.kpiFollowerWeight.toFixed(1)}% = {(member.followerScore * weights.kpiFollowerWeight).toFixed(1)}%</div>
+                                    <div>CS: {(member.collaborationScore * 100).toFixed(0)}% × {weights.kpiCollaborationWeight.toFixed(1)}% = {(member.collaborationScore * weights.kpiCollaborationWeight).toFixed(1)}%</div>
                                     {withReviewStage && <div>RS: {(member.reviewScore * 100).toFixed(0)}% × {weights.kpiReviewWeight.toFixed(1)}% = {(member.reviewScore * weights.kpiReviewWeight).toFixed(1)}%</div>}
                                   </div>
                                 </div>
@@ -738,9 +738,9 @@ export const WorkspaceAnalytics = ({
                       </td>
                       <td className="text-center py-2 px-1">
                         <div className="flex items-center justify-center gap-1">
-                          <Progress value={member.followerScore * 100} className="w-12 h-2" />
+                          <Progress value={member.collaborationScore * 100} className="w-12 h-2" />
                           <span className="text-xs font-medium">
-                            {(member.followerScore * 100).toFixed(0)}%
+                            {(member.collaborationScore * 100).toFixed(0)}%
                           </span>
                         </div>
                       </td>
