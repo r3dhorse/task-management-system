@@ -1381,7 +1381,9 @@ const app = new Hono()
         // Detect what changed for history tracking
         const updatePayload = c.req.valid("json");
         // Convert Prisma task to match the expected format
-        const taskForComparison: Task = {
+        // Include assigneeIds as JSON string for comparison with update payload
+        const currentAssigneeIds = JSON.stringify(existingTask.assignees.map(a => a.id));
+        const taskForComparison: Task & { assigneeIds?: string } = {
           id: existingTask.id,
           taskNumber: existingTask.taskNumber,
           name: existingTask.name,
@@ -1398,6 +1400,7 @@ const app = new Hono()
           isConfidential: existingTask.isConfidential,
           createdAt: existingTask.createdAt.toISOString(),
           updatedAt: existingTask.updatedAt.toISOString(),
+          assigneeIds: currentAssigneeIds,
         };
         const changes = detectTaskChanges(taskForComparison, updatePayload);
 

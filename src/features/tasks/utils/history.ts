@@ -12,6 +12,21 @@ function normalizeFollowerIds(value: string | undefined | null): string {
   return value;
 }
 
+// Helper function to normalize assignee IDs for comparison
+function normalizeAssigneeIds(value: string | undefined | null): string {
+  if (!value || value === "") return "[]";
+  try {
+    // Sort IDs to ensure consistent comparison regardless of order
+    const ids = JSON.parse(value);
+    if (Array.isArray(ids)) {
+      return JSON.stringify([...ids].sort());
+    }
+    return "[]";
+  } catch {
+    return "[]";
+  }
+}
+
 // Helper function to normalize dates for comparison
 function normalizeDateForComparison(dateValue: string | undefined | null): string {
   if (!dateValue) return "";
@@ -51,7 +66,20 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
     }
   }
 
-  // Note: Assignee changes are now tracked via assigneeIds (JSON string array) in the API route
+  // Assignee changes - compare JSON arrays of member IDs
+  // Extended task type includes assigneeIds for comparison
+  const oldTaskWithAssignees = oldTask as Task & { assigneeIds?: string };
+  const newTaskWithAssignees = newTask as Partial<Task> & { assigneeIds?: string };
+
+  if (newTaskWithAssignees.assigneeIds !== undefined &&
+      normalizeAssigneeIds(newTaskWithAssignees.assigneeIds) !== normalizeAssigneeIds(oldTaskWithAssignees.assigneeIds)) {
+    changes.push({
+      field: "assigneeIds",
+      oldValue: oldTaskWithAssignees.assigneeIds || "[]",
+      newValue: newTaskWithAssignees.assigneeIds || "[]",
+      displayName: "Assignees"
+    });
+  }
 
   // Reviewer change - handle empty strings vs null/undefined consistently
   if (newTask.reviewerId !== undefined && normalizeValue(newTask.reviewerId) !== normalizeValue(oldTask.reviewerId)) {
@@ -146,6 +174,11 @@ export function formatHistoryMessage(
   // Handle follower changes even when action is UPDATED
   if (field === "followedIds") {
     return formatFollowersChangeMessage(userName, oldValue, newValue);
+  }
+
+  // Handle assignee changes even when action is UPDATED
+  if (field === "assigneeIds") {
+    return formatAssigneesChangeMessage(userName, oldValue, newValue);
   }
 
   // Handle service changes even when action is UPDATED
@@ -281,10 +314,41 @@ function formatFollowersChangeMessage(userName: string, oldValue?: string, newVa
   }
 }
 
+function formatAssigneesChangeMessage(userName: string, oldValue?: string, newValue?: string): string {
+  try {
+    const oldAssignees = oldValue ? JSON.parse(oldValue) : [];
+    const newAssignees = newValue ? JSON.parse(newValue) : [];
+
+    const added = newAssignees.filter((id: string) => !oldAssignees.includes(id));
+    const removed = oldAssignees.filter((id: string) => !newAssignees.includes(id));
+
+    if (added.length > 0 && removed.length > 0) {
+      return `${userName} updated the assignees`;
+    } else if (added.length > 0 && oldAssignees.length === 0) {
+      return `${userName} assigned ${added.length} member${added.length > 1 ? 's' : ''} to this task`;
+    } else if (added.length > 0) {
+      return `${userName} added ${added.length} assignee${added.length > 1 ? 's' : ''}`;
+    } else if (removed.length > 0 && newAssignees.length === 0) {
+      return `${userName} removed all assignees from this task`;
+    } else if (removed.length > 0) {
+      return `${userName} removed ${removed.length} assignee${removed.length > 1 ? 's' : ''}`;
+    }
+
+    return `${userName} updated the assignees`;
+  } catch {
+    return `${userName} updated the assignees`;
+  }
+}
+
 export function getActionColor(action: TaskHistoryAction, field?: string): string {
   // Handle follower changes even when action is UPDATED
   if (field === "followedIds") {
     return "bg-teal-500";
+  }
+
+  // Handle assignee changes even when action is UPDATED
+  if (field === "assigneeIds") {
+    return "bg-purple-500";
   }
 
   // Handle service changes even when action is UPDATED
