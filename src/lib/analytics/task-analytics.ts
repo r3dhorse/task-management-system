@@ -178,15 +178,16 @@ export function calculateMemberMetrics(
     return new Date(task.dueDate) < new Date();
   });
 
-  // Tasks where member is a follower/collaborator (excluding where they are assignee)
-  const followingTasks = tasks.filter(task => {
+  // Tasks where member is a collaborator (excluding where they are assignee)
+  // Collaborators are team members who work on the task but are not primary assignees
+  const collaboratingTasks = tasks.filter(task => {
     if (task.assignees && task.assignees.some(a => a.id === member.id)) return false;
-    if (task.followers && Array.isArray(task.followers)) {
-      return task.followers.some((follower: { id: string }) => follower.id === member.id);
+    if (task.collaborators && Array.isArray(task.collaborators)) {
+      return task.collaborators.some((collaborator: { id: string }) => collaborator.id === member.id);
     }
     return false;
   });
-  const followingTasksCompleted = followingTasks.filter(task => task.status === TaskStatus.DONE);
+  const collaboratingTasksCompleted = collaboratingTasks.filter(task => task.status === TaskStatus.DONE);
 
   // Tasks where member is the designated reviewer
   const reviewingTasks = tasks.filter(task => {
@@ -208,7 +209,7 @@ export function calculateMemberMetrics(
   // Collaborator on Completed Task → 0.5 points
   // Reviewer of Completed Task → 0.3 points
   const assignedPoints = completedTasks.length * 1.0;
-  const collaboratorPoints = followingTasksCompleted.length * 0.5;
+  const collaboratorPoints = collaboratingTasksCompleted.length * 0.5;
   const reviewerPoints = reviewingTasksCompleted * 0.3;
   const contributionScore = assignedPoints + collaboratorPoints + reviewerPoints;
 
@@ -225,8 +226,8 @@ export function calculateMemberMetrics(
     : 1; // If no tasks with due dates, consider fully compliant
 
   // KPI Metric 4: Collaboration Score (CS) - collaboration effectiveness
-  const collaborationScore = followingTasks.length > 0
-    ? followingTasksCompleted.length / followingTasks.length
+  const collaborationScore = collaboratingTasks.length > 0
+    ? collaboratingTasksCompleted.length / collaboratingTasks.length
     : 0;
 
   // KPI Metric 5: Review Score (RS) - for tasks reviewed
@@ -242,8 +243,8 @@ export function calculateMemberMetrics(
     tasksCompleted: completedTasks.length,
     tasksInProgress: inProgressTasks.length,
     tasksOverdue: overdueTasks.length,
-    tasksFollowing: followingTasks.length,
-    tasksFollowingCompleted: followingTasksCompleted.length,
+    tasksFollowing: collaboratingTasks.length,
+    tasksFollowingCompleted: collaboratingTasksCompleted.length,
     tasksReviewing: reviewingTasks.length,
     tasksReviewingCompleted: reviewingTasksCompleted,
     contributionScore,

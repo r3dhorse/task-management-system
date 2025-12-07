@@ -11,7 +11,8 @@ export const createTaskSchema = z.object({
   reviewerId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   description: z.string().min(1, "Description is required"),
   attachmentId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
-  followedIds: z.string().optional(), // JSON string array of follower IDs
+  followedIds: z.string().optional(), // JSON string array of customer follower IDs
+  collaboratorIds: z.string().optional(), // JSON string array of team member collaborator IDs
   creatorId: z.string().optional(), // User ID of the task creator
   isConfidential: z.boolean().optional(),
 }).refine((data) => {
@@ -43,7 +44,8 @@ export const updateTaskSchema = z.object({
   reviewerId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   description: z.string().optional(),
   attachmentId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
-  followedIds: z.string().optional(),
+  followedIds: z.string().optional(), // JSON string array of customer follower IDs
+  collaboratorIds: z.string().optional(), // JSON string array of team member collaborator IDs
   creatorId: z.string().optional(),
   isConfidential: z.boolean().optional(),
 }).refine((data) => {

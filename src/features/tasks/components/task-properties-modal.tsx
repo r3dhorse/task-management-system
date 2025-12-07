@@ -28,6 +28,7 @@ import {
   SaveIcon,
   EyeOffIcon,
   UsersIcon,
+  UserIcon,
   PlusIcon,
   SettingsIcon,
   AlertTriangleIcon
@@ -62,9 +63,13 @@ interface TaskPropertiesModalProps {
   members?: { documents: Member[] };
   services?: { documents: Service[] };
   workspaces?: { documents: Workspace[] };
-  followers: Member[];
+  assignees: Member[]; // Team members assigned to the task
+  followers: Member[]; // Customers following the task
+  collaborators: Member[]; // Team members collaborating on the task
   canEditStatus: boolean;
+  onManageAssignees: () => void;
   onManageFollowers: () => void;
+  onManageCollaborators: () => void;
   onWorkspaceChange?: (workspaceId: string) => void;
 }
 
@@ -79,9 +84,13 @@ export const TaskPropertiesModal = ({
   members,
   services,
   workspaces,
+  assignees,
   followers,
+  collaborators,
   canEditStatus,
+  onManageAssignees,
   onManageFollowers,
+  onManageCollaborators,
   onWorkspaceChange
 }: TaskPropertiesModalProps) => {
   // State for confirmation dialog
@@ -267,6 +276,87 @@ export const TaskPropertiesModal = ({
                 )}
               </div>
 
+              {/* Service */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                  Service
+                  {editForm.workspaceId !== task.workspaceId && (
+                    <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
+                      Required (Public only)
+                    </span>
+                  )}
+                </label>
+                <Select
+                  value={editForm.serviceId}
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, serviceId: value }))}
+                >
+                  <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                    <SelectValue placeholder="Select service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services?.documents
+                      .filter(serv => {
+                        // If changing workspace, only show public services
+                        if (editForm.workspaceId !== task.workspaceId) {
+                          return serv.isPublic;
+                        }
+                        // If staying in same workspace, show all services
+                        return true;
+                      })
+                      .map((serv) => (
+                      <SelectItem key={serv.id} value={serv.id}>
+                        <span className="text-sm flex items-center gap-1">
+                          📁 {serv.name}
+                          {serv.isPublic && editForm.workspaceId !== task.workspaceId && (
+                            <span className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded">
+                              Public
+                            </span>
+                          )}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Confidential */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+                  Confidential
+                </label>
+                <div className="flex items-center justify-between p-2 bg-gray-50/80 rounded-lg border border-gray-200/60">
+                  <div className="flex items-center gap-1.5">
+                    <EyeOffIcon className="w-3.5 h-3.5 text-gray-500" />
+                    <span className="text-xs text-gray-700">
+                      Restricted visibility
+                    </span>
+                  </div>
+                  <Switch
+                    checked={editForm.isConfidential}
+                    onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, isConfidential: checked }))}
+                    className="scale-90"
+                  />
+                </div>
+              </div>
+
+              {/* Due Date */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                  Due Date
+                </label>
+                <DatePicker
+                  value={editForm.dueDate}
+                  onChange={(date) => setEditForm(prev => ({ ...prev, dueDate: date || new Date() }))}
+                  className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-3">
               {/* Workspace */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
@@ -312,143 +402,50 @@ export const TaskPropertiesModal = ({
                 )}
               </div>
 
-              {/* Confidential */}
+              {/* Assignees - Modal-based UI like Collaborators/Followers */}
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                  Confidential
-                </label>
-                <div className="flex items-center justify-between p-2 bg-gray-50/80 rounded-lg border border-gray-200/60">
-                  <div className="flex items-center gap-1.5">
-                    <EyeOffIcon className="w-3.5 h-3.5 text-gray-500" />
-                    <span className="text-xs text-gray-700">
-                      Restricted visibility
-                    </span>
-                  </div>
-                  <Switch
-                    checked={editForm.isConfidential}
-                    onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, isConfidential: checked }))}
-                    className="scale-90"
-                  />
-                </div>
-              </div>
-
-              {/* Due Date */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-                  Due Date
-                </label>
-                <DatePicker
-                  value={editForm.dueDate}
-                  onChange={(date) => setEditForm(prev => ({ ...prev, dueDate: date || new Date() }))}
-                  className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-3">
-              {/* Assignees */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                  Assignees
-                  {editForm.isConfidential && (
-                    <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
-                      Required
-                    </span>
-                  )}
-                </label>
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {editForm.assigneeIds.map(id => {
-                    const member = members?.documents.find(m => m.id === id);
-                    return member ? (
-                      <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
-                        👤 {member.name}
-                        <button
-                          type="button"
-                          className="text-blue-600 hover:text-blue-800"
-                          onClick={() => setEditForm(prev => ({
-                            ...prev,
-                            assigneeIds: prev.assigneeIds.filter(a => a !== id)
-                          }))}
-                        >
-                          &times;
-                        </button>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                    Assignees ({assignees.length})
+                    {editForm.isConfidential && (
+                      <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
+                        Required
                       </span>
-                    ) : null;
-                  })}
+                    )}
+                  </label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onManageAssignees}
+                    className="h-5 w-5 p-0 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-700"
+                    title="Manage assignees"
+                  >
+                    <PlusIcon className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <Select
-                  value=""
-                  onValueChange={(value) => {
-                    if (value && !editForm.assigneeIds.includes(value)) {
-                      setEditForm(prev => ({
-                        ...prev,
-                        assigneeIds: [...prev.assigneeIds, value]
-                      }));
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                    <SelectValue placeholder="Add assignee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {members?.documents
-                      .filter(member => (member as Member).role !== MemberRole.CUSTOMER)
-                      .filter(member => !editForm.assigneeIds.includes(member.id))
-                      .map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        <span className="text-sm">👤 {member.name}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Service */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-                  Service
-                  {editForm.workspaceId !== task.workspaceId && (
-                    <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
-                      Required (Public only)
-                    </span>
+                <div className="p-2 bg-gray-50/80 rounded-lg border border-gray-200/60 max-h-[72px] overflow-y-auto">
+                  {assignees.length > 0 ? (
+                    <div className="space-y-1">
+                      {assignees.slice(0, 3).map((assignee) => (
+                        <div key={assignee.id} className="flex items-center gap-1.5 text-xs">
+                          <UserIcon className="size-3 text-indigo-500" />
+                          <span className="truncate">{assignee.name}</span>
+                        </div>
+                      ))}
+                      {assignees.length > 3 && (
+                        <p className="text-xs text-gray-500 pl-4">
+                          +{assignees.length - 3} more
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center text-gray-500 py-1">
+                      <UserIcon className="size-3 mr-1.5" />
+                      <span className="text-xs">No assignees</span>
+                    </div>
                   )}
-                </label>
-                <Select
-                  value={editForm.serviceId}
-                  onValueChange={(value) => setEditForm(prev => ({ ...prev, serviceId: value }))}
-                >
-                  <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                    <SelectValue placeholder="Select service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services?.documents
-                      .filter(serv => {
-                        // If changing workspace, only show public services
-                        if (editForm.workspaceId !== task.workspaceId) {
-                          return serv.isPublic;
-                        }
-                        // If staying in same workspace, show all services
-                        return true;
-                      })
-                      .map((serv) => (
-                      <SelectItem key={serv.id} value={serv.id}>
-                        <span className="text-sm flex items-center gap-1">
-                          📁 {serv.name}
-                          {serv.isPublic && editForm.workspaceId !== task.workspaceId && (
-                            <span className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded">
-                              Public
-                            </span>
-                          )}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                </div>
               </div>
 
               {/* Reviewer - Only show when status is IN_PROGRESS or IN_REVIEW */}
@@ -481,18 +478,59 @@ export const TaskPropertiesModal = ({
                 </div>
               )}
 
-              {/* Followers */}
+              {/* Collaborators (Team Members) */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
-                    <div className="w-1.5 h-1.5 bg-violet-500 rounded-full" />
+                    <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full" />
+                    Collaborators ({collaborators.length})
+                  </label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onManageCollaborators}
+                    className="h-5 w-5 p-0 hover:bg-cyan-100 text-cyan-600 hover:text-cyan-700"
+                    title="Manage collaborators"
+                  >
+                    <PlusIcon className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <div className="p-2 bg-gray-50/80 rounded-lg border border-gray-200/60 max-h-[72px] overflow-y-auto">
+                  {collaborators.length > 0 ? (
+                    <div className="space-y-1">
+                      {collaborators.slice(0, 3).map((collaborator) => (
+                        <div key={collaborator.id} className="flex items-center gap-1.5 text-xs">
+                          <UsersIcon className="size-3 text-cyan-500" />
+                          <span className="truncate">{collaborator.name}</span>
+                        </div>
+                      ))}
+                      {collaborators.length > 3 && (
+                        <p className="text-xs text-gray-500 pl-4">
+                          +{collaborators.length - 3} more
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center text-gray-500 py-1">
+                      <UsersIcon className="size-3 mr-1.5" />
+                      <span className="text-xs">No collaborators</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Followers (Customers) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 bg-teal-500 rounded-full" />
                     Followers ({followers.length})
                   </label>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={onManageFollowers}
-                    className="h-5 w-5 p-0 hover:bg-violet-100 text-violet-600 hover:text-violet-700"
+                    className="h-5 w-5 p-0 hover:bg-teal-100 text-teal-600 hover:text-teal-700"
                     title="Manage followers"
                   >
                     <PlusIcon className="w-3.5 h-3.5" />
@@ -503,7 +541,7 @@ export const TaskPropertiesModal = ({
                     <div className="space-y-1">
                       {followers.slice(0, 3).map((follower) => (
                         <div key={follower.id} className="flex items-center gap-1.5 text-xs">
-                          <UsersIcon className="size-3 text-gray-500" />
+                          <UsersIcon className="size-3 text-teal-500" />
                           <span className="truncate">{follower.name}</span>
                         </div>
                       ))}

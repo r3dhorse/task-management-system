@@ -1,7 +1,7 @@
 "use client"
 
 import { useGetMembers } from "@/features/members/api/use-get-members";
-import { Member } from "@/features/members/types";
+import { Member, MemberRole } from "@/features/members/types";
 import { useGetServices } from "@/features/services/api/use-get-services";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,12 +43,25 @@ export const EditTaskFormWrapper = ({
     role: (member as Member).role,
   }));
 
-  const followerOptions = members?.documents.map((member) => ({
-    value: member.id,
-    label: member.name,
-    email: member.email,
-    role: (member as Member).role,
-  }));
+  // Follower options - customers only
+  const followerOptions = members?.documents
+    .filter((member) => (member as Member).role === MemberRole.CUSTOMER)
+    .map((member) => ({
+      value: member.id,
+      label: member.name,
+      email: member.email,
+      role: (member as Member).role,
+    })) ?? [];
+
+  // Collaborator options - team members only (non-customers)
+  const collaboratorOptions = members?.documents
+    .filter((member) => (member as Member).role !== MemberRole.CUSTOMER)
+    .map((member) => ({
+      value: member.id,
+      label: member.name,
+      email: member.email,
+      role: (member as Member).role,
+    })) ?? [];
 
   const isLoading = isLoadingServices || isLoadingMembers || isLoadingTask;
 
@@ -71,7 +84,8 @@ export const EditTaskFormWrapper = ({
       initialValues={initialValues as Task}
       serviceOptions={serviceOptions ?? []}
       membertOptions={memberOptions ?? []}
-      followerOptions={followerOptions ?? []}
+      followerOptions={followerOptions}
+      collaboratorOptions={collaboratorOptions}
       onFormReady={onFormReady}
     />
   );

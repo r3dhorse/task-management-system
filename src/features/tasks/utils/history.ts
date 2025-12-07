@@ -12,6 +12,12 @@ function normalizeFollowerIds(value: string | undefined | null): string {
   return value;
 }
 
+// Helper function to normalize collaborator IDs for comparison
+function normalizeCollaboratorIds(value: string | undefined | null): string {
+  if (!value || value === "") return "[]";
+  return value;
+}
+
 // Helper function to normalize assignee IDs for comparison
 function normalizeAssigneeIds(value: string | undefined | null): string {
   if (!value || value === "") return "[]";
@@ -151,6 +157,16 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
     });
   }
 
+  // Collaborators change
+  if (newTask.collaboratorIds !== undefined && normalizeCollaboratorIds(newTask.collaboratorIds) !== normalizeCollaboratorIds(oldTask.collaboratorIds)) {
+    changes.push({
+      field: "collaboratorIds",
+      oldValue: oldTask.collaboratorIds || "[]",
+      newValue: newTask.collaboratorIds || "[]",
+      displayName: "Collaborators"
+    });
+  }
+
   // Confidential change
   if (newTask.isConfidential !== undefined && newTask.isConfidential !== oldTask.isConfidential) {
     changes.push({
@@ -174,6 +190,11 @@ export function formatHistoryMessage(
   // Handle follower changes even when action is UPDATED
   if (field === "followedIds") {
     return formatFollowersChangeMessage(userName, oldValue, newValue);
+  }
+
+  // Handle collaborator changes even when action is UPDATED
+  if (field === "collaboratorIds") {
+    return formatCollaboratorsChangeMessage(userName, oldValue, newValue);
   }
 
   // Handle assignee changes even when action is UPDATED
@@ -240,7 +261,10 @@ export function formatHistoryMessage(
     
     case TaskHistoryAction.FOLLOWERS_CHANGED:
       return formatFollowersChangeMessage(userName, oldValue, newValue);
-    
+
+    case TaskHistoryAction.COLLABORATORS_CHANGED:
+      return formatCollaboratorsChangeMessage(userName, oldValue, newValue);
+
     case TaskHistoryAction.CONFIDENTIAL_CHANGED:
       const isConfidentialStatus = newValue === "true";
       if (isConfidentialStatus) {
@@ -296,10 +320,10 @@ function formatFollowersChangeMessage(userName: string, oldValue?: string, newVa
   try {
     const oldFollowers = oldValue ? JSON.parse(oldValue) : [];
     const newFollowers = newValue ? JSON.parse(newValue) : [];
-    
+
     const added = newFollowers.filter((id: string) => !oldFollowers.includes(id));
     const removed = oldFollowers.filter((id: string) => !newFollowers.includes(id));
-    
+
     if (added.length > 0 && removed.length > 0) {
       return `${userName} updated the followers list`;
     } else if (added.length > 0) {
@@ -307,10 +331,32 @@ function formatFollowersChangeMessage(userName: string, oldValue?: string, newVa
     } else if (removed.length > 0) {
       return `${userName} removed ${removed.length} follower${removed.length > 1 ? 's' : ''}`;
     }
-    
+
     return `${userName} updated the followers`;
   } catch {
     return `${userName} updated the followers`;
+  }
+}
+
+function formatCollaboratorsChangeMessage(userName: string, oldValue?: string, newValue?: string): string {
+  try {
+    const oldCollaborators = oldValue ? JSON.parse(oldValue) : [];
+    const newCollaborators = newValue ? JSON.parse(newValue) : [];
+
+    const added = newCollaborators.filter((id: string) => !oldCollaborators.includes(id));
+    const removed = oldCollaborators.filter((id: string) => !newCollaborators.includes(id));
+
+    if (added.length > 0 && removed.length > 0) {
+      return `${userName} updated the collaborators list`;
+    } else if (added.length > 0) {
+      return `${userName} added ${added.length} collaborator${added.length > 1 ? 's' : ''}`;
+    } else if (removed.length > 0) {
+      return `${userName} removed ${removed.length} collaborator${removed.length > 1 ? 's' : ''}`;
+    }
+
+    return `${userName} updated the collaborators`;
+  } catch {
+    return `${userName} updated the collaborators`;
   }
 }
 
@@ -344,6 +390,11 @@ export function getActionColor(action: TaskHistoryAction, field?: string): strin
   // Handle follower changes even when action is UPDATED
   if (field === "followedIds") {
     return "bg-teal-500";
+  }
+
+  // Handle collaborator changes even when action is UPDATED
+  if (field === "collaboratorIds") {
+    return "bg-cyan-500";
   }
 
   // Handle assignee changes even when action is UPDATED
@@ -391,6 +442,8 @@ export function getActionColor(action: TaskHistoryAction, field?: string): strin
       return "bg-gray-500";
     case TaskHistoryAction.FOLLOWERS_CHANGED:
       return "bg-teal-500";
+    case TaskHistoryAction.COLLABORATORS_CHANGED:
+      return "bg-cyan-500";
     case TaskHistoryAction.CONFIDENTIAL_CHANGED:
       return "bg-amber-500";
     case TaskHistoryAction.ARCHIVED:

@@ -43,7 +43,8 @@ interface EditTaskFormProps {
   onCancel?: () => void;
   serviceOptions: { id: string; name: string }[];
   membertOptions: { id: string; name: string; role: MemberRole }[];
-  followerOptions: MultiSelectOption[];
+  followerOptions: MultiSelectOption[]; // Customers only
+  collaboratorOptions: MultiSelectOption[]; // Team members only
   initialValues: Task;
   initialAssignees?: { id: string; name: string }[];
   /** Callback when form actions are available (for external footer rendering) */
@@ -55,6 +56,7 @@ export const EditTaskForm = ({
   serviceOptions,
   membertOptions,
   followerOptions,
+  collaboratorOptions,
   initialValues,
   initialAssignees,
   onFormReady,
@@ -77,15 +79,6 @@ export const EditTaskForm = ({
     }
   }, [onFormReady, isPending]);
 
-  // Create assignee options for the MultiSelect component
-  const assigneeOptions = membertOptions
-    .filter(member => member.role !== MemberRole.CUSTOMER)
-    .map((member) => ({
-      value: member.id,
-      label: member.name,
-      role: member.role,
-    }));
-
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>(() => {
     return initialAssignees?.map(a => a.id) || [];
   });
@@ -97,6 +90,43 @@ export const EditTaskForm = ({
       return [];
     }
   });
+
+  const [selectedCollaborators, setSelectedCollaborators] = useState<string[]>(() => {
+    try {
+      return initialValues.collaboratorIds ? JSON.parse(initialValues.collaboratorIds) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Create assignee options for the MultiSelect component
+  const assigneeOptions = membertOptions
+    .filter(member => member.role !== MemberRole.CUSTOMER)
+    .map((member) => ({
+      value: member.id,
+      label: member.name,
+      role: member.role,
+    }));
+
+  // Filter collaborator options to exclude assignees (to avoid redundancy)
+  const filteredCollaboratorOptions = collaboratorOptions.filter(
+    option => !selectedAssignees.includes(option.value)
+  );
+
+  // Filter follower options to exclude assignees (customers typically can't be assignees, but for safety)
+  const filteredFollowerOptions = followerOptions.filter(
+    option => !selectedAssignees.includes(option.value)
+  );
+
+  // Remove assignees from collaborators/followers when assignees change (to avoid redundancy)
+  useEffect(() => {
+    if (selectedAssignees.length > 0) {
+      // Remove any assignees from collaborators
+      setSelectedCollaborators(prev => prev.filter(id => !selectedAssignees.includes(id)));
+      // Remove any assignees from followers (shouldn't happen since customers can't be assignees, but just in case)
+      setSelectedFollowers(prev => prev.filter(id => !selectedAssignees.includes(id)));
+    }
+  }, [selectedAssignees]);
 
   const trimmedSchema = z.object({
     name: z.string().trim().min(1, "Required"),
@@ -142,7 +172,8 @@ export const EditTaskForm = ({
       assigneeIds: JSON.stringify(selectedAssignees), // JSON string array of assignee IDs
       attachmentId: initialValues.attachmentId || "", // Preserve existing attachment
       workspaceId,
-      followedIds: JSON.stringify(selectedFollowers), // JSON string array of follower IDs
+      followedIds: JSON.stringify(selectedFollowers), // JSON string array of customer follower IDs
+      collaboratorIds: JSON.stringify(selectedCollaborators), // JSON string array of team member collaborator IDs
       isConfidential: values.isConfidential || false, // Ensure boolean value
     };
 
@@ -211,21 +242,7 @@ export const EditTaskForm = ({
                 )}
               />
 
-              {/* Due Date */}
-              <FormField
-                control={form.control}
-                name="dueDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Due Date</FormLabel>
-                    <FormControl>
-                      <DatePicker {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {/* Assignees */}
+              {/* Assignees - Enhanced UI */}
               <FormItem>
                 <FormLabel className="flex items-center gap-2">
                   Assignees
@@ -244,36 +261,22 @@ export const EditTaskForm = ({
                     className="w-full"
                   />
                 </FormControl>
-                {isConfidentialValue && selectedAssignees.length === 0 && (
-                  <p className="text-sm text-red-500">At least one assignee is required for confidential tasks</p>
-                )}
+                <div className="space-y-1 mt-2">
+                  {selectedAssignees.length > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-200">
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                      <span className="font-medium">{selectedAssignees.length} assignee{selectedAssignees.length > 1 ? 's' : ''} selected</span>
+                      <span className="text-indigo-500">(Primary task owners)</span>
+                    </div>
+                  )}
+                  {isConfidentialValue && selectedAssignees.length === 0 && (
+                    <p className="text-sm text-red-500">At least one assignee is required for confidential tasks</p>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Team members responsible for completing this task. They have full access to monitor and update the task.
+                  </p>
+                </div>
               </FormItem>
-
-              {/* Status */}
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <FormMessage />
-                      <SelectContent>
-                        <SelectItem value={TaskStatus.BACKLOG}>Backlog</SelectItem>
-                        <SelectItem value={TaskStatus.TODO}>Todo</SelectItem>
-                        <SelectItem value={TaskStatus.IN_PROGRESS}>In Progress</SelectItem>
-                        <SelectItem value={TaskStatus.IN_REVIEW}>In Review</SelectItem>
-                        <SelectItem value={TaskStatus.DONE}>Done</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
 
               {/* Service */}
               <FormField
@@ -309,6 +312,46 @@ export const EditTaskForm = ({
                 )}
               />
 
+              {/* Due Date */}
+              <FormField
+                control={form.control}
+                name="dueDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Due Date</FormLabel>
+                    <FormControl>
+                      <DatePicker {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              {/* Status */}
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <FormMessage />
+                      <SelectContent>
+                        <SelectItem value={TaskStatus.BACKLOG}>Backlog</SelectItem>
+                        <SelectItem value={TaskStatus.TODO}>Todo</SelectItem>
+                        <SelectItem value={TaskStatus.IN_PROGRESS}>In Progress</SelectItem>
+                        <SelectItem value={TaskStatus.IN_REVIEW}>In Review</SelectItem>
+                        <SelectItem value={TaskStatus.DONE}>Done</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+
               {/* Description */}
               <FormField
                 control={form.control}
@@ -328,22 +371,41 @@ export const EditTaskForm = ({
                 )}
               />
 
-              {/* Followers (Workspace Members) */}
+              {/* Collaborators (Team Members) */}
               <FormItem>
-                <FormLabel>Followers</FormLabel>
+                <FormLabel>Collaborators (Team Members)</FormLabel>
                 <FormControl>
                   <MultiSelect
-                    options={followerOptions}
-                    selected={selectedFollowers}
-                    onChange={setSelectedFollowers}
-                    placeholder="Select members to follow this task..."
+                    options={filteredCollaboratorOptions}
+                    selected={selectedCollaborators}
+                    onChange={setSelectedCollaborators}
+                    placeholder="Select team members to collaborate..."
                     className="w-full"
                   />
                 </FormControl>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Selected members will receive notifications and updates about this task.
+                  Team members who will work on this task. Assignees are excluded as they already monitor the task.
                 </p>
               </FormItem>
+
+              {/* Followers (Customers) */}
+              {filteredFollowerOptions.length > 0 && (
+                <FormItem>
+                  <FormLabel>Followers (Customers)</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      options={filteredFollowerOptions}
+                      selected={selectedFollowers}
+                      onChange={setSelectedFollowers}
+                      placeholder="Select customers to follow this task..."
+                      className="w-full"
+                    />
+                  </FormControl>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Customers who will receive updates about this task. They can view task progress but cannot make changes.
+                  </p>
+                </FormItem>
+              )}
 
             </div>
           </form>

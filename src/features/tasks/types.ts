@@ -26,9 +26,10 @@ export type Task = {
   dueDate: string | null;
   description?: string | null;
   attachmentId?: string | null;
-  followedIds?: string; // JSON string array of user IDs following this task
+  followedIds?: string; // JSON string array of customer IDs following this task
+  collaboratorIds?: string; // JSON string array of team member IDs collaborating on this task
   creatorId?: string | null; // User ID of the task creator
-  isConfidential?: boolean; // If true, only visible to creator, assignees, and followers
+  isConfidential?: boolean; // If true, only visible to creator, assignees, followers, and collaborators
   parentTaskId?: string | null; // ID of the parent task if this is a subtask
   createdAt: string;
   updatedAt: string;
@@ -58,6 +59,18 @@ export type PopulatedTask = Task & {
     };
   };
   followers?: Array<{
+    id: string;
+    userId: string;
+    workspaceId: string;
+    role: string;
+    joinedAt: string;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+    };
+  }>;
+  collaborators?: Array<{
     id: string;
     userId: string;
     workspaceId: string;

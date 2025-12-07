@@ -168,6 +168,17 @@ const app = new Hono()
               }
             }
           },
+          collaborators: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
           _count: {
             select: {
               subTasks: true
@@ -188,6 +199,7 @@ const app = new Hono()
           email: assignee.user.email,
         })),
         followedIds: JSON.stringify(task.followers.map(f => f.id)),
+        collaboratorIds: JSON.stringify(task.collaborators.map(c => c.id)),
         subTaskCount: task._count.subTasks,
       }));
 
@@ -270,6 +282,11 @@ const app = new Hono()
                 id: { in: string[] };
               };
             };
+            collaborators?: {
+              some: {
+                id: { in: string[] };
+              };
+            };
           }>;
         }>;
         OR?: Array<{
@@ -278,6 +295,11 @@ const app = new Hono()
           assignees?: { some: { id: { in: string[] } } };
           reviewerId?: { in: string[] };
           followers?: {
+            some: {
+              id: { in: string[] };
+            };
+          };
+          collaborators?: {
             some: {
               id: { in: string[] };
             };
@@ -335,6 +357,7 @@ const app = new Hono()
         { isConfidential: true, assignees: { some: { id: { in: memberIds } } } },
         { isConfidential: true, reviewerId: { in: memberIds } },
         { isConfidential: true, followers: { some: { id: { in: memberIds } } } },
+        { isConfidential: true, collaborators: { some: { id: { in: memberIds } } } },
       ];
 
       // Combine search filter with confidential filter
@@ -393,6 +416,17 @@ const app = new Hono()
               }
             }
           },
+          collaborators: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
           _count: {
             select: {
               subTasks: true
@@ -413,6 +447,7 @@ const app = new Hono()
           email: assignee.user.email,
         })),
         followedIds: JSON.stringify(task.followers.map(f => f.id)),
+        collaboratorIds: JSON.stringify(task.collaborators.map(c => c.id)),
         subTaskCount: task._count.subTasks,
       }));
 
@@ -446,6 +481,7 @@ const app = new Hono()
         include: {
           assignees: true,
           followers: true,
+          collaborators: true,
         }
       });
 
@@ -469,7 +505,8 @@ const app = new Hono()
           task.creatorId === user.id || // User created the task
           task.assignees.some(a => a.id === member.id) || // User is assigned to the task
           task.reviewerId === member.id || // User is the reviewer of the task
-          task.followers.some(f => f.id === member.id); // User is following the task
+          task.followers.some(f => f.id === member.id) || // Customer is following the task
+          task.collaborators.some(c => c.id === member.id); // Team member is collaborating
 
         if (!hasConfidentialAccess) {
           return c.json({ error: "You don't have access to this confidential task" }, 403);
@@ -577,6 +614,12 @@ const app = new Hono()
                 userId?: string;
               };
             };
+            collaborators?: {
+              some: {
+                id?: string;
+                userId?: string;
+              };
+            };
           }>;
         }>;
         OR?: Array<{
@@ -584,6 +627,12 @@ const app = new Hono()
           creatorId?: string;
           assignees?: { some: { id: string } };
           followers?: {
+            some: {
+              id?: string;
+              userId?: string;
+            };
+          };
+          collaborators?: {
             some: {
               id?: string;
               userId?: string;
@@ -666,13 +715,14 @@ const app = new Hono()
       }
 
       // Add confidential task filtering to the where clause
-      // Users can see confidential tasks if they are the creator, assignee, reviewer, or follower
+      // Users can see confidential tasks if they are the creator, assignee, reviewer, follower, or collaborator
       const confidentialFilter = [
         { isConfidential: false }, // Non-confidential tasks are visible to everyone
         { isConfidential: true, creatorId: user.id }, // User created the task
         { isConfidential: true, assignees: { some: { id: member.id } } }, // User is assigned to the task
         { isConfidential: true, reviewerId: member.id }, // User is the reviewer of the task
-        { isConfidential: true, followers: { some: { id: member.id } } }, // User is following the task
+        { isConfidential: true, followers: { some: { id: member.id } } }, // Customer is following the task
+        { isConfidential: true, collaborators: { some: { id: member.id } } }, // Team member is collaborating
       ];
 
       // For customers, add additional filtering to only show tasks they are following
@@ -732,6 +782,17 @@ const app = new Hono()
               }
             }
           },
+          collaborators: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
           _count: {
             select: {
               subTasks: true
@@ -752,6 +813,7 @@ const app = new Hono()
           email: assignee.user.email,
         })),
         followedIds: JSON.stringify(task.followers.map(f => f.id)),
+        collaboratorIds: JSON.stringify(task.collaborators.map(c => c.id)),
         subTaskCount: task._count.subTasks,
       }));
 
@@ -788,6 +850,7 @@ const app = new Hono()
           description,
           attachmentId,
           followedIds,
+          collaboratorIds,
           isConfidential,
         } = c.req.valid("json");
 
@@ -831,7 +894,7 @@ const app = new Hono()
           }
         }
 
-        // Prepare followers - automatically add the task creator as a follower
+        // Prepare followers (customers following the task)
         const followerIds: string[] = [];
         if (followedIds) {
           try {
@@ -848,17 +911,33 @@ const app = new Hono()
           }
         }
 
-        // Ensure creator is always included in followers
-        if (!followerIds.includes(member.id)) {
-          followerIds.push(member.id);
-        }
-
-        // Ensure all assignees are always included in followers
-        for (const assigneeId of parsedAssigneeIds) {
-          if (assigneeId !== member.id && !followerIds.includes(assigneeId)) {
-            followerIds.push(assigneeId);
+        // Prepare collaborators (team members working on the task)
+        let collaboratorIdsList: string[] = [];
+        if (collaboratorIds) {
+          try {
+            const parsedIds = JSON.parse(collaboratorIds);
+            if (Array.isArray(parsedIds)) {
+              const validIds = parsedIds.filter((id: unknown) =>
+                id && typeof id === 'string' && id.trim().length > 0
+              ) as string[];
+              collaboratorIdsList.push(...validIds);
+            }
+          } catch {
+            // Invalid JSON, ignore
           }
         }
+
+        // Ensure creator is always included in collaborators (if they are a team member and not an assignee)
+        if (member.role !== MemberRole.CUSTOMER && !collaboratorIdsList.includes(member.id) && !parsedAssigneeIds.includes(member.id)) {
+          collaboratorIdsList.push(member.id);
+        }
+
+        // IMPORTANT: Remove assignees from collaborators to avoid redundancy
+        // Assignees already have full access to monitor the task
+        collaboratorIdsList = collaboratorIdsList.filter(id => !parsedAssigneeIds.includes(id));
+
+        // Also remove assignees from followers for consistency
+        const filteredFollowerIds = followerIds.filter(id => !parsedAssigneeIds.includes(id));
 
         // Validate required fields and convert string 'undefined' to proper values
         if (!serviceId || serviceId === 'undefined' || serviceId === '') {
@@ -883,7 +962,10 @@ const app = new Hono()
               connect: parsedAssigneeIds.map(id => ({ id }))
             },
             followers: {
-              connect: followerIds.map(id => ({ id }))
+              connect: filteredFollowerIds.map(id => ({ id }))
+            },
+            collaborators: {
+              connect: collaboratorIdsList.map(id => ({ id }))
             }
           },
           include: {
@@ -984,6 +1066,7 @@ const app = new Hono()
           description,
           attachmentId,
           followedIds,
+          collaboratorIds,
           isConfidential,
         } = c.req.valid("json");
 
@@ -999,6 +1082,7 @@ const app = new Hono()
           where: { id: taskId },
           include: {
             followers: true,
+            collaborators: true,
             assignees: true,
           }
         });
@@ -1023,7 +1107,8 @@ const app = new Hono()
             existingTask.creatorId === user.id || // User created the task
             existingTask.assignees.some(a => a.id === member.id) || // User is assigned to the task
             existingTask.reviewerId === member.id || // User is the reviewer of the task
-            existingTask.followers.some(f => f.id === member.id); // User is following the task
+            existingTask.followers.some(f => f.id === member.id) || // Customer is following the task
+            existingTask.collaborators.some(c => c.id === member.id); // Team member is collaborating
 
           if (!hasConfidentialAccess) {
             return c.json({ error: "You don't have access to this confidential task" }, 403);
@@ -1034,6 +1119,7 @@ const app = new Hono()
         const isCurrentAssignee = existingTask.assignees.some(a => a.id === member.id);
         const isCurrentReviewer = existingTask.reviewerId === member.id;
         const isFollower = existingTask.followers.some(f => f.id === member.id);
+        const isCollaborator = existingTask.collaborators.some(c => c.id === member.id);
         const isWorkspaceAdmin = member.role === MemberRole.ADMIN;
         const isWorkspaceMember = member.role === MemberRole.MEMBER;
         const isCustomer = member.role === MemberRole.CUSTOMER;
@@ -1070,23 +1156,24 @@ const app = new Hono()
           // This allows reviewers to perform their review duties
           if (isCurrentReviewer) {
             // Reviewer has full permissions to edit IN_REVIEW tasks
-          } else if (!isWorkspaceAdmin && !isWorkspaceMember && !isCurrentAssignee && !isFollower) {
-            // Only allow workspace members, assignee, followers, or admin to edit if not the reviewer
-            return c.json({ error: "Only the reviewer, assignee, followers, or workspace members can update tasks in review" }, 403);
+          } else if (!isWorkspaceAdmin && !isWorkspaceMember && !isCurrentAssignee && !isFollower && !isCollaborator) {
+            // Only allow workspace members, assignee, followers, collaborators, or admin to edit if not the reviewer
+            return c.json({ error: "Only the reviewer, assignee, followers, collaborators, or workspace members can update tasks in review" }, 403);
           }
         } else if (existingTask.status === TaskStatus.IN_PROGRESS) {
-          // In Progress status: only assignee and followers (with member role) can update
+          // In Progress status: only assignee, collaborators, and followers (with member role) can update
           // Exception: Allow anyone to move task from IN_PROGRESS to IN_REVIEW
           const isMovingToReview = status === TaskStatus.IN_REVIEW && existingTask.status === TaskStatus.IN_PROGRESS;
 
           if (!isMovingToReview) {
-            // For other updates, only assignee and followers can update
+            // For other updates, only assignee, collaborators, and followers can update
             const canUpdate = isCurrentAssignee ||
+                             isCollaborator ||
                              (isFollower && (isWorkspaceMember || isWorkspaceAdmin)) ||
                              isWorkspaceAdmin;
 
             if (!canUpdate) {
-              return c.json({ error: "Only the assignee and followers (with member role) can update tasks in progress" }, 403);
+              return c.json({ error: "Only the assignee, collaborators, and followers (with member role) can update tasks in progress" }, 403);
             }
           }
         } else if (existingTask.status === TaskStatus.DONE) {
@@ -1188,6 +1275,7 @@ const app = new Hono()
           position?: number;
           assignees?: { set: { id: string }[] };
           followers?: { set: { id: string }[] };
+          collaborators?: { set: { id: string }[] };
         } = {};
 
         // Handle workspace change - filter followers who don't have access to target workspace
@@ -1321,24 +1409,22 @@ const app = new Hono()
           updateData.status = status;
         }
 
-        // Handle followers update (skip if workspace is being transferred as it's already handled above)
+        // Handle followers update (for customers - skip if workspace is being transferred as it's already handled above)
         if (followedIds !== undefined && !isWorkspaceTransfer) {
           try {
             const parsedIds = JSON.parse(followedIds);
             if (Array.isArray(parsedIds)) {
               // Filter out null, undefined, empty strings, and non-string values
-              const validIds = parsedIds.filter((id: unknown) =>
+              let validIds = parsedIds.filter((id: unknown) =>
                 id && typeof id === 'string' && id.trim().length > 0
               ) as string[];
 
-              // Ensure all assignees are included in followers (if assignees are being updated)
-              if (parsedAssigneeIds) {
-                for (const assigneeId of parsedAssigneeIds) {
-                  if (!validIds.includes(assigneeId)) {
-                    validIds.push(assigneeId);
-                  }
-                }
-              }
+              // IMPORTANT: Remove assignees from followers to avoid redundancy
+              // Get the effective assignees (either new ones being set or existing ones)
+              const effectiveAssigneeIds = parsedAssigneeIds !== undefined
+                ? parsedAssigneeIds
+                : existingTask.assignees.map(a => a.id);
+              validIds = validIds.filter(id => !effectiveAssigneeIds.includes(id));
 
               // Use the target workspace ID if provided, otherwise use existing
               const targetWorkspaceId = updateData.workspaceId || existingTask.workspaceId;
@@ -1360,19 +1446,55 @@ const app = new Hono()
             console.error("Error processing followers:", error);
             // Invalid JSON, ignore followers update
           }
-        } else if (parsedAssigneeIds && parsedAssigneeIds.length > 0 && !isWorkspaceTransfer) {
-          // If followers are not being explicitly updated but assignees are changing,
-          // add the new assignees to the existing followers
-          const currentFollowerIds = existingTask.followers.map(f => f.id);
-          const newFollowerIds = [...currentFollowerIds];
-          for (const assigneeId of parsedAssigneeIds) {
-            if (!newFollowerIds.includes(assigneeId)) {
-              newFollowerIds.push(assigneeId);
+        }
+
+        // Handle collaborators update (for team members - skip if workspace is being transferred)
+        if (collaboratorIds !== undefined && !isWorkspaceTransfer) {
+          try {
+            const parsedIds = JSON.parse(collaboratorIds);
+            if (Array.isArray(parsedIds)) {
+              // Filter out null, undefined, empty strings, and non-string values
+              let validIds = parsedIds.filter((id: unknown) =>
+                id && typeof id === 'string' && id.trim().length > 0
+              ) as string[];
+
+              // IMPORTANT: Remove assignees from collaborators to avoid redundancy
+              // Assignees already have full access to monitor the task
+              const effectiveAssigneeIds = parsedAssigneeIds !== undefined
+                ? parsedAssigneeIds
+                : existingTask.assignees.map(a => a.id);
+              validIds = validIds.filter(id => !effectiveAssigneeIds.includes(id));
+
+              // Use the target workspace ID if provided, otherwise use existing
+              const targetWorkspaceId = updateData.workspaceId || existingTask.workspaceId;
+
+              // Verify that these member IDs exist in the workspace
+              const existingMembers = await prisma.member.findMany({
+                where: {
+                  id: { in: validIds },
+                  workspaceId: targetWorkspaceId
+                }
+              });
+
+              const existingMemberIds = existingMembers.map(m => m.id);
+              updateData.collaborators = {
+                set: existingMemberIds.map((id: string) => ({ id }))
+              };
             }
+          } catch (error) {
+            console.error("Error processing collaborators:", error);
+            // Invalid JSON, ignore collaborators update
           }
-          if (newFollowerIds.length !== currentFollowerIds.length) {
-            updateData.followers = {
-              set: newFollowerIds.map((id: string) => ({ id }))
+        } else if (parsedAssigneeIds && parsedAssigneeIds.length > 0 && !isWorkspaceTransfer) {
+          // If collaborators are not being explicitly updated but assignees are changing,
+          // remove any new assignees from current collaborators
+          const currentCollaboratorIds = existingTask.collaborators.map(c => c.id);
+          const newCollaboratorIds = currentCollaboratorIds.filter(id => !parsedAssigneeIds.includes(id));
+
+          // Only update if there are changes
+          if (newCollaboratorIds.length !== currentCollaboratorIds.length) {
+            updateData.collaborators = {
+              set: newCollaboratorIds.map((id: string) => ({ id }))
             };
           }
         }
@@ -1396,6 +1518,7 @@ const app = new Hono()
           description: existingTask.description,
           attachmentId: existingTask.attachmentId,
           followedIds: JSON.stringify(existingTask.followers.map(f => f.id)),
+          collaboratorIds: JSON.stringify(existingTask.collaborators.map(c => c.id)),
           creatorId: existingTask.creatorId,
           isConfidential: existingTask.isConfidential,
           createdAt: existingTask.createdAt.toISOString(),
@@ -1432,6 +1555,17 @@ const app = new Hono()
               }
             },
             followers: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  }
+                }
+              }
+            },
+            collaborators: {
               include: {
                 user: {
                   select: {
@@ -1479,32 +1613,38 @@ const app = new Hono()
           }
         }
 
-        // Create task update notifications for followers (for significant changes)
+        // Create task update notifications for followers and collaborators (for significant changes)
         const significantChanges = changes.filter(change =>
           ['status', 'assigneeIds', 'serviceId', 'dueDate', 'name', 'description'].includes(change.field)
         );
 
         if (significantChanges.length > 0) {
           try {
-            // Get all followers with their user information
-            const followers = await prisma.member.findMany({
+            // Get all followers and collaborators with their user information
+            const allRecipientIds = [
+              ...task.followers.map(f => f.id),
+              ...task.collaborators.map(c => c.id)
+            ];
+            const uniqueRecipientIds = [...new Set(allRecipientIds)];
+
+            const recipients = await prisma.member.findMany({
               where: {
-                id: { in: task.followers.map(f => f.id) }
+                id: { in: uniqueRecipientIds }
               },
               include: { user: true }
             });
 
-            // Create notifications for all followers except the person making the change
-            const notificationPromises = followers
-              .filter(follower => follower.userId !== user.id) // Don't notify the person making the change
-              .map(follower => {
-                const changeDescription = significantChanges.length === 1 
+            // Create notifications for all recipients except the person making the change
+            const notificationPromises = recipients
+              .filter(recipient => recipient.userId !== user.id) // Don't notify the person making the change
+              .map(recipient => {
+                const changeDescription = significantChanges.length === 1
                   ? `${significantChanges[0].field} was updated`
                   : `${significantChanges.length} fields were updated`;
 
                 return prisma.notification.create({
                   data: {
-                    userId: follower.userId,
+                    userId: recipient.userId,
                     type: "TASK_UPDATE",
                     title: "Task updated",
                     message: `${user.name || 'Someone'} updated task "${task.name}" - ${changeDescription}`,
@@ -1653,6 +1793,9 @@ const app = new Hono()
                 case "followedIds":
                   action = TaskHistoryAction.FOLLOWERS_CHANGED;
                   break;
+                case "collaboratorIds":
+                  action = TaskHistoryAction.COLLABORATORS_CHANGED;
+                  break;
                 case "isConfidential":
                   action = TaskHistoryAction.CONFIDENTIAL_CHANGED;
                   break;
@@ -1742,6 +1885,17 @@ const app = new Hono()
               }
             }
           },
+          collaborators: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          },
           _count: {
             select: {
               subTasks: true
@@ -1776,7 +1930,8 @@ const app = new Hono()
           task.creatorId === currentUser.id || // User created the task
           task.assignees.some(a => a.id === currentMember.id) || // User is assigned to the task
           task.reviewerId === currentMember.id || // User is the reviewer of the task
-          task.followers.some(f => f.id === currentMember.id); // User is following the task
+          task.followers.some(f => f.id === currentMember.id) || // Customer is following the task
+          task.collaborators.some(c => c.id === currentMember.id); // Team member is collaborating
 
         if (!hasConfidentialAccess) {
           return c.json({ error: "You don't have access to this confidential task" }, 403);
@@ -1790,11 +1945,12 @@ const app = new Hono()
         const isAssignee = task.assignees.some(a => a.id === currentMember.id);
         const isReviewer = task.reviewerId === currentMember.id;
         const isFollower = task.followers.some(follower => follower.id === currentMember.id);
+        const isCollaborator = task.collaborators.some(collab => collab.id === currentMember.id);
         const isWorkspaceAdmin = currentMember.role === MemberRole.ADMIN;
         const isSuperAdmin = currentUser.isAdmin || currentUser.isSuperAdmin || false;
 
         // Check if user has permission to view this task
-        if (!isCreator && !isAssignee && !isReviewer && !isFollower && !isWorkspaceAdmin && !isSuperAdmin) {
+        if (!isCreator && !isAssignee && !isReviewer && !isFollower && !isCollaborator && !isWorkspaceAdmin && !isSuperAdmin) {
           return c.json({ error: "Unauthorized" }, 401);
         }
       }
@@ -1813,6 +1969,7 @@ const app = new Hono()
           updatedAt: task.updatedAt.toISOString(),
           assignees,
           followedIds: JSON.stringify(task.followers.map(f => f.id)),
+          collaboratorIds: JSON.stringify(task.collaborators.map(c => c.id)),
           subTaskCount: task._count.subTasks,
         },
       });

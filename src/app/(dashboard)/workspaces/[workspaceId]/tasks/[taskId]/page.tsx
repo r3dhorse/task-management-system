@@ -28,6 +28,8 @@ import { Member, MemberRole } from "@/features/members/types";
 import { Service } from "@/features/services/types";
 import { TaskStatus } from "@/features/tasks/types";
 import { ManageFollowersModal } from "@/features/tasks/components/manage-followers-modal";
+import { ManageCollaboratorsModal } from "@/features/tasks/components/manage-collaborators-modal";
+import { ManageAssigneesModal } from "@/features/tasks/components/manage-assignees-modal";
 import { TaskPropertiesModal } from "@/features/tasks/components/task-properties-modal";
 import { EnhancedStageIndicator } from "@/features/tasks/components/enhanced-stage-indicator";
 import { SubTasksTable } from "@/features/tasks/components/sub-tasks-table";
@@ -58,7 +60,10 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   });
 
   const [selectedFollowers, setSelectedFollowers] = useState<string[]>([]);
+  const [selectedCollaborators, setSelectedCollaborators] = useState<string[]>([]);
   const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
+  const [isCollaboratorsModalOpen, setIsCollaboratorsModalOpen] = useState(false);
+  const [isAssigneesModalOpen, setIsAssigneesModalOpen] = useState(false);
   const [isPropertiesModalOpen, setIsPropertiesModalOpen] = useState(false);
 
   const { data: task, isLoading: isLoadingTask } = useGetTask({ 
@@ -434,7 +439,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   );
 
 
-  // Parse followers from task
+  // Parse followers from task (customers)
   const followedIds = task?.followedIds ? (() => {
     try {
       return JSON.parse(task.followedIds);
@@ -443,9 +448,23 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     }
   })() : [];
 
-  // Get follower members
-  const followers = members?.documents.filter((member) => 
+  // Get follower members (customers)
+  const followers = members?.documents.filter((member) =>
     followedIds.includes(member.id)
+  ) || [];
+
+  // Parse collaborators from task (team members)
+  const collaboratorIds = task?.collaboratorIds ? (() => {
+    try {
+      return JSON.parse(task.collaboratorIds);
+    } catch {
+      return [];
+    }
+  })() : [];
+
+  // Get collaborator members (team members)
+  const collaborators = members?.documents.filter((member) =>
+    collaboratorIds.includes(member.id)
   ) || [];
 
   // Find current user's member record to check delete permissions
@@ -461,6 +480,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   const isAssignee = currentMember && assignees.length > 0 ? assignees.some(a => a.id === currentMember.id) : false;
   const isReviewer = currentMember && task?.reviewerId ? currentMember.id === task.reviewerId : false;
   const isFollower = followedIds.includes(currentMember?.id || '');
+  const isCollaborator = collaboratorIds.includes(currentMember?.id || '');
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
 
   // For DONE tasks, only admins can archive
@@ -479,17 +499,17 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         ? true // Reviewers can edit tasks in IN_REVIEW status
       : currentMember?.role === MemberRole.CUSTOMER
         ? false // Customers cannot edit tasks that are not in TO DO status
-        : (isCreator || isAssignee || (isFollower && currentMember?.role === MemberRole.MEMBER) || isWorkspaceAdmin || isSuperAdmin);
+        : (isCreator || isAssignee || isCollaborator || (isFollower && currentMember?.role === MemberRole.MEMBER) || isWorkspaceAdmin || isSuperAdmin);
 
   const canEditStatus = task?.status === TaskStatus.IN_REVIEW && isReviewer
     ? true // Reviewers can change status of IN_REVIEW tasks
     : (currentMember?.role !== MemberRole.CUSTOMER || isCreator); // Non-customers and creators can edit status
 
-  // Access restriction: Only assignee, creator, reviewer, followers, and workspace admins can view task details
+  // Access restriction: Only assignee, creator, reviewer, collaborators, followers, and workspace admins can view task details
   // Exception: All workspace members can view TO DO tasks (since this is where they get their tasks)
   const canViewTaskDetails = task?.status === TaskStatus.TODO
     ? currentMember?.role !== undefined // All workspace members can view TO DO tasks
-    : (isCreator || isAssignee || isReviewer || isFollower || isWorkspaceAdmin || isSuperAdmin);
+    : (isCreator || isAssignee || isReviewer || isCollaborator || isFollower || isWorkspaceAdmin || isSuperAdmin);
 
   // If user doesn't have permission to view task details, show access denied
   if (!canViewTaskDetails && task && currentMember) {
@@ -580,6 +600,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         isConfidential: task.isConfidential || false,
       });
       setSelectedFollowers(followedIds);
+      setSelectedCollaborators(collaboratorIds);
       setIsPropertiesModalOpen(true);
     }
   };
@@ -597,6 +618,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       dueDate: string;
       attachmentId: string;
       followedIds: string;
+      collaboratorIds: string;
       isConfidential: boolean;
       status?: TaskStatus;
     } = {
@@ -609,6 +631,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       dueDate: editForm.dueDate.toISOString(),
       attachmentId: editForm.attachmentId,
       followedIds: JSON.stringify(selectedFollowers),
+      collaboratorIds: JSON.stringify(selectedCollaborators),
       isConfidential: editForm.isConfidential,
     };
 
@@ -709,6 +732,54 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     );
   };
 
+  const handleCollaboratorsSave = (newCollaborators: string[]) => {
+    if (!task) return;
+
+    const updatePayload = {
+      collaboratorIds: JSON.stringify(newCollaborators),
+    };
+
+    updateTask(
+      {
+        param: { taskId: task.id },
+        json: updatePayload,
+      },
+      {
+        onSuccess: () => {
+          setSelectedCollaborators(newCollaborators);
+        },
+        onError: (error) => {
+          console.error("Failed to update collaborators:", error);
+          toast.error("Failed to update collaborators");
+        },
+      }
+    );
+  };
+
+  const handleAssigneesSave = (newAssignees: string[]) => {
+    if (!task) return;
+
+    const updatePayload = {
+      assigneeIds: JSON.stringify(newAssignees),
+    };
+
+    updateTask(
+      {
+        param: { taskId: task.id },
+        json: updatePayload,
+      },
+      {
+        onSuccess: () => {
+          setEditForm(prev => ({ ...prev, assigneeIds: newAssignees }));
+        },
+        onError: (error) => {
+          console.error("Failed to update assignees:", error);
+          toast.error("Failed to update assignees");
+        },
+      }
+    );
+  };
+
   const handleStatusChange = (newStatus: TaskStatus) => {
     if (!task || !canEditStatus) return;
 
@@ -721,6 +792,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       dueDate: task.dueDate || new Date().toISOString(),
       attachmentId: task.attachmentId || "",
       followedIds: task.followedIds || "[]",
+      collaboratorIds: task.collaboratorIds || "[]",
       isConfidential: task.isConfidential || false,
     };
 
@@ -749,7 +821,26 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         onClose={() => setIsFollowersModalOpen(false)}
         onSave={handleFollowersSave}
         currentFollowers={followedIds}
+        availableMembers={(members?.documents || []).filter(m => (m as Member).role === MemberRole.CUSTOMER) as Member[]}
+        currentAssignees={assignees.map(a => a.id)}
+        isLoading={isUpdating}
+      />
+      <ManageCollaboratorsModal
+        isOpen={isCollaboratorsModalOpen}
+        onClose={() => setIsCollaboratorsModalOpen(false)}
+        onSave={handleCollaboratorsSave}
+        currentCollaborators={collaboratorIds}
         availableMembers={(members?.documents || []) as Member[]}
+        currentAssignees={assignees.map(a => a.id)}
+        isLoading={isUpdating}
+      />
+      <ManageAssigneesModal
+        isOpen={isAssigneesModalOpen}
+        onClose={() => setIsAssigneesModalOpen(false)}
+        onSave={handleAssigneesSave}
+        currentAssignees={assignees.map(a => a.id)}
+        availableMembers={(members?.documents || []) as Member[]}
+        isConfidential={task.isConfidential}
         isLoading={isUpdating}
       />
 
@@ -1101,16 +1192,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         </div>
       </div>
 
-      {/* Modals */}
-      <ManageFollowersModal
-        isOpen={isFollowersModalOpen}
-        onClose={() => setIsFollowersModalOpen(false)}
-        onSave={handleFollowersSave}
-        currentFollowers={followedIds}
-        availableMembers={(members?.documents || []) as Member[]}
-        isLoading={isUpdating}
-      />
-
+      {/* Task Properties Modal */}
       <TaskPropertiesModal
         isOpen={isPropertiesModalOpen}
         onClose={() => setIsPropertiesModalOpen(false)}
@@ -1127,6 +1209,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
           description: task.description,
           attachmentId: task.attachmentId,
           followedIds: task.followedIds || "[]",
+          collaboratorIds: task.collaboratorIds || "[]",
           creatorId: task.creatorId,
           isConfidential: task.isConfidential,
           createdAt: String(task.createdAt),
@@ -1139,13 +1222,17 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         members={editForm.workspaceId !== workspaceId && targetMembers ? targetMembers as { documents: Member[] } | undefined : members as { documents: Member[] } | undefined}
         services={services as { documents: Service[] } | undefined}
         workspaces={workspaces}
+        assignees={assignees as Member[]}
         followers={followers as Member[]}
+        collaborators={collaborators as Member[]}
         canEditStatus={canEditStatus}
+        onManageAssignees={() => setIsAssigneesModalOpen(true)}
         onManageFollowers={() => setIsFollowersModalOpen(true)}
+        onManageCollaborators={() => setIsCollaboratorsModalOpen(true)}
         onWorkspaceChange={(_workspaceId) => {
           // When workspace changes, we need to refresh services for the new workspace
           // The useGetServices hook will automatically refetch when workspaceId changes
-          // Note: Followers will be filtered on the server to keep only those who are members of the target workspace
+          // Note: Followers and collaborators will be filtered on the server to keep only those who are members of the target workspace
         }}
       />
     </div>

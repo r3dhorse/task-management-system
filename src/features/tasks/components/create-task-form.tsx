@@ -86,7 +86,8 @@ export const CreateTaskForm = ({
   const { mutate: createSubTask, isPending: isCreatingSubTask } = useCreateSubTask({
     taskId: parentTaskId || ""
   });
-  const [selectedFollowers, setSelectedFollowers] = useState<string[]>([]);
+  const [selectedFollowers, setSelectedFollowers] = useState<string[]>([]); // Customers following the task
+  const [selectedCollaborators, setSelectedCollaborators] = useState<string[]>([]); // Team members collaborating
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const { data: currentUser } = useCurrent();
 
@@ -180,7 +181,7 @@ export const CreateTaskForm = ({
     role: member.role as MemberRole,
   })) || [];
 
-  // Create assignee options for the AssigneeSelect component
+  // Create assignee options for the AssigneeSelect component (team members only)
   const assigneeOptions = memberOptions
     .filter((member: MemberOption) => member.role !== MemberRole.CUSTOMER)
     .map((member: MemberOption) => ({
@@ -190,26 +191,52 @@ export const CreateTaskForm = ({
       role: member.role,
     }));
 
-  // Create follower options from workspace members
-  const followerOptions = members?.documents?.map((member: MemberDocument) => ({
-    value: member.id,
-    label: member.name,
-    email: member.email,
-    role: member.role,
-  })) || [];
+  // Create collaborator options from team members (non-customers), excluding assignees
+  const collaboratorOptions = memberOptions
+    .filter((member: MemberOption) => member.role !== MemberRole.CUSTOMER)
+    .filter((member: MemberOption) => !selectedAssignees.includes(member.id)) // Exclude assignees
+    .map((member: MemberOption) => ({
+      value: member.id,
+      label: member.name,
+      email: member.email,
+      role: member.role,
+    }));
+
+  // Create follower options from customers only (customers can't be assignees, but keeping filter for consistency)
+  const followerOptions = memberOptions
+    .filter((member: MemberOption) => member.role === MemberRole.CUSTOMER)
+    .filter((member: MemberOption) => !selectedAssignees.includes(member.id)) // Exclude assignees (just in case)
+    .map((member: MemberOption) => ({
+      value: member.id,
+      label: member.name,
+      email: member.email,
+      role: member.role,
+    }));
 
   // Find current user's member record
   const currentMember = members?.documents?.find((member: MemberDocument) => 
     member.userId === currentUser?.id
   );
 
-  // Reset service and assignees when workspace changes
+  // Reset service, assignees, followers and collaborators when workspace changes
   useEffect(() => {
     if (selectedWorkspaceId && selectedWorkspaceId !== workspaceId) {
       form.setValue("serviceId", "");
       setSelectedAssignees([]);
+      setSelectedFollowers([]);
+      setSelectedCollaborators([]);
     }
   }, [selectedWorkspaceId, workspaceId, form]);
+
+  // Remove assignees from collaborators/followers when assignees change (to avoid redundancy)
+  useEffect(() => {
+    if (selectedAssignees.length > 0) {
+      // Remove any assignees from collaborators
+      setSelectedCollaborators(prev => prev.filter(id => !selectedAssignees.includes(id)));
+      // Remove any assignees from followers (shouldn't happen since customers can't be assignees, but just in case)
+      setSelectedFollowers(prev => prev.filter(id => !selectedAssignees.includes(id)));
+    }
+  }, [selectedAssignees]);
 
   // Update due date when service changes (SLA-based)
   useEffect(() => {
@@ -247,7 +274,8 @@ export const CreateTaskForm = ({
       dueDate: new Date(values.dueDate).toISOString(), // Convert date to ISO string
       attachmentId: "", // No attachment support in creation
       assigneeIds: JSON.stringify(selectedAssignees), // JSON string array of assignee IDs
-      followedIds: JSON.stringify(selectedFollowers), // JSON string array of follower IDs
+      followedIds: JSON.stringify(selectedFollowers), // JSON string array of customer follower IDs
+      collaboratorIds: JSON.stringify(selectedCollaborators), // JSON string array of team member collaborator IDs
       isConfidential: values.isConfidential || false, // Ensure boolean value
     };
 
@@ -259,6 +287,7 @@ export const CreateTaskForm = ({
         isConfidential: false,
       });
       setSelectedFollowers([]);
+      setSelectedCollaborators([]);
       setSelectedAssignees([]);
       onCancel?.();
       onSuccess?.(formattedValues);
@@ -390,7 +419,49 @@ export const CreateTaskForm = ({
                 )}
               />
 
-              {/* 4. Service (only services from selected workspace) */}
+              {/* 4. Assignees (Multi-select) - Enhanced UI */}
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  Assignees
+                  {isConfidentialValue && (
+                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+                      Required for confidential tasks
+                    </span>
+                  )}
+                </FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    options={assigneeOptions}
+                    selected={selectedAssignees}
+                    onChange={setSelectedAssignees}
+                    placeholder={
+                      isLoadingMembers
+                        ? "Loading members..."
+                        : !selectedWorkspaceId
+                          ? "Select workspace first"
+                          : "Select assignees..."
+                    }
+                    className="w-full"
+                  />
+                </FormControl>
+                <div className="space-y-1 mt-2">
+                  {selectedAssignees.length > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-200">
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                      <span className="font-medium">{selectedAssignees.length} assignee{selectedAssignees.length > 1 ? 's' : ''} selected</span>
+                      <span className="text-indigo-500">(Primary task owners)</span>
+                    </div>
+                  )}
+                  {isConfidentialValue && selectedAssignees.length === 0 && (
+                    <p className="text-sm text-destructive">At least one assignee is required for confidential tasks</p>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Team members responsible for completing this task. They have full access to monitor and update the task.
+                  </p>
+                </div>
+              </FormItem>
+
+              {/* 5. Service (only services from selected workspace) */}
               <FormField
                 control={form.control}
                 name="serviceId"
@@ -401,9 +472,9 @@ export const CreateTaskForm = ({
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={
-                            isLoadingServices 
-                              ? "Loading services..." 
-                              : !selectedWorkspaceId 
+                            isLoadingServices
+                              ? "Loading services..."
+                              : !selectedWorkspaceId
                                 ? "Select workspace first"
                                 : "Select Service *"
                           } />
@@ -440,7 +511,7 @@ export const CreateTaskForm = ({
                 )}
               />
 
-              {/* 5. Due Date */}
+              {/* 6. Due Date */}
               <FormField
                 control={form.control}
                 name="dueDate"
@@ -476,51 +547,20 @@ export const CreateTaskForm = ({
                 )}
               />
 
-              {/* 6. Assignees (Multi-select) */}
+              {/* 7. Collaborators (Team Members) */}
               <FormItem>
-                <FormLabel className="flex items-center gap-2">
-                  Assignees
-                  {isConfidentialValue && (
-                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
-                      Required for confidential tasks
-                    </span>
-                  )}
-                </FormLabel>
+                <FormLabel>Collaborators (Team Members)</FormLabel>
                 <FormControl>
                   <MultiSelect
-                    options={assigneeOptions}
-                    selected={selectedAssignees}
-                    onChange={setSelectedAssignees}
-                    placeholder={
-                      isLoadingMembers
-                        ? "Loading members..."
-                        : !selectedWorkspaceId
-                          ? "Select workspace first"
-                          : "Select assignees..."
-                    }
+                    options={collaboratorOptions}
+                    selected={selectedCollaborators}
+                    onChange={setSelectedCollaborators}
+                    placeholder="Select team members to collaborate..."
                     className="w-full"
-                  />
-                </FormControl>
-                {isConfidentialValue && selectedAssignees.length === 0 && (
-                  <p className="text-sm text-destructive">At least one assignee is required for confidential tasks</p>
-                )}
-              </FormItem>
-
-              {/* 7. Collaborators (Workspace Members) */}
-              <FormItem>
-                <FormLabel>Collaborators</FormLabel>
-                <FormControl>
-                  <MultiSelect
-                    options={followerOptions}
-                    selected={selectedFollowers}
-                    onChange={setSelectedFollowers}
-                    placeholder="Select members to collaborate on this task..."
-                    className="w-full"
-                    dropdownDirection="up"
                   />
                 </FormControl>
                 <div className="space-y-1 mt-2">
-                  {currentMember && (
+                  {currentMember && currentMember.role !== MemberRole.CUSTOMER && (
                     <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200">
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       <span className="font-medium">{currentMember.name}</span>
@@ -528,10 +568,30 @@ export const CreateTaskForm = ({
                     </div>
                   )}
                   <p className="text-sm text-muted-foreground">
-                    You will automatically be a collaborator on any task you create. Selected users will receive notifications and updates about this task.
+                    Team members who will work on this task. They will receive notifications and updates.
                   </p>
                 </div>
               </FormItem>
+
+              {/* 8. Followers (Customers) */}
+              {followerOptions.length > 0 && (
+                <FormItem>
+                  <FormLabel>Followers (Customers)</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      options={followerOptions}
+                      selected={selectedFollowers}
+                      onChange={setSelectedFollowers}
+                      placeholder="Select customers to follow this task..."
+                      className="w-full"
+                      dropdownDirection="up"
+                    />
+                  </FormControl>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Customers who will receive updates about this task. They can view task progress but cannot make changes.
+                  </p>
+                </FormItem>
+              )}
 
 
             </div>
