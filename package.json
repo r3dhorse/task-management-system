@@ -14,9 +14,9 @@
     "db:seed:dev": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:push": "prisma db push",
-    "db:reset": "prisma migrate reset --force",
-    "db:fresh": "prisma migrate reset --force && prisma migrate deploy && prisma generate && tsx prisma/seed.ts",
-    "db:rebuild": "prisma db push --force-reset && prisma generate && tsx prisma/seed.ts",
+    "db:reset": "prisma db push --force-reset --accept-data-loss && prisma generate",
+    "db:fresh": "prisma db push --force-reset --accept-data-loss && prisma generate && tsx prisma/seed.ts",
+    "db:rebuild": "prisma db push --force-reset --accept-data-loss && prisma generate && tsx prisma/seed.ts",
     "create-superadmin": "tsx scripts/create-superadmin.ts"
   },
   "dependencies": {

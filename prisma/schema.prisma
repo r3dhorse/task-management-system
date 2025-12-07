@@ -147,11 +147,12 @@ model Member {
 // Frequency options for routine task generation
 enum RoutinaryFrequency {
   DAILY
+  BIDAILY     // Every 2 days
   WEEKLY
-  BIWEEKLY
   MONTHLY
   QUARTERLY
   YEARLY
+  BIYEARLY    // Every 2 years
 }
 
 model Service {

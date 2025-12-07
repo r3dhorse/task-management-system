@@ -30,17 +30,37 @@ export async function POST() {
 
     console.log(`[CRON] Manual routinary tasks trigger by user ${session.user.email}`);
 
+    // Get debug info before running
+    const debugInfo = {
+      superAdminExists: await prisma?.user.findFirst({ where: { isSuperAdmin: true } }) !== null,
+      totalRoutinaryServices: await prisma?.service.count({ where: { isRoutinary: true } }),
+      routinaryServicesDetails: await prisma?.service.findMany({
+        where: { isRoutinary: true },
+        select: {
+          id: true,
+          name: true,
+          routinaryFrequency: true,
+          routinaryNextRunDate: true,
+          routinaryStartDate: true,
+        }
+      })
+    };
+
     const result = await createRoutinaryTasks();
 
     return NextResponse.json({
       success: true,
       message: "Routinary tasks creation completed",
-      result
+      result,
+      debug: debugInfo
     });
   } catch (error) {
     console.error("[CRON] Manual routinary tasks trigger failed:", error);
     return NextResponse.json(
-      { error: "Failed to create routinary tasks" },
+      {
+        error: "Failed to create routinary tasks",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

@@ -33,16 +33,18 @@ const getTodayEndInPHT = (): Date => {
 // Helper to add one frequency interval to a date
 const addFrequencyInterval = (date: Date, frequency: RoutinaryFrequency): Date => {
   switch (frequency) {
+    case "BIDAILY":
+      return addDays(date, 1); // Twice a day - creates 2 tasks per day, next run is tomorrow
     case "DAILY":
       return addDays(date, 1);
     case "WEEKLY":
       return addWeeks(date, 1);
-    case "BIWEEKLY":
-      return addWeeks(date, 2);
     case "MONTHLY":
       return addMonths(date, 1);
     case "QUARTERLY":
       return addMonths(date, 3);
+    case "BIYEARLY":
+      return addMonths(date, 6); // Twice a year (every 6 months)
     case "YEARLY":
       return addYears(date, 1);
     default:
@@ -69,14 +71,35 @@ const calculateNextRunDate = (currentDate: Date, frequency: RoutinaryFrequency):
 
 // Generate task title based on service name and current date
 // Format: "Service Name - Month Year" (e.g., "Fire Cabinet Inspection - July 2026")
-const generateTaskTitle = (serviceName: string, taskDate: Date): string => {
+// For bi-daily tasks, adds suffix like "1st" or "2nd"
+const generateTaskTitle = (serviceName: string, taskDate: Date, suffix?: string): string => {
   const monthYear = format(taskDate, 'MMMM yyyy'); // e.g., "July 2026"
+  const dayOfMonth = format(taskDate, 'd'); // e.g., "15"
+
+  if (suffix) {
+    // For bi-daily: "Service Name - December 6 (1st)"
+    return `${serviceName} - ${format(taskDate, 'MMMM d')} (${suffix})`;
+  }
+
   return `${serviceName} - ${monthYear}`;
 };
 
+// Generate task title for daily frequency (includes day)
+const generateDailyTaskTitle = (serviceName: string, taskDate: Date): string => {
+  return `${serviceName} - ${format(taskDate, 'MMMM d, yyyy')}`; // e.g., "Service Name - December 6, 2025"
+};
+
 // Calculate SLA due date based on service configuration
-const calculateDueDate = (slaDays: number | null, includeWeekends: boolean): Date => {
+// For DAILY and BIDAILY frequencies, due date is end of the same day
+const calculateDueDate = (slaDays: number | null, includeWeekends: boolean, frequency?: RoutinaryFrequency): Date => {
   const startDate = new Date();
+
+  // For daily/bi-daily tasks, due date is end of today (same day SLA)
+  if (frequency === "DAILY" || frequency === "BIDAILY") {
+    const endOfDay = new Date(startDate);
+    endOfDay.setHours(23, 59, 59, 999);
+    return endOfDay;
+  }
 
   if (!slaDays) {
     // Default to 7 days if no SLA configured
@@ -112,6 +135,8 @@ export const createRoutinaryTasks = async () => {
       select: { id: true }
     });
 
+    console.log(`[CRON] System user (superadmin) found: ${systemUser ? systemUser.id : 'NOT FOUND'}`);
+
     if (!systemUser) {
       throw new Error('No superadmin user found to perform automated task creation');
     }
@@ -121,6 +146,25 @@ export const createRoutinaryTasks = async () => {
     const todayEndPHT = getTodayEndInPHT();
 
     console.log(`[CRON] Using PHT timezone. Today ends at: ${todayEndPHT.toISOString()} (UTC)`);
+
+    // First, let's see ALL routinary services regardless of date
+    const allRoutinaryServices = await prisma.service.findMany({
+      where: {
+        isRoutinary: true
+      },
+      select: {
+        id: true,
+        name: true,
+        routinaryFrequency: true,
+        routinaryNextRunDate: true,
+        routinaryStartDate: true,
+      }
+    });
+
+    console.log(`[CRON] Total routinary services in database: ${allRoutinaryServices.length}`);
+    for (const svc of allRoutinaryServices) {
+      console.log(`[CRON] Service "${svc.name}": frequency=${svc.routinaryFrequency}, nextRunDate=${svc.routinaryNextRunDate?.toISOString() || 'NULL'}, startDate=${svc.routinaryStartDate?.toISOString() || 'NULL'}`);
+    }
 
     // Find all services where:
     // 1. isRoutinary is true
@@ -141,7 +185,7 @@ export const createRoutinaryTasks = async () => {
       }
     });
 
-    console.log(`[CRON] Found ${routinaryServices.length} routinary services to process`);
+    console.log(`[CRON] Found ${routinaryServices.length} routinary services to process (with nextRunDate <= ${todayEndPHT.toISOString()})`);
 
     let createdCount = 0;
     let failedCount = 0;
@@ -151,21 +195,48 @@ export const createRoutinaryTasks = async () => {
       try {
         const frequency = service.routinaryFrequency as RoutinaryFrequency;
         const taskDate = new Date(); // Current date for task title
-        const taskName = generateTaskTitle(service.name, taskDate);
+        const dueDate = calculateDueDate(service.slaDays, service.includeWeekends, frequency);
 
-        // Check if a task with the same name already exists for this service
-        // This prevents duplicate creation when manual cron is triggered
-        const existingTask = await prisma.task.findFirst({
-          where: {
-            serviceId: service.id,
-            name: taskName
+        // Determine how many tasks to create and their names
+        let tasksToCreate: { name: string; suffix?: string }[] = [];
+
+        if (frequency === "BIDAILY") {
+          // Create 2 tasks for bi-daily frequency
+          tasksToCreate = [
+            { name: generateTaskTitle(service.name, taskDate, "1st"), suffix: "1st" },
+            { name: generateTaskTitle(service.name, taskDate, "2nd"), suffix: "2nd" }
+          ];
+        } else if (frequency === "DAILY") {
+          // Daily tasks include the full date
+          tasksToCreate = [{ name: generateDailyTaskTitle(service.name, taskDate) }];
+        } else {
+          // Other frequencies use month/year format
+          tasksToCreate = [{ name: generateTaskTitle(service.name, taskDate) }];
+        }
+
+        let allTasksExist = true;
+        let someTasksExist = false;
+
+        // Check which tasks already exist
+        for (const taskInfo of tasksToCreate) {
+          const existingTask = await prisma.task.findFirst({
+            where: {
+              serviceId: service.id,
+              name: taskInfo.name
+            }
+          });
+          if (existingTask) {
+            someTasksExist = true;
+            console.log(`[CRON] Task "${taskInfo.name}" already exists for service ${service.name}`);
+          } else {
+            allTasksExist = false;
           }
-        });
+        }
 
-        if (existingTask) {
-          console.log(`[CRON] Skipping service ${service.name} - task "${taskName}" already exists (ID: ${existingTask.id})`);
+        // If all tasks exist, skip and update next run date
+        if (allTasksExist) {
+          console.log(`[CRON] Skipping service ${service.name} - all tasks already exist`);
 
-          // Still update the next run date to prevent this service from being picked up again
           const nextRunDate = calculateNextRunDate(
             service.routinaryNextRunDate || new Date(),
             frequency
@@ -183,35 +254,54 @@ export const createRoutinaryTasks = async () => {
           continue;
         }
 
-        const taskNumber = await generateTaskNumber(prisma);
-        const dueDate = calculateDueDate(service.slaDays, service.includeWeekends);
-
+        // Create tasks that don't exist yet
         await prisma.$transaction(async (tx) => {
-          // Create the task
-          const task = await tx.task.create({
-            data: {
-              taskNumber,
-              name: taskName,
-              description: "Auto Generated Task",
-              status: TaskStatus.TODO,
-              workspaceId: service.workspaceId,
-              serviceId: service.id,
-              dueDate,
-              position: 1000,
-              creatorId: systemUser.id,
-              isConfidential: false,
-            }
-          });
+          for (const taskInfo of tasksToCreate) {
+            // Check if this specific task exists
+            const existingTask = await tx.task.findFirst({
+              where: {
+                serviceId: service.id,
+                name: taskInfo.name
+              }
+            });
 
-          // Create history entry
-          await tx.taskHistory.create({
-            data: {
-              taskId: task.id,
-              userId: systemUser.id,
-              action: TaskHistoryAction.CREATED,
-              details: `Automatically created by routinary schedule for service: ${service.name} (${frequency})`
+            if (existingTask) {
+              console.log(`[CRON] Skipping task "${taskInfo.name}" - already exists`);
+              continue;
             }
-          });
+
+            // Generate task number using the transaction client to see uncommitted tasks
+            const taskNumber = await generateTaskNumber(tx);
+
+            // Create the task
+            const task = await tx.task.create({
+              data: {
+                taskNumber,
+                name: taskInfo.name,
+                description: "Auto Generated Task",
+                status: TaskStatus.TODO,
+                workspaceId: service.workspaceId,
+                serviceId: service.id,
+                dueDate,
+                position: 1000,
+                creatorId: systemUser.id,
+                isConfidential: false,
+              }
+            });
+
+            // Create history entry
+            await tx.taskHistory.create({
+              data: {
+                taskId: task.id,
+                userId: systemUser.id,
+                action: TaskHistoryAction.CREATED,
+                details: `Automatically created by routinary schedule for service: ${service.name} (${frequency}${taskInfo.suffix ? ` - ${taskInfo.suffix}` : ''})`
+              }
+            });
+
+            console.log(`[CRON] Created routinary task "${taskInfo.name}" (${taskNumber}) for service ${service.name}`);
+            createdCount++;
+          }
 
           // Update service with next run date
           const nextRunDate = calculateNextRunDate(
@@ -227,10 +317,9 @@ export const createRoutinaryTasks = async () => {
             }
           });
 
-          console.log(`[CRON] Created routinary task "${taskName}" (${taskNumber}) for service ${service.name}. Next run: ${nextRunDate.toISOString()}`);
+          console.log(`[CRON] Service ${service.name} next run: ${nextRunDate.toISOString()}`);
         });
 
-        createdCount++;
       } catch (error) {
         console.error(`[CRON] Failed to create routinary task for service ${service.id} (${service.name}):`, error);
         failedCount++;

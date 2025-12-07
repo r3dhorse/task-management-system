@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const routinaryFrequencyValues = ["DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"] as const;
+export const routinaryFrequencyValues = ["BIDAILY", "DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "BIYEARLY", "YEARLY"] as const;
 export type RoutinaryFrequency = typeof routinaryFrequencyValues[number];
 
 export const createServiceSchema = z.object({

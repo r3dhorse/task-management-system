@@ -74,11 +74,24 @@ function SidebarContent({ onClose, isMobile = false }: SidebarContentProps) {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(
-          `Routinary tasks created: ${data.result?.created || 0} tasks`
-        );
+        const result = data.result;
+        const totalServices = data.debug?.totalRoutinaryServices || 0;
+        if (result?.created > 0) {
+          toast.success(
+            `Created ${result.created} tasks (${totalServices} routinary services found)`
+          );
+        } else if (totalServices === 0) {
+          toast.info("No routinary services configured");
+        } else if (result?.skipped > 0) {
+          toast.info(`${result.skipped} services skipped (tasks already exist)`);
+        } else {
+          toast.info(
+            `No tasks created. Services found: ${totalServices}, Due: ${result?.total || 0}`
+          );
+        }
+        console.log("[CRON] Debug info:", data.debug);
       } else {
-        toast.error(data.error || "Failed to run routinary tasks");
+        toast.error(data.details || data.error || "Failed to run routinary tasks");
       }
     } catch {
       toast.error("Failed to run routinary tasks");

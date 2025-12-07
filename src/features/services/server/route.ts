@@ -47,6 +47,11 @@ const app = new Hono()
           return c.json({ error: "Service name already exists in this workspace" }, 400);
         }
 
+        // For routinary services, if no start date is provided, use today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const effectiveStartDate = routinaryStartDate || today;
+
         const service = await prisma.service.create({
           data: {
             name,
@@ -57,8 +62,8 @@ const app = new Hono()
             // Routinary fields
             isRoutinary: isRoutinary || false,
             routinaryFrequency: isRoutinary ? routinaryFrequency : null,
-            routinaryStartDate: isRoutinary ? routinaryStartDate : null,
-            routinaryNextRunDate: isRoutinary && routinaryStartDate ? routinaryStartDate : null,
+            routinaryStartDate: isRoutinary ? effectiveStartDate : null,
+            routinaryNextRunDate: isRoutinary ? effectiveStartDate : null,
           },
         });
 
@@ -167,11 +172,15 @@ const app = new Hono()
         return c.json({ error: "Service name already exists in this workspace" }, 400);
       }
 
+      // For routinary services, if no start date is provided, use today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const effectiveStartDate = routinaryStartDate || today;
+
       // Determine if routinaryNextRunDate needs to be recalculated
       const shouldRecalculateNextRun =
         isRoutinary &&
-        routinaryStartDate &&
-        (routinaryStartDate.getTime() !== existingService.routinaryStartDate?.getTime() ||
+        (effectiveStartDate.getTime() !== existingService.routinaryStartDate?.getTime() ||
          !existingService.isRoutinary);
 
       const service = await prisma.service.update({
@@ -184,9 +193,9 @@ const app = new Hono()
           // Routinary fields
           isRoutinary: isRoutinary || false,
           routinaryFrequency: isRoutinary ? routinaryFrequency : null,
-          routinaryStartDate: isRoutinary ? routinaryStartDate : null,
+          routinaryStartDate: isRoutinary ? effectiveStartDate : null,
           routinaryNextRunDate: shouldRecalculateNextRun
-            ? routinaryStartDate
+            ? effectiveStartDate
             : (isRoutinary ? existingService.routinaryNextRunDate : null),
         },
       });

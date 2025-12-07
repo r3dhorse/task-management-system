@@ -1,9 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 
+// Type that works with both PrismaClient and transaction client
+type PrismaTransactionClient = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
+
 /**
  * Generate the next sequential task number in the format "Task #0000001"
+ * Accepts either PrismaClient or a transaction client for use inside transactions
  */
-export async function generateTaskNumber(prisma: PrismaClient): Promise<string> {
+export async function generateTaskNumber(prisma: PrismaClient | PrismaTransactionClient): Promise<string> {
   // Get the highest existing task number
   const lastTask = await prisma.task.findFirst({
     where: {

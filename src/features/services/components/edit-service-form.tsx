@@ -34,12 +34,13 @@ interface EditServiceFormProps {
 }
 
 const frequencyLabels: Record<RoutinaryFrequency, string> = {
-  DAILY: "Daily",
-  WEEKLY: "Weekly",
-  BIWEEKLY: "Bi-Weekly",
-  MONTHLY: "Monthly",
-  QUARTERLY: "Quarterly",
-  YEARLY: "Yearly",
+  BIDAILY: "Bi-Daily (Twice a Day)",
+  DAILY: "Daily (Once a Day)",
+  WEEKLY: "Weekly (Once a Week)",
+  MONTHLY: "Monthly (Once a Month)",
+  QUARTERLY: "Quarterly (Every 3 Months)",
+  BIYEARLY: "Bi-Yearly (Twice a Year)",
+  YEARLY: "Yearly (Once a Year)",
 };
 
 export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProps) => {
@@ -78,6 +79,10 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
   });
 
   const isRoutinary = form.watch("isRoutinary");
+  const routinaryFrequency = form.watch("routinaryFrequency");
+
+  // Check if frequency requires same-day SLA (daily or bi-daily)
+  const isSameDaySLA = isRoutinary && (routinaryFrequency === "DAILY" || routinaryFrequency === "BIDAILY");
 
   const handleDelete = async () => {
     const ok = await confirmDelete();
@@ -183,81 +188,15 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="slaDays"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-muted-foreground">
-                        Service Level Agreement (Days)
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="number"
-                          min="1"
-                          max="365"
-                          placeholder="e.g., 5"
-                          value={field.value || ""}
-                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                          className="focus-visible:ring-2 focus-visible:ring-primary"
-                        />
-                      </FormControl>
-                      <div className="text-sm text-muted-foreground">
-                        Optional: Set the expected completion time for tasks in this service
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="includeWeekends"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-sm font-medium text-muted-foreground">Include Weekends in SLA</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Include Saturday and Sunday when calculating SLA deadlines
-                        </div>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="isPublic"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-sm font-medium text-muted-foreground">Public Service</FormLabel>
-                        <div className="text-sm text-muted-foreground">
-                          Allow workspace customers to see this service when creating tasks
-                        </div>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
 
-                {/* Routinary Toggle */}
+                {/* Routinary Toggle - Moved to top */}
                 <FormField
                   control={form.control}
                   name="isRoutinary"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm bg-blue-50/50 dark:bg-blue-950/20">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-sm font-medium text-blue-700 dark:text-blue-300">Routinary</FormLabel>
+                        <FormLabel className="text-sm font-medium text-blue-700 dark:text-blue-300">Routinary Service</FormLabel>
                         <div className="text-sm text-muted-foreground">
                           Automatically create recurring tasks for this service
                         </div>
@@ -333,8 +272,90 @@ export const EditServiceForm = ({ onCancel, initialValues }: EditServiceFormProp
                         })}
                       </div>
                     )}
+
+                    {/* Same Day SLA Notice for Daily/Bi-Daily */}
+                    {isSameDaySLA && (
+                      <div className="flex items-center gap-2 p-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                        <div className="text-sm text-amber-700 dark:text-amber-300">
+                          <span className="font-medium">Same Day SLA:</span> Tasks with Daily or Bi-Daily frequency must be completed within the same day they are created.
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
+
+                {/* SLA Days - Only show when NOT same-day SLA */}
+                {!isSameDaySLA && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="slaDays"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-muted-foreground">
+                            Service Level Agreement (Days)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="number"
+                              min="1"
+                              max="365"
+                              placeholder="e.g., 5"
+                              value={field.value || ""}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                              className="focus-visible:ring-2 focus-visible:ring-primary"
+                            />
+                          </FormControl>
+                          <div className="text-sm text-muted-foreground">
+                            Optional: Set the expected completion time for tasks in this service
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="includeWeekends"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-sm font-medium text-muted-foreground">Include Weekends in SLA</FormLabel>
+                            <div className="text-sm text-muted-foreground">
+                              Include Saturday and Sunday when calculating SLA deadlines
+                            </div>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="isPublic"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-sm font-medium text-muted-foreground">Public Service</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Allow workspace customers to see this service when creating tasks
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <DottedSeparator />

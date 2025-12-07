@@ -167,8 +167,8 @@ export const initializeCronJobs = () => {
 
   console.log(`[CRON] Initialized overdue tasks cron job. Will run at midnight ${timezone} time daily.`);
 
-  // Routinary tasks job - runs every 12 hours (1 AM and 1 PM) to ensure scheduled recurring tasks are created
-  const routinaryCronExpression = '0 1,13 * * *';
+  // Routinary tasks job - runs every hour to ensure scheduled recurring tasks are created promptly
+  const routinaryCronExpression = '0 * * * *';
   routinaryCronJob = cron.schedule(
     routinaryCronExpression,
     async () => {
@@ -198,7 +198,7 @@ export const initializeCronJobs = () => {
 
   routinaryCronJob.start();
 
-  console.log(`[CRON] Initialized routinary tasks cron job. Will run every 12 hours (1 AM and 1 PM) ${timezone} time.`);
+  console.log(`[CRON] Initialized routinary tasks cron job. Will run every hour ${timezone} time.`);
 
   if (process.env.NODE_ENV === 'development') {
     console.log('[CRON] Development mode: You can manually trigger jobs using the /api/cron/* endpoints');
@@ -228,9 +228,9 @@ export const getCronJobStatus = () => {
     },
     routinaryTasks: {
       isRunning: routinaryCronJob !== null,
-      cronExpression: '0 1,13 * * *',
+      cronExpression: '0 * * * *',
       timezone: 'Asia/Manila',
-      description: 'Runs every 12 hours at 1 AM and 1 PM',
+      description: 'Runs every hour at minute 0',
       nextExecution: routinaryCronJob ? getNextRoutinaryExecution() : null,
       lastExecution: getRoutinaryTasksStatus().lastExecution
     }
@@ -264,26 +264,15 @@ const getNextExecution = (hour: number = 0) => {
   }
 };
 
-// Get next execution for routinary tasks (runs at 1 AM and 1 PM)
+// Get next execution for routinary tasks (runs every hour at minute 0)
 const getNextRoutinaryExecution = () => {
   try {
     const now = new Date();
     const manila = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
-    const currentHour = manila.getHours();
     const nextExecution = new Date(manila);
 
-    // Determine next run: 1 AM or 1 PM (13:00)
-    if (currentHour < 1) {
-      // Before 1 AM - next run is 1 AM today
-      nextExecution.setHours(1, 0, 0, 0);
-    } else if (currentHour < 13) {
-      // Between 1 AM and 1 PM - next run is 1 PM today
-      nextExecution.setHours(13, 0, 0, 0);
-    } else {
-      // After 1 PM - next run is 1 AM tomorrow
-      nextExecution.setDate(nextExecution.getDate() + 1);
-      nextExecution.setHours(1, 0, 0, 0);
-    }
+    // Next run is at the start of the next hour
+    nextExecution.setHours(nextExecution.getHours() + 1, 0, 0, 0);
 
     return nextExecution.toLocaleString('en-US', {
       timeZone: 'Asia/Manila',

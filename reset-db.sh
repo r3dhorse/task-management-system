@@ -24,12 +24,12 @@ if [ "$confirm" != "yes" ]; then
 fi
 
 echo ""
-echo "🗑️  Using Prisma reset to delete and recreate database..."
-npx prisma migrate reset --force
+echo "🗑️  Using Prisma db push to reset and sync database schema..."
+npx prisma db push --force-reset --accept-data-loss
 
 echo ""
 echo "🔧 Generating Prisma client..."
-npm run db:generate
+npx prisma generate
 
 echo ""
 echo "👤 Creating superadmin user: jun@mail.com"
