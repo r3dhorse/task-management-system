@@ -46,7 +46,7 @@ export const updateOverdueTasks = async () => {
       },
       include: {
         service: true,
-        assignee: {
+        assignees: {
           include: {
             user: true
           }

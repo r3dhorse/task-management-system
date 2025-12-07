@@ -64,8 +64,8 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
       return true;
     }
 
-    // Check if user is the assignee (assignee ID is a member ID)
-    if (task.assigneeId && task.assigneeId === currentMember.id) {
+    // Check if user is one of the assignees (assignee IDs are member IDs)
+    if (task.assignees && task.assignees.some(a => a.id === currentMember.id)) {
       return true;
     }
 

@@ -233,7 +233,7 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
                   })() : [];
 
                   // Check if current user can drag this task
-                  const isAssignee = currentMember?.id === task.assigneeId;
+                  const isAssignee = task.assignees && task.assignees.some(a => a.id === currentMember?.id);
                   const isReviewer = currentMember?.id === task.reviewerId;
                   const isFollower = followedIds.includes(currentMember?.id || '');
                   const isCreator = currentUser?.id === task.creatorId;
@@ -402,15 +402,17 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
           return;
         }
 
-        // Auto-assign current user when moving to IN_PROGRESS without assignee
-        if (destStatus === TaskStatus.IN_PROGRESS && !taskToMove.assigneeId) {
+        // Auto-assign current user when moving to IN_PROGRESS without assignees
+        let newAssignees = taskToMove.assignees || [];
+        if (destStatus === TaskStatus.IN_PROGRESS && (!taskToMove.assignees || taskToMove.assignees.length === 0)) {
           // Find the current user's member in this workspace
           const currentMember = (membersData?.documents as Member[] || []).find(
             (member) => member.userId === currentUser?.id
           );
 
           if (currentMember) {
-            taskToMove.assigneeId = currentMember.id;
+            newAssignees = [{ id: currentMember.id, name: currentMember.name || '', email: currentMember.email || '' }];
+            taskToMove.assignees = newAssignees;
           }
         }
 
@@ -433,7 +435,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
             status: taskUpdate.status!,
             serviceId: taskToMove.serviceId,
             dueDate: taskToMove.dueDate || undefined,
-            assigneeId: taskToMove.assigneeId || undefined,
+            assigneeIds: JSON.stringify(newAssignees.map(a => a.id)),
             reviewerId: taskToMove.reviewerId || undefined,
             description: taskToMove.description || undefined,
             attachmentId: taskToMove.attachmentId || undefined,
@@ -481,7 +483,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
               status: update.status!,
               serviceId: task.serviceId,
               dueDate: task.dueDate || undefined,
-              assigneeId: task.assigneeId || undefined,
+              assigneeIds: task.assignees ? JSON.stringify(task.assignees.map(a => a.id)) : '[]',
               description: task.description || undefined,
               attachmentId: task.attachmentId || undefined,
             }
@@ -538,7 +540,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
       })() : [];
 
       // Check permissions for dragging this specific task
-      const isAssignee = currentMember?.id === draggedTask.assigneeId;
+      const isAssignee = draggedTask.assignees && draggedTask.assignees.some(a => a.id === currentMember?.id);
       const isReviewer = currentMember?.id === draggedTask.reviewerId;
       const isFollower = followedIds.includes(currentMember?.id || '');
       const isCreator = currentUser?.id === draggedTask.creatorId;
@@ -608,7 +610,8 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     if (!taskToMove) return;
 
     // Update the task with both status change and assignee assignment
-    const updatedTask = { ...taskToMove, status: TaskStatus.IN_PROGRESS, assigneeId };
+    const newAssignees = [{ id: assigneeId, name: '', email: '' }];
+    const updatedTask = { ...taskToMove, status: TaskStatus.IN_PROGRESS, assignees: newAssignees };
 
     // Update local state
     const tasksToUpdate = data.map(task =>
@@ -624,7 +627,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         status: TaskStatus.IN_PROGRESS,
         serviceId: taskToMove.serviceId,
         dueDate: taskToMove.dueDate || undefined,
-        assigneeId: assigneeId,
+        assigneeIds: JSON.stringify([assigneeId]),
         reviewerId: taskToMove.reviewerId || undefined,
         description: taskToMove.description || undefined,
         attachmentId: taskToMove.attachmentId || undefined,

@@ -84,7 +84,9 @@ function calculateMemberPerformance(
   const memberStats = members
     .filter((member) => includeCustomers || member.role !== MemberRole.CUSTOMER)
     .map((member) => {
-      const memberTasks = tasks.filter((task) => task.assigneeId === member.id);
+      const memberTasks = tasks.filter((task) =>
+        task.assignees && task.assignees.some(a => a.id === member.id)
+      );
       const completedTasks = memberTasks.filter(
         (task) => task.status === TaskStatus.DONE
       );
@@ -101,7 +103,7 @@ function calculateMemberPerformance(
 
       // Following tasks
       const followingTasks = tasks.filter((task) => {
-        if (task.assigneeId === member.id) return false;
+        if (task.assignees && task.assignees.some(a => a.id === member.id)) return false;
         if (task.followers && Array.isArray(task.followers)) {
           return task.followers.some(
             (follower: { id: string }) => follower.id === member.id

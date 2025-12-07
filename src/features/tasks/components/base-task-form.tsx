@@ -368,7 +368,7 @@ export function BaseTaskForm({
         workspaceId: initialValues.workspaceId || workspaceId,
         serviceId: initialValues.serviceId || "",
         dueDate: initialValues.dueDate ? new Date(initialValues.dueDate) : new Date(),
-        assigneeId: initialValues.assigneeId || "unassigned",
+        assigneeId: "unassigned", // Multiple assignees handled separately
         reviewerId: initialValues.reviewerId || "",
         isConfidential: initialValues.isConfidential || false,
         attachmentId: initialValues.attachmentId || "",

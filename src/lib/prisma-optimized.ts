@@ -22,7 +22,7 @@ const prismaClientSingleton = () => {
       },
       task: {
         async findMany({ args, query }) {
-          if (!args.include?.assignee && !args.include?.followers) {
+          if (!args.include?.assignees && !args.include?.followers) {
             args.select = {
               ...args.select,
               id: true,
@@ -35,7 +35,6 @@ const prismaClientSingleton = () => {
               workspaceId: true,
               serviceId: true,
               creatorId: true,
-              assigneeId: true,
               createdAt: true,
               updatedAt: true,
             };

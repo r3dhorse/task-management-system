@@ -324,8 +324,8 @@ export const CreatedTasksModal = () => {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm text-gray-600 truncate max-w-[120px]" title={task.assignee?.user?.name || undefined}>
-                          {task.assignee?.user?.name || '-'}
+                        <span className="text-sm text-gray-600 truncate max-w-[120px]" title={task.assignees?.map(a => a.user?.name).join(', ') || undefined}>
+                          {task.assignees && task.assignees.length > 0 ? task.assignees.map(a => a.user?.name || a.name).join(', ') : '-'}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">

@@ -42,7 +42,7 @@ interface EditForm {
   name: string;
   description: string;
   status: TaskStatus;
-  assigneeId: string;
+  assigneeIds: string[];
   reviewerId: string;
   serviceId: string;
   workspaceId: string;
@@ -88,16 +88,16 @@ export const TaskPropertiesModal = ({
   const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
 
   const handleSave = () => {
-    // Validate that assignee is required for confidential tasks
-    if (editForm.isConfidential && (!editForm.assigneeId || editForm.assigneeId === "" || editForm.assigneeId === "unassigned")) {
-      toast.error("Assignee is required for confidential tasks");
+    // Validate that at least one assignee is required for confidential tasks
+    if (editForm.isConfidential && (!editForm.assigneeIds || editForm.assigneeIds.length === 0)) {
+      toast.error("At least one assignee is required for confidential tasks");
       return;
     }
 
     // Additional validation for confidential tasks when changing workspace
     const isChangingWorkspace = editForm.workspaceId !== task.workspaceId;
-    if (isChangingWorkspace && editForm.isConfidential && (!editForm.assigneeId || editForm.assigneeId === "" || editForm.assigneeId === "unassigned")) {
-      toast.error("Assignee is required when transferring confidential tasks to another workspace");
+    if (isChangingWorkspace && editForm.isConfidential && (!editForm.assigneeIds || editForm.assigneeIds.length === 0)) {
+      toast.error("At least one assignee is required when transferring confidential tasks to another workspace");
       return;
     }
 
@@ -288,7 +288,7 @@ export const TaskPropertiesModal = ({
                         workspaceId: value,
                         serviceId: "", // Reset service when workspace changes
                         status: isChangingWorkspace ? TaskStatus.TODO : prev.status, // Set to TODO when changing workspace
-                        assigneeId: isChangingWorkspace && !prev.isConfidential ? "unassigned" : prev.assigneeId, // Reset assignee for non-confidential tasks
+                        assigneeIds: isChangingWorkspace && !prev.isConfidential ? [] : prev.assigneeIds, // Reset assignees for non-confidential tasks
                         reviewerId: isChangingWorkspace ? "unassigned" : prev.reviewerId, // Reset reviewer when changing workspace
                       }));
                       onWorkspaceChange?.(value);
@@ -349,32 +349,55 @@ export const TaskPropertiesModal = ({
 
             {/* Right Column */}
             <div className="space-y-3">
-              {/* Assignee */}
+              {/* Assignees */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                  Assignee
+                  Assignees
                   {editForm.isConfidential && (
                     <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
                       Required
                     </span>
                   )}
                 </label>
+                <div className="flex flex-wrap gap-1 mb-2">
+                  {editForm.assigneeIds.map(id => {
+                    const member = members?.documents.find(m => m.id === id);
+                    return member ? (
+                      <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
+                        👤 {member.name}
+                        <button
+                          type="button"
+                          className="text-blue-600 hover:text-blue-800"
+                          onClick={() => setEditForm(prev => ({
+                            ...prev,
+                            assigneeIds: prev.assigneeIds.filter(a => a !== id)
+                          }))}
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ) : null;
+                  })}
+                </div>
                 <Select
-                  value={editForm.assigneeId}
-                  onValueChange={(value) => setEditForm(prev => ({ ...prev, assigneeId: value }))}
+                  value=""
+                  onValueChange={(value) => {
+                    if (value && !editForm.assigneeIds.includes(value)) {
+                      setEditForm(prev => ({
+                        ...prev,
+                        assigneeIds: [...prev.assigneeIds, value]
+                      }));
+                    }
+                  }}
                 >
                   <SelectTrigger className="h-9 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
-                    <SelectValue placeholder="Select assignee" />
+                    <SelectValue placeholder="Add assignee" />
                   </SelectTrigger>
                   <SelectContent>
-                    {!editForm.isConfidential && (
-                      <SelectItem value="unassigned">
-                        <span className="text-sm">👤 Unassigned</span>
-                      </SelectItem>
-                    )}
                     {members?.documents
                       .filter(member => (member as Member).role !== MemberRole.CUSTOMER)
+                      .filter(member => !editForm.assigneeIds.includes(member.id))
                       .map((member) => (
                       <SelectItem key={member.id} value={member.id}>
                         <span className="text-sm">👤 {member.name}</span>

@@ -51,15 +51,7 @@ export function detectTaskChanges(oldTask: Task, newTask: Partial<Task>): TaskHi
     }
   }
 
-  // Assignee change - handle empty strings vs null/undefined consistently
-  if (newTask.assigneeId !== undefined && normalizeValue(newTask.assigneeId) !== normalizeValue(oldTask.assigneeId)) {
-    changes.push({
-      field: "assigneeId",
-      oldValue: oldTask.assigneeId || undefined,
-      newValue: newTask.assigneeId || undefined,
-      displayName: "Assignee"
-    });
-  }
+  // Note: Assignee changes are now tracked via assigneeIds (JSON string array) in the API route
 
   // Reviewer change - handle empty strings vs null/undefined consistently
   if (newTask.reviewerId !== undefined && normalizeValue(newTask.reviewerId) !== normalizeValue(oldTask.reviewerId)) {

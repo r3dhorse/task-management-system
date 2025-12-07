@@ -33,7 +33,7 @@ function calculateMemberKPI(
   tasks: Array<{
     id: string;
     status: string;
-    assigneeId: string | null;
+    assignees: Array<{ id: string }>;
     reviewerId: string | null;
     dueDate: Date | null;
     updatedAt: Date;
@@ -48,13 +48,13 @@ function calculateMemberKPI(
   },
   withReviewStage: boolean
 ): { kpiScore: number; tasksAssigned: number; tasksCompleted: number } {
-  // Assigned tasks
-  const memberTasks = tasks.filter(task => task.assigneeId === memberId);
+  // Assigned tasks - member is one of the assignees (each assignee gets FULL credit)
+  const memberTasks = tasks.filter(task => task.assignees.some(a => a.id === memberId));
   const completedTasks = memberTasks.filter(task => task.status === TaskStatus.DONE);
 
-  // Tasks where member is a follower/collaborator
+  // Tasks where member is a follower/collaborator (not assigned)
   const followingTasks = tasks.filter(task => {
-    if (task.assigneeId === memberId) return false;
+    if (task.assignees.some(a => a.id === memberId)) return false;
     return task.followers.some(f => f.id === memberId);
   });
   const followingTasksCompleted = followingTasks.filter(task => task.status === TaskStatus.DONE);
@@ -208,7 +208,9 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             status: true,
-            assigneeId: true,
+            assignees: {
+              select: { id: true },
+            },
             reviewerId: true,
             dueDate: true,
             updatedAt: true,

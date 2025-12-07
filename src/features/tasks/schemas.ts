@@ -7,7 +7,7 @@ export const createTaskSchema = z.object({
   workspaceId: z.string().trim().min(1, "Required"),
   serviceId: z.string().trim().min(1, "Service is required"),
   dueDate: z.string().min(1, "Due date is required"),
-  assigneeId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
+  assigneeIds: z.string().optional(), // JSON string array of assignee member IDs
   reviewerId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   description: z.string().min(1, "Description is required"),
   attachmentId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
@@ -15,14 +15,21 @@ export const createTaskSchema = z.object({
   creatorId: z.string().optional(), // User ID of the task creator
   isConfidential: z.boolean().optional(),
 }).refine((data) => {
-  // If task is confidential, assignee must be required and not "unassigned"
-  if (data.isConfidential && (!data.assigneeId || data.assigneeId === "unassigned" || data.assigneeId === "")) {
-    return false;
+  // If task is confidential, at least one assignee must be present
+  if (data.isConfidential) {
+    try {
+      const assigneeIds = data.assigneeIds ? JSON.parse(data.assigneeIds) : [];
+      if (!Array.isArray(assigneeIds) || assigneeIds.length === 0) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
   }
   return true;
 }, {
-  message: "Assignee is required for confidential tasks",
-  path: ["assigneeId"],
+  message: "At least one assignee is required for confidential tasks",
+  path: ["assigneeIds"],
 });
 
 // Schema for updating tasks (all fields optional except validation)
@@ -32,7 +39,7 @@ export const updateTaskSchema = z.object({
   serviceId: z.string().trim().min(1, "Service is required").optional(),
   workspaceId: z.string().trim().min(1, "Workspace is required").optional(),
   dueDate: z.string().optional(),
-  assigneeId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
+  assigneeIds: z.string().optional(), // JSON string array of assignee member IDs
   reviewerId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
   description: z.string().optional(),
   attachmentId: z.string().optional().transform((val) => val === 'undefined' || !val ? undefined : val),
@@ -40,12 +47,19 @@ export const updateTaskSchema = z.object({
   creatorId: z.string().optional(),
   isConfidential: z.boolean().optional(),
 }).refine((data) => {
-  // If task is confidential, assignee must be required and not "unassigned"
-  if (data.isConfidential && (!data.assigneeId || data.assigneeId === "unassigned" || data.assigneeId === "")) {
-    return false;
+  // If task is confidential, at least one assignee must be present
+  if (data.isConfidential) {
+    try {
+      const assigneeIds = data.assigneeIds ? JSON.parse(data.assigneeIds) : [];
+      if (!Array.isArray(assigneeIds) || assigneeIds.length === 0) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
   }
   return true;
 }, {
-  message: "Assignee is required for confidential tasks",
-  path: ["assigneeId"],
+  message: "At least one assignee is required for confidential tasks",
+  path: ["assigneeIds"],
 });

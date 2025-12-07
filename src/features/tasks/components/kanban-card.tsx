@@ -26,10 +26,8 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
   const { data: members } = useGetMembers({ workspaceId });
   const { data: currentUser } = useCurrent();
 
-  // Find the single assignee (not multiple assignees)
-  const assignee = members?.documents?.find((member) =>
-    member.id === task.assigneeId
-  );
+  // Find all assignees from the task
+  const assignees = task.assignees || [];
 
   // Find the reviewer
   const reviewer = members?.documents?.find((member) =>
@@ -57,7 +55,7 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
 
   // Check access permissions
   const isCreator = currentUser && task.creatorId ? currentUser.id === task.creatorId : false;
-  const isAssignee = currentMember && task.assigneeId ? currentMember.id === task.assigneeId : false;
+  const isAssignee = currentMember && assignees.length > 0 ? assignees.some(a => a.id === currentMember.id) : false;
   const isReviewer = currentMember && task.reviewerId ? currentMember.id === task.reviewerId : false;
   const isFollower = followedIds.includes(currentMember?.id || '');
   const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
@@ -256,13 +254,13 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
               </div>
             </div>
 
-            {/* Assignee */}
+            {/* Assignees */}
             <div className="mb-2">
-              <div className="flex items-center gap-1 text-xs">
-                <span className="text-gray-500 font-medium">Assignee:</span>
-                {assignee ? (
+              <div className="flex items-start gap-1 text-xs">
+                <span className="text-gray-500 font-medium shrink-0">Assignee{assignees.length > 1 ? 's' : ''}:</span>
+                {assignees.length > 0 ? (
                   <span className="text-neutral-600 font-medium break-words">
-                    {assignee.name}
+                    {assignees.map(a => a.name).join(', ')}
                   </span>
                 ) : (
                   <span className="text-neutral-400 font-medium">

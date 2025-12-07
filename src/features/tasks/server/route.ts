@@ -135,7 +135,7 @@ const app = new Hono()
               name: true,
             }
           },
-          assignee: {
+          assignees: {
             include: {
               user: {
                 select: {
@@ -182,11 +182,11 @@ const app = new Hono()
         dueDate: task.dueDate ? task.dueDate.toISOString() : null,
         createdAt: task.createdAt.toISOString(),
         updatedAt: task.updatedAt.toISOString(),
-        assignees: task.assignee ? [{
-          ...task.assignee,
-          name: task.assignee.user.name,
-          email: task.assignee.user.email,
-        }] : [],
+        assignees: task.assignees.map(assignee => ({
+          ...assignee,
+          name: assignee.user.name,
+          email: assignee.user.email,
+        })),
         followedIds: JSON.stringify(task.followers.map(f => f.id)),
         subTaskCount: task._count.subTasks,
       }));
@@ -255,7 +255,7 @@ const app = new Hono()
       // Build the where clause for filtering
       interface TaskWhereClause {
         workspaceId: { in: string[] };
-        assigneeId?: { in: string[] };
+        assignees?: { some: { id: { in: string[] } } };
         status?: TaskStatus | { not: TaskStatus };
         AND?: Array<{
           OR?: Array<{
@@ -263,7 +263,7 @@ const app = new Hono()
             taskNumber?: { contains: string; mode: 'insensitive' };
             isConfidential?: boolean;
             creatorId?: string;
-            assigneeId?: { in: string[] };
+            assignees?: { some: { id: { in: string[] } } };
             reviewerId?: { in: string[] };
             followers?: {
               some: {
@@ -275,7 +275,7 @@ const app = new Hono()
         OR?: Array<{
           isConfidential?: boolean;
           creatorId?: string;
-          assigneeId?: { in: string[] };
+          assignees?: { some: { id: { in: string[] } } };
           reviewerId?: { in: string[] };
           followers?: {
             some: {
@@ -287,7 +287,7 @@ const app = new Hono()
 
       const where: TaskWhereClause = {
         workspaceId: { in: workspaceIds },
-        assigneeId: { in: memberIds }, // User is assigned to the task via one of their member records
+        assignees: { some: { id: { in: memberIds } } }, // User is assigned to the task via one of their member records
       };
 
       if (status) {
@@ -332,7 +332,7 @@ const app = new Hono()
       const confidentialFilter = [
         { isConfidential: false },
         { isConfidential: true, creatorId: user.id },
-        { isConfidential: true, assigneeId: { in: memberIds } },
+        { isConfidential: true, assignees: { some: { id: { in: memberIds } } } },
         { isConfidential: true, reviewerId: { in: memberIds } },
         { isConfidential: true, followers: { some: { id: { in: memberIds } } } },
       ];
@@ -360,7 +360,7 @@ const app = new Hono()
             }
           },
           service: true,
-          assignee: {
+          assignees: {
             include: {
               user: {
                 select: {
@@ -407,11 +407,11 @@ const app = new Hono()
         dueDate: task.dueDate ? task.dueDate.toISOString() : null,
         createdAt: task.createdAt.toISOString(),
         updatedAt: task.updatedAt.toISOString(),
-        assignees: task.assignee ? [{
-          ...task.assignee,
-          name: task.assignee.user.name,
-          email: task.assignee.user.email,
-        }] : [],
+        assignees: task.assignees.map(assignee => ({
+          ...assignee,
+          name: assignee.user.name,
+          email: assignee.user.email,
+        })),
         followedIds: JSON.stringify(task.followers.map(f => f.id)),
         subTaskCount: task._count.subTasks,
       }));
@@ -444,7 +444,7 @@ const app = new Hono()
       const task = await prisma.task.findUnique({
         where: { id: taskId },
         include: {
-          assignee: true,
+          assignees: true,
           followers: true,
         }
       });
@@ -467,7 +467,7 @@ const app = new Hono()
       if (task.isConfidential) {
         const hasConfidentialAccess =
           task.creatorId === user.id || // User created the task
-          task.assigneeId === member.id || // User is assigned to the task
+          task.assignees.some(a => a.id === member.id) || // User is assigned to the task
           task.reviewerId === member.id || // User is the reviewer of the task
           task.followers.some(f => f.id === member.id); // User is following the task
 
@@ -479,7 +479,7 @@ const app = new Hono()
       // Check archive permissions based on task status
       const isWorkspaceAdmin = member.role === MemberRole.ADMIN;
       const isCreator = task.creatorId === user.id;
-      const isAssignee = task.assigneeId === member.id;
+      const isAssignee = task.assignees.some(a => a.id === member.id);
       const isSuperAdmin = user.isAdmin || false;
 
       // For DONE tasks, only admins can archive
@@ -556,7 +556,7 @@ const app = new Hono()
         workspaceId: string;
         serviceId?: string;
         status?: TaskStatus | { not: TaskStatus };
-        assigneeId?: string;
+        assignees?: { some: { id: string } };
         dueDate?: Date;
         followers?: {
           some: {
@@ -570,7 +570,7 @@ const app = new Hono()
             taskNumber?: { contains: string; mode: 'insensitive' };
             isConfidential?: boolean;
             creatorId?: string;
-            assigneeId?: string;
+            assignees?: { some: { id: string } };
             followers?: {
               some: {
                 id?: string;
@@ -582,7 +582,7 @@ const app = new Hono()
         OR?: Array<{
           isConfidential?: boolean;
           creatorId?: string;
-          assigneeId?: string;
+          assignees?: { some: { id: string } };
           followers?: {
             some: {
               id?: string;
@@ -602,16 +602,16 @@ const app = new Hono()
 
       if (status) {
         where.status = status;
-        
+
         // If filtering for archived status, user must have permission to view archived tasks
         if (status === TaskStatus.ARCHIVED) {
           const canViewArchived = member.role === MemberRole.ADMIN || member.role === MemberRole.MEMBER;
           if (!canViewArchived) {
-            return c.json({ 
-              data: { 
-                documents: [], 
-                total: 0 
-              } 
+            return c.json({
+              data: {
+                documents: [],
+                total: 0
+              }
             });
           }
         }
@@ -625,7 +625,7 @@ const app = new Hono()
       }
 
       if (assigneeId) {
-        where.assigneeId = assigneeId;
+        where.assignees = { some: { id: assigneeId } };
       }
 
       if (dueDate) {
@@ -670,7 +670,7 @@ const app = new Hono()
       const confidentialFilter = [
         { isConfidential: false }, // Non-confidential tasks are visible to everyone
         { isConfidential: true, creatorId: user.id }, // User created the task
-        { isConfidential: true, assigneeId: member.id }, // User is assigned to the task
+        { isConfidential: true, assignees: { some: { id: member.id } } }, // User is assigned to the task
         { isConfidential: true, reviewerId: member.id }, // User is the reviewer of the task
         { isConfidential: true, followers: { some: { id: member.id } } }, // User is following the task
       ];
@@ -699,7 +699,7 @@ const app = new Hono()
         skip: offset,
         include: {
           service: true,
-          assignee: {
+          assignees: {
             include: {
               user: {
                 select: {
@@ -746,11 +746,11 @@ const app = new Hono()
         dueDate: task.dueDate ? task.dueDate.toISOString() : null,
         createdAt: task.createdAt.toISOString(),
         updatedAt: task.updatedAt.toISOString(),
-        assignees: task.assignee ? [{
-          ...task.assignee,
-          name: task.assignee.user.name,
-          email: task.assignee.user.email,
-        }] : [],
+        assignees: task.assignees.map(assignee => ({
+          ...assignee,
+          name: assignee.user.name,
+          email: assignee.user.email,
+        })),
         followedIds: JSON.stringify(task.followers.map(f => f.id)),
         subTaskCount: task._count.subTasks,
       }));
@@ -783,7 +783,7 @@ const app = new Hono()
           workspaceId,
           serviceId,
           dueDate,
-          assigneeId,
+          assigneeIds,
           reviewerId,
           description,
           attachmentId,
@@ -816,6 +816,21 @@ const app = new Hono()
         // Generate the next task number
         const taskNumber = await generateTaskNumber(prisma);
 
+        // Parse assignee IDs from JSON string
+        let parsedAssigneeIds: string[] = [];
+        if (assigneeIds) {
+          try {
+            const parsed = JSON.parse(assigneeIds);
+            if (Array.isArray(parsed)) {
+              parsedAssigneeIds = parsed.filter((id: unknown) =>
+                id && typeof id === 'string' && id.trim().length > 0
+              ) as string[];
+            }
+          } catch {
+            // Invalid JSON, ignore
+          }
+        }
+
         // Prepare followers - automatically add the task creator as a follower
         const followerIds: string[] = [];
         if (followedIds) {
@@ -823,7 +838,7 @@ const app = new Hono()
             const parsedIds = JSON.parse(followedIds);
             if (Array.isArray(parsedIds)) {
               // Filter out null, undefined, empty strings, and non-string values
-              const validIds = parsedIds.filter((id: unknown) => 
+              const validIds = parsedIds.filter((id: unknown) =>
                 id && typeof id === 'string' && id.trim().length > 0
               ) as string[];
               followerIds.push(...validIds);
@@ -832,17 +847,19 @@ const app = new Hono()
             // Invalid JSON, ignore
           }
         }
-        
+
         // Ensure creator is always included in followers
         if (!followerIds.includes(member.id)) {
           followerIds.push(member.id);
         }
 
-        // Ensure assignee is always included in followers (if different from creator)
-        if (assigneeId && assigneeId !== 'undefined' && assigneeId !== member.id && !followerIds.includes(assigneeId)) {
-          followerIds.push(assigneeId);
+        // Ensure all assignees are always included in followers
+        for (const assigneeId of parsedAssigneeIds) {
+          if (assigneeId !== member.id && !followerIds.includes(assigneeId)) {
+            followerIds.push(assigneeId);
+          }
         }
-        
+
         // Validate required fields and convert string 'undefined' to proper values
         if (!serviceId || serviceId === 'undefined' || serviceId === '') {
           return c.json({ error: "Service is required" }, 400);
@@ -856,20 +873,22 @@ const app = new Hono()
             workspaceId,
             serviceId,
             dueDate: new Date(dueDate), // dueDate is now required
-            assigneeId: assigneeId === 'undefined' || !assigneeId ? null : assigneeId,
             reviewerId: reviewerId === 'undefined' || !reviewerId ? null : reviewerId,
             description,
             position: newPosition,
             attachmentId: attachmentId === 'undefined' || !attachmentId ? null : attachmentId,
             creatorId: user.id,
             isConfidential: isConfidential || false,
+            assignees: {
+              connect: parsedAssigneeIds.map(id => ({ id }))
+            },
             followers: {
               connect: followerIds.map(id => ({ id }))
             }
           },
           include: {
             service: true,
-            assignee: {
+            assignees: {
               include: {
                 user: {
                   select: {
@@ -908,19 +927,13 @@ const app = new Hono()
           // Don't fail the task creation if history fails
         }
 
-        // Create task assignment notification if task is assigned to someone
-        if (task.assigneeId && task.assigneeId !== member.id) {
-          try {
-            // Get the assignee's user ID
-            const assigneeMember = await prisma.member.findUnique({
-              where: { id: task.assigneeId },
-              include: { user: true }
-            });
-
-            if (assigneeMember) {
+        // Create task assignment notifications for all assignees
+        for (const assignee of task.assignees) {
+          if (assignee.id !== member.id) {
+            try {
               await prisma.notification.create({
                 data: {
-                  userId: assigneeMember.userId,
+                  userId: assignee.userId,
                   type: "TASK_ASSIGNED",
                   title: "Task assigned to you",
                   message: `${user.name || 'Someone'} assigned you to task "${task.name}"`,
@@ -929,10 +942,10 @@ const app = new Hono()
                   mentionedBy: user.id,
                 }
               });
+            } catch (notificationError) {
+              console.error("Failed to create task assignment notification:", notificationError);
+              // Don't fail task creation if notification fails
             }
-          } catch (notificationError) {
-            console.error("Failed to create task assignment notification:", notificationError);
-            // Don't fail task creation if notification fails
           }
         }
 
@@ -966,7 +979,7 @@ const app = new Hono()
           serviceId,
           workspaceId,
           dueDate,
-          assigneeId,
+          assigneeIds,
           reviewerId,
           description,
           attachmentId,
@@ -986,6 +999,7 @@ const app = new Hono()
           where: { id: taskId },
           include: {
             followers: true,
+            assignees: true,
           }
         });
 
@@ -1007,7 +1021,7 @@ const app = new Hono()
         if (existingTask.isConfidential) {
           const hasConfidentialAccess =
             existingTask.creatorId === user.id || // User created the task
-            existingTask.assigneeId === member.id || // User is assigned to the task
+            existingTask.assignees.some(a => a.id === member.id) || // User is assigned to the task
             existingTask.reviewerId === member.id || // User is the reviewer of the task
             existingTask.followers.some(f => f.id === member.id); // User is following the task
 
@@ -1017,7 +1031,7 @@ const app = new Hono()
         }
 
         // Permission checks based on task status and user roles
-        const isCurrentAssignee = existingTask.assigneeId === member.id;
+        const isCurrentAssignee = existingTask.assignees.some(a => a.id === member.id);
         const isCurrentReviewer = existingTask.reviewerId === member.id;
         const isFollower = existingTask.followers.some(f => f.id === member.id);
         const isWorkspaceAdmin = member.role === MemberRole.ADMIN;
@@ -1087,17 +1101,41 @@ const app = new Hono()
           // All members can update, customers can update fields but not status (handled above)
         }
 
+        // Parse assignee IDs from JSON string for update
+        let parsedAssigneeIds: string[] | undefined = undefined;
+        if (assigneeIds !== undefined) {
+          try {
+            const parsed = JSON.parse(assigneeIds);
+            if (Array.isArray(parsed)) {
+              parsedAssigneeIds = parsed.filter((id: unknown) =>
+                id && typeof id === 'string' && id.trim().length > 0
+              ) as string[];
+            } else {
+              parsedAssigneeIds = [];
+            }
+          } catch {
+            parsedAssigneeIds = [];
+          }
+        }
+
         // Assignee transfer restrictions
-        if (assigneeId !== undefined && assigneeId !== existingTask.assigneeId) {
-          // Allow self-assignment if task has no assignee
-          const isSelfAssignment = !existingTask.assigneeId && assigneeId === member.id;
+        const existingAssigneeIds = existingTask.assignees.map(a => a.id);
+        const assigneesChanged = parsedAssigneeIds !== undefined &&
+          (parsedAssigneeIds.length !== existingAssigneeIds.length ||
+           !parsedAssigneeIds.every(id => existingAssigneeIds.includes(id)));
+
+        if (assigneesChanged) {
+          // Allow self-assignment if task has no assignees
+          const isSelfAssignment = existingAssigneeIds.length === 0 &&
+            parsedAssigneeIds!.length === 1 &&
+            parsedAssigneeIds![0] === member.id;
 
           // Allow assignment if:
           // 1. User is workspace admin
-          // 2. User is the current assignee (can unassign or reassign)
-          // 3. Task has no assignee and user is assigning to themselves
+          // 2. User is one of the current assignees (can modify assignments)
+          // 3. Task has no assignees and user is assigning to themselves
           if (!isWorkspaceAdmin && !isCurrentAssignee && !isSelfAssignment) {
-            return c.json({ error: "Only the current assignee or workspace admin can transfer task assignment" }, 403);
+            return c.json({ error: "Only the current assignees or workspace admin can modify task assignments" }, 403);
           }
         }
 
@@ -1142,47 +1180,47 @@ const app = new Hono()
           serviceId?: string;
           workspaceId?: string;
           dueDate?: Date | null;
-          assigneeId?: string | null;
           reviewerId?: string | null;
           description?: string;
           attachmentId?: string | null;
           isConfidential?: boolean;
           status?: TaskStatus;
           position?: number;
+          assignees?: { set: { id: string }[] };
           followers?: { set: { id: string }[] };
         } = {};
 
         // Handle workspace change - filter followers who don't have access to target workspace
-        if (workspaceId !== undefined && workspaceId !== existingTask.workspaceId) {
+        const isWorkspaceTransfer = workspaceId !== undefined && workspaceId !== existingTask.workspaceId;
+        if (isWorkspaceTransfer) {
           updateData.workspaceId = workspaceId;
           updateData.reviewerId = null; // Always reset reviewer
 
           // Set default status to TODO when transferring to new workspace
           updateData.status = TaskStatus.TODO;
 
-          // Handle assignee based on task confidentiality
+          // Handle assignees based on task confidentiality
           const isConfidentialTask = isConfidential !== undefined ? isConfidential : existingTask.isConfidential;
 
           if (isConfidentialTask) {
-            // For confidential tasks, assignee must remain required
-            // If no assignee is provided in the update, return error
-            if (!assigneeId || assigneeId === 'undefined' || assigneeId === '') {
-              return c.json({ error: "Assignee is required when transferring confidential tasks to another workspace" }, 400);
+            // For confidential tasks, at least one assignee must be present
+            if (!parsedAssigneeIds || parsedAssigneeIds.length === 0) {
+              return c.json({ error: "At least one assignee is required when transferring confidential tasks to another workspace" }, 400);
             }
 
-            // Validate that the assignee is a member of the target workspace
-            const targetAssignee = await prisma.member.findUnique({
-              where: {
-                id: assigneeId,
-              },
-            });
+            // Validate that all assignees are members of the target workspace
+            for (const assigneeId of parsedAssigneeIds) {
+              const targetAssignee = await prisma.member.findUnique({
+                where: { id: assigneeId },
+              });
 
-            if (!targetAssignee || targetAssignee.workspaceId !== workspaceId || targetAssignee.role === MemberRole.CUSTOMER) {
-              return c.json({ error: "Assignee must be a member (not customer) of the target workspace for confidential tasks" }, 400);
+              if (!targetAssignee || targetAssignee.workspaceId !== workspaceId || targetAssignee.role === MemberRole.CUSTOMER) {
+                return c.json({ error: "All assignees must be members (not customers) of the target workspace for confidential tasks" }, 400);
+              }
             }
           } else {
-            // For non-confidential tasks, reset assignee to null (unassigned)
-            updateData.assigneeId = null;
+            // For non-confidential tasks, reset assignees to empty (unassigned)
+            updateData.assignees = { set: [] };
           }
 
           // Auto-register followers as customers to the target workspace if they're not already members
@@ -1270,7 +1308,9 @@ const app = new Hono()
         if (serviceId !== undefined) updateData.serviceId = serviceId;
         if (workspaceId !== undefined && workspaceId === existingTask.workspaceId) updateData.workspaceId = workspaceId;
         if (dueDate !== undefined) updateData.dueDate = dueDate ? new Date(dueDate) : null;
-        if (assigneeId !== undefined) updateData.assigneeId = assigneeId === 'undefined' || !assigneeId ? null : assigneeId;
+        if (parsedAssigneeIds !== undefined && !isWorkspaceTransfer) {
+          updateData.assignees = { set: parsedAssigneeIds.map(id => ({ id })) };
+        }
         if (reviewerId !== undefined) updateData.reviewerId = reviewerId === 'undefined' || !reviewerId ? null : reviewerId;
         if (description !== undefined) updateData.description = description;
         if (attachmentId !== undefined) updateData.attachmentId = attachmentId === 'undefined' || !attachmentId ? null : attachmentId;
@@ -1282,8 +1322,6 @@ const app = new Hono()
         }
 
         // Handle followers update (skip if workspace is being transferred as it's already handled above)
-        const isWorkspaceTransfer = workspaceId !== undefined && workspaceId !== existingTask.workspaceId;
-
         if (followedIds !== undefined && !isWorkspaceTransfer) {
           try {
             const parsedIds = JSON.parse(followedIds);
@@ -1293,9 +1331,13 @@ const app = new Hono()
                 id && typeof id === 'string' && id.trim().length > 0
               ) as string[];
 
-              // Ensure assignee is included in followers (if assignee is being updated)
-              if (updateData.assigneeId && updateData.assigneeId !== null && !validIds.includes(updateData.assigneeId)) {
-                validIds.push(updateData.assigneeId);
+              // Ensure all assignees are included in followers (if assignees are being updated)
+              if (parsedAssigneeIds) {
+                for (const assigneeId of parsedAssigneeIds) {
+                  if (!validIds.includes(assigneeId)) {
+                    validIds.push(assigneeId);
+                  }
+                }
               }
 
               // Use the target workspace ID if provided, otherwise use existing
@@ -1318,12 +1360,17 @@ const app = new Hono()
             console.error("Error processing followers:", error);
             // Invalid JSON, ignore followers update
           }
-        } else if (updateData.assigneeId && updateData.assigneeId !== null && !isWorkspaceTransfer) {
-          // If followers are not being explicitly updated but assignee is changing,
-          // add the new assignee to the existing followers
+        } else if (parsedAssigneeIds && parsedAssigneeIds.length > 0 && !isWorkspaceTransfer) {
+          // If followers are not being explicitly updated but assignees are changing,
+          // add the new assignees to the existing followers
           const currentFollowerIds = existingTask.followers.map(f => f.id);
-          if (!currentFollowerIds.includes(updateData.assigneeId)) {
-            const newFollowerIds = [...currentFollowerIds, updateData.assigneeId];
+          const newFollowerIds = [...currentFollowerIds];
+          for (const assigneeId of parsedAssigneeIds) {
+            if (!newFollowerIds.includes(assigneeId)) {
+              newFollowerIds.push(assigneeId);
+            }
+          }
+          if (newFollowerIds.length !== currentFollowerIds.length) {
             updateData.followers = {
               set: newFollowerIds.map((id: string) => ({ id }))
             };
@@ -1340,7 +1387,6 @@ const app = new Hono()
           name: existingTask.name,
           status: existingTask.status as TaskStatus,
           workspaceId: existingTask.workspaceId,
-          assigneeId: existingTask.assigneeId,
           reviewerId: existingTask.reviewerId,
           serviceId: existingTask.serviceId,
           position: existingTask.position,
@@ -1360,7 +1406,7 @@ const app = new Hono()
           data: updateData,
           include: {
             service: true,
-            assignee: {
+            assignees: {
               include: {
                 user: {
                   select: {
@@ -1397,38 +1443,42 @@ const app = new Hono()
         });
 
 
-        // Create task assignment notification if assignee changed
-        const assigneeChange = changes.find(change => change.field === 'assigneeId');
-        if (assigneeChange && assigneeChange.newValue && assigneeChange.newValue !== member.id) {
-          try {
-            // Get the assignee's user ID
-            const assigneeMember = await prisma.member.findUnique({
-              where: { id: assigneeChange.newValue },
-              include: { user: true }
-            });
-            
-            if (assigneeMember) {
-              await prisma.notification.create({
-                data: {
-                  userId: assigneeMember.userId,
-                  type: "TASK_ASSIGNED",
-                  title: "Task assigned to you",
-                  message: `${user.name || 'Someone'} assigned you to task "${task.name}"`,
-                  workspaceId: task.workspaceId,
-                  taskId: task.id,
-                  mentionedBy: user.id,
+        // Create task assignment notifications for new assignees
+        if (assigneesChanged && parsedAssigneeIds) {
+          // Find new assignees (in new list but not in old list)
+          const newAssignees = parsedAssigneeIds.filter(id => !existingAssigneeIds.includes(id));
+          for (const assigneeId of newAssignees) {
+            if (assigneeId !== member.id) {
+              try {
+                const assigneeMember = await prisma.member.findUnique({
+                  where: { id: assigneeId },
+                  include: { user: true }
+                });
+
+                if (assigneeMember) {
+                  await prisma.notification.create({
+                    data: {
+                      userId: assigneeMember.userId,
+                      type: "TASK_ASSIGNED",
+                      title: "Task assigned to you",
+                      message: `${user.name || 'Someone'} assigned you to task "${task.name}"`,
+                      workspaceId: task.workspaceId,
+                      taskId: task.id,
+                      mentionedBy: user.id,
+                    }
+                  });
                 }
-              });
+              } catch (notificationError) {
+                console.error("Failed to create task assignment notification:", notificationError);
+                // Don't fail task update if notification fails
+              }
             }
-          } catch (notificationError) {
-            console.error("Failed to create task assignment notification:", notificationError);
-            // Don't fail task update if notification fails
           }
         }
 
         // Create task update notifications for followers (for significant changes)
-        const significantChanges = changes.filter(change => 
-          ['status', 'assigneeId', 'serviceId', 'dueDate', 'name', 'description'].includes(change.field)
+        const significantChanges = changes.filter(change =>
+          ['status', 'assigneeIds', 'serviceId', 'dueDate', 'name', 'description'].includes(change.field)
         );
 
         if (significantChanges.length > 0) {
@@ -1482,34 +1532,36 @@ const app = new Hono()
                 case "status":
                   action = TaskHistoryAction.STATUS_CHANGED;
                   break;
-                case "assigneeId":
+                case "assigneeIds":
                   action = TaskHistoryAction.ASSIGNEE_CHANGED;
                   // Resolve assignee IDs to names
-                  if (change.oldValue) {
-                    try {
-                      const oldMember = await prisma.member.findUnique({
-                        where: { id: change.oldValue },
+                  try {
+                    const oldIds = change.oldValue ? JSON.parse(change.oldValue) : [];
+                    if (Array.isArray(oldIds) && oldIds.length > 0) {
+                      const oldMembers = await prisma.member.findMany({
+                        where: { id: { in: oldIds } },
                         include: { user: true }
                       });
-                      oldValue = oldMember?.user.name || "Unknown User";
-                    } catch {
-                      oldValue = "Unknown User";
+                      oldValue = oldMembers.map(m => m.user.name || "Unknown").join(", ") || "Unassigned";
+                    } else {
+                      oldValue = "Unassigned";
                     }
-                  } else {
+                  } catch {
                     oldValue = "Unassigned";
                   }
 
-                  if (change.newValue) {
-                    try {
-                      const newMember = await prisma.member.findUnique({
-                        where: { id: change.newValue },
+                  try {
+                    const newIds = change.newValue ? JSON.parse(change.newValue) : [];
+                    if (Array.isArray(newIds) && newIds.length > 0) {
+                      const newMembers = await prisma.member.findMany({
+                        where: { id: { in: newIds } },
                         include: { user: true }
                       });
-                      newValue = newMember?.user.name || "Unknown User";
-                    } catch {
-                      newValue = "Unknown User";
+                      newValue = newMembers.map(m => m.user.name || "Unknown").join(", ") || "Unassigned";
+                    } else {
+                      newValue = "Unassigned";
                     }
-                  } else {
+                  } catch {
                     newValue = "Unassigned";
                   }
                   break;
@@ -1654,7 +1706,7 @@ const app = new Hono()
         where: { id: taskId },
         include: {
           service: true,
-          assignee: {
+          assignees: {
             include: {
               user: {
                 select: {
@@ -1719,7 +1771,7 @@ const app = new Hono()
       if (task.isConfidential) {
         const hasConfidentialAccess =
           task.creatorId === currentUser.id || // User created the task
-          task.assigneeId === currentMember.id || // User is assigned to the task
+          task.assignees.some(a => a.id === currentMember.id) || // User is assigned to the task
           task.reviewerId === currentMember.id || // User is the reviewer of the task
           task.followers.some(f => f.id === currentMember.id); // User is following the task
 
@@ -1732,7 +1784,7 @@ const app = new Hono()
       // TODO tasks can be viewed by all workspace members
       if (task.status !== TaskStatus.TODO) {
         const isCreator = task.creatorId === currentUser.id;
-        const isAssignee = task.assigneeId === currentMember.id;
+        const isAssignee = task.assignees.some(a => a.id === currentMember.id);
         const isReviewer = task.reviewerId === currentMember.id;
         const isFollower = task.followers.some(follower => follower.id === currentMember.id);
         const isWorkspaceAdmin = currentMember.role === MemberRole.ADMIN;
@@ -1744,11 +1796,11 @@ const app = new Hono()
         }
       }
 
-      const assignees = task.assignee ? [{
-        ...task.assignee,
-        name: task.assignee.user.name,
-        email: task.assignee.user.email,
-      }] : [];
+      const assignees = task.assignees.map(assignee => ({
+        ...assignee,
+        name: assignee.user.name,
+        email: assignee.user.email,
+      }));
 
       return c.json({
         data: {
@@ -1809,7 +1861,7 @@ const app = new Hono()
           }
         },
         include: {
-          assignee: {
+          assignees: {
             include: { user: true }
           },
           service: true,
@@ -1824,6 +1876,11 @@ const app = new Hono()
           dueDate: task.dueDate?.toISOString() || null,
           createdAt: task.createdAt.toISOString(),
           updatedAt: task.updatedAt.toISOString(),
+          assignees: task.assignees.map(a => ({
+            ...a,
+            name: a.user.name,
+            email: a.user.email,
+          })),
         }))
       });
     }
@@ -1884,6 +1941,21 @@ const app = new Hono()
       // Generate task number
       const taskNumber = await generateTaskNumber(prisma);
 
+      // Parse assignee IDs from JSON string for sub-task
+      let subTaskAssigneeIds: string[] = [];
+      if (values.assigneeIds) {
+        try {
+          const parsed = JSON.parse(values.assigneeIds);
+          if (Array.isArray(parsed)) {
+            subTaskAssigneeIds = parsed.filter((id: unknown) =>
+              id && typeof id === 'string' && id.trim().length > 0
+            ) as string[];
+          }
+        } catch {
+          // Invalid JSON, ignore
+        }
+      }
+
       // Create the sub-task (can be in a different workspace)
       const subTask = await prisma.task.create({
         data: {
@@ -1895,13 +1967,15 @@ const app = new Hono()
           taskNumber,
           workspaceId: values.workspaceId,
           serviceId: values.serviceId,
-          assigneeId: values.assigneeId === "unassigned" || !values.assigneeId ? null : values.assigneeId,
+          assignees: {
+            connect: subTaskAssigneeIds.map(id => ({ id }))
+          },
           parentTaskId: taskId,
           creatorId: user.id,
           position: 9999,
         },
         include: {
-          assignee: {
+          assignees: {
             include: { user: true }
           },
           service: true,

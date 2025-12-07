@@ -17,7 +17,6 @@ import { DatePicker } from "@/components/date-picker";
 import { TaskStatus } from "../types";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelect } from "@/components/ui/multi-select-simple";
-import { AssigneeSelect } from "@/components/ui/assignee-select";
 import { useGetServices } from "@/features/services/api/use-get-services";
 import { useGetMembers } from "@/features/members/api/use-get-members";
 import { MemberRole } from "@/features/members/types";
@@ -88,6 +87,7 @@ export const CreateTaskForm = ({
     taskId: parentTaskId || ""
   });
   const [selectedFollowers, setSelectedFollowers] = useState<string[]>([]);
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const { data: currentUser } = useCurrent();
 
   const isPending = isCreatingTask || isCreatingSubTask;
@@ -114,21 +114,11 @@ export const CreateTaskForm = ({
     workspaceId: z.string().trim().min(1, "Required"),
     serviceId: z.string().trim().min(1, "Required"),
     dueDate: z.date({ required_error: "Due date is required" }),
-    assigneeId: z.string().optional(),
     description: z.string().min(1, "Description is required"),
     attachmentId: z.string().optional(),
     followedIds: z.string().optional(),
     creatorId: z.string().optional(),
     isConfidential: z.boolean().optional(),
-  }).refine((data) => {
-    // If task is confidential, assignee must be required and not "unassigned"
-    if (data.isConfidential && (!data.assigneeId || data.assigneeId === "unassigned" || data.assigneeId === "")) {
-      return false;
-    }
-    return true;
-  }, {
-    message: "Assignee is required for confidential tasks",
-    path: ["assigneeId"],
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -136,7 +126,6 @@ export const CreateTaskForm = ({
     defaultValues: {
       workspaceId: workspaceId, // Set current workspace as default
       serviceId: initialServiceId || "", // Use initial service ID if provided
-      assigneeId: "", // Initialize as empty string
       status: TaskStatus.TODO, // Set default status to TODO
       isConfidential: false, // Default to not confidential
       name: "",
@@ -214,20 +203,13 @@ export const CreateTaskForm = ({
     member.userId === currentUser?.id
   );
 
-  // Reset service and assignee when workspace changes
+  // Reset service and assignees when workspace changes
   useEffect(() => {
     if (selectedWorkspaceId && selectedWorkspaceId !== workspaceId) {
       form.setValue("serviceId", "");
-      form.setValue("assigneeId", "");
+      setSelectedAssignees([]);
     }
   }, [selectedWorkspaceId, workspaceId, form]);
-
-  // Clear assignee if it's "unassigned" when confidential is toggled on
-  useEffect(() => {
-    if (isConfidentialValue && (form.getValues("assigneeId") === "unassigned" || !form.getValues("assigneeId"))) {
-      form.setValue("assigneeId", "");
-    }
-  }, [isConfidentialValue, form]);
 
   // Update due date when service changes (SLA-based)
   useEffect(() => {
@@ -253,12 +235,18 @@ export const CreateTaskForm = ({
       return;
     }
 
+    // Validate that confidential tasks have at least one assignee
+    if (values.isConfidential && selectedAssignees.length === 0) {
+      // Show error for assignees
+      return;
+    }
+
     const formattedValues = {
       ...values,
       serviceId: values.serviceId || "", // Convert undefined to empty string
       dueDate: new Date(values.dueDate).toISOString(), // Convert date to ISO string
       attachmentId: "", // No attachment support in creation
-      assigneeId: values.assigneeId === "unassigned" ? "" : values.assigneeId || "", // Send empty string if unassigned
+      assigneeIds: JSON.stringify(selectedAssignees), // JSON string array of assignee IDs
       followedIds: JSON.stringify(selectedFollowers), // JSON string array of follower IDs
       isConfidential: values.isConfidential || false, // Ensure boolean value
     };
@@ -271,6 +259,7 @@ export const CreateTaskForm = ({
         isConfidential: false,
       });
       setSelectedFollowers([]);
+      setSelectedAssignees([]);
       onCancel?.();
       onSuccess?.(formattedValues);
     };
@@ -487,40 +476,35 @@ export const CreateTaskForm = ({
                 )}
               />
 
-              {/* 6. Assignee */}
-              <FormField
-                control={form.control}
-                name="assigneeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      Assignee
-                      {isConfidentialValue && (
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
-                          Required for confidential tasks
-                        </span>
-                      )}
-                    </FormLabel>
-                    <FormControl>
-                      <AssigneeSelect
-                        options={assigneeOptions}
-                        selected={field.value || "unassigned"}
-                        onChange={field.onChange}
-                        disabled={isLoadingMembers || !selectedWorkspaceId}
-                        allowUnassigned={!isConfidentialValue}
-                        placeholder={
-                          isLoadingMembers
-                            ? "Loading members..."
-                            : !selectedWorkspaceId
-                              ? "Select workspace first"
-                              : "Select assignee"
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+              {/* 6. Assignees (Multi-select) */}
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  Assignees
+                  {isConfidentialValue && (
+                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+                      Required for confidential tasks
+                    </span>
+                  )}
+                </FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    options={assigneeOptions}
+                    selected={selectedAssignees}
+                    onChange={setSelectedAssignees}
+                    placeholder={
+                      isLoadingMembers
+                        ? "Loading members..."
+                        : !selectedWorkspaceId
+                          ? "Select workspace first"
+                          : "Select assignees..."
+                    }
+                    className="w-full"
+                  />
+                </FormControl>
+                {isConfidentialValue && selectedAssignees.length === 0 && (
+                  <p className="text-sm text-destructive">At least one assignee is required for confidential tasks</p>
                 )}
-              />
+              </FormItem>
 
               {/* 7. Collaborators (Workspace Members) */}
               <FormItem>

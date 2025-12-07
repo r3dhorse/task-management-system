@@ -167,8 +167,10 @@ export function calculateMemberMetrics(
   tasks: PopulatedTask[],
   withReviewStage: boolean = true
 ): Omit<MemberAnalytics, 'productivityScore' | 'normalizedProductivityScore' | 'kpiScore'> {
-  // Assigned tasks
-  const memberTasks = tasks.filter(task => task.assigneeId === member.id);
+  // Assigned tasks - member is one of the assignees (each assignee gets FULL credit)
+  const memberTasks = tasks.filter(task =>
+    task.assignees && task.assignees.some(a => a.id === member.id)
+  );
   const completedTasks = memberTasks.filter(task => task.status === TaskStatus.DONE);
   const inProgressTasks = memberTasks.filter(task => task.status === TaskStatus.IN_PROGRESS);
   const overdueTasks = memberTasks.filter(task => {
@@ -178,7 +180,7 @@ export function calculateMemberMetrics(
 
   // Tasks where member is a follower/collaborator (excluding where they are assignee)
   const followingTasks = tasks.filter(task => {
-    if (task.assigneeId === member.id) return false;
+    if (task.assignees && task.assignees.some(a => a.id === member.id)) return false;
     if (task.followers && Array.isArray(task.followers)) {
       return task.followers.some((follower: { id: string }) => follower.id === member.id);
     }
@@ -477,13 +479,15 @@ export function filterTasksByDateRange(
 }
 
 /**
- * Filter tasks by member
+ * Filter tasks by member (returns tasks where member is an assignee)
  */
 export function filterTasksByMember(
   tasks: PopulatedTask[],
   memberId: string
 ): PopulatedTask[] {
-  return tasks.filter(task => task.assigneeId === memberId);
+  return tasks.filter(task =>
+    task.assignees && task.assignees.some(a => a.id === memberId)
+  );
 }
 
 /**

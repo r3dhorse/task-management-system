@@ -51,7 +51,7 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
     name: "",
     description: "",
     status: "" as TaskStatus,
-    assigneeId: "",
+    assigneeIds: [] as string[],
     serviceId: "",
     dueDate: new Date(),
     attachmentId: "",
@@ -64,7 +64,7 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
         name: task.name,
         description: task.description || "",
         status: task.status as TaskStatus,
-        assigneeId: task.assigneeId || "",
+        assigneeIds: task.assignees?.map(a => a.id) || [],
         serviceId: task.serviceId || "",
         dueDate: task.dueDate ? new Date(task.dueDate) : new Date(),
         attachmentId: task.attachmentId || "",
@@ -105,7 +105,7 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
           name: editForm.name,
           description: editForm.description,
           status: editForm.status,
-          assigneeId: editForm.assigneeId,
+          assigneeIds: JSON.stringify(editForm.assigneeIds),
           serviceId: editForm.serviceId,
           dueDate: editForm.dueDate.toISOString(),
           attachmentId: editForm.attachmentId || undefined,
@@ -238,26 +238,55 @@ export default function TaskEditPage({ params }: TaskEditPageProps) {
             </CardContent>
           </Card>
 
-          {/* Assignee */}
+          {/* Assignees */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Assignee</CardTitle>
+              <CardTitle className="text-sm">Assignees</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {editForm.assigneeIds.map(id => {
+                  const member = members?.documents.find(m => m.id === id);
+                  return member ? (
+                    <span key={id} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                      {member.name}
+                      <button
+                        type="button"
+                        className="ml-1 text-blue-600 hover:text-blue-800"
+                        onClick={() => setEditForm(prev => ({
+                          ...prev,
+                          assigneeIds: prev.assigneeIds.filter(a => a !== id)
+                        }))}
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  ) : null;
+                })}
+              </div>
               <Select
-                value={editForm.assigneeId}
-                onValueChange={(value) => setEditForm(prev => ({ ...prev, assigneeId: value }))}
+                value=""
+                onValueChange={(value) => {
+                  if (value && !editForm.assigneeIds.includes(value)) {
+                    setEditForm(prev => ({
+                      ...prev,
+                      assigneeIds: [...prev.assigneeIds, value]
+                    }));
+                  }
+                }}
                 disabled={isUpdating}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select assignee" />
+                  <SelectValue placeholder="Add assignee" />
                 </SelectTrigger>
                 <SelectContent>
-                  {members?.documents.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name}
-                    </SelectItem>
-                  ))}
+                  {members?.documents
+                    .filter(member => !editForm.assigneeIds.includes(member.id))
+                    .map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </CardContent>

@@ -113,7 +113,7 @@ export async function GET(
             name: true
           }
         },
-        assignee: {
+        assignees: {
           select: {
             id: true,
             user: {
@@ -122,13 +122,6 @@ export async function GET(
                 email: true
               }
             }
-          }
-        },
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            email: true
           }
         }
       },
@@ -149,8 +142,8 @@ export async function GET(
       updatedAt: task.updatedAt.toISOString(),
       dueDate: task.dueDate?.toISOString(),
       serviceName: task.service?.name || undefined,
-      assigneeName: task.assignee?.user?.name || undefined,
-      creatorName: task.creator?.name || undefined,
+      assigneeName: task.assignees?.map(a => a.user?.name).filter(Boolean).join(', ') || undefined,
+      creatorName: undefined, // Creator relation removed to simplify
       isConfidential: task.isConfidential || false
     }));
 

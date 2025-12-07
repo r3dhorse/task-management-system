@@ -48,7 +48,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     name: "",
     description: "",
     status: "" as TaskStatus,
-    assigneeId: "unassigned",
+    assigneeIds: [] as string[],
     reviewerId: "unassigned",
     serviceId: "",
     workspaceId: "",
@@ -422,9 +422,8 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     );
   }
 
-  const assignee = members?.documents.find(
-    (member) => member.id === task.assigneeId
-  );
+  // Get assignees from task - already populated
+  const assignees = task.assignees || [];
 
   const reviewer = members?.documents.find(
     (member) => member.id === task.reviewerId
@@ -459,7 +458,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
 
   const isCreator = currentUser && task?.creatorId ? currentUser.id === task.creatorId : false;
-  const isAssignee = currentMember && task?.assigneeId ? currentMember.id === task.assigneeId : false;
+  const isAssignee = currentMember && assignees.length > 0 ? assignees.some(a => a.id === currentMember.id) : false;
   const isReviewer = currentMember && task?.reviewerId ? currentMember.id === task.reviewerId : false;
   const isFollower = followedIds.includes(currentMember?.id || '');
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
@@ -572,7 +571,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         name: task.name,
         description: task.description || "",
         status: task.status as TaskStatus,
-        assigneeId: task.assigneeId || "unassigned",
+        assigneeIds: assignees.map(a => a.id),
         reviewerId: task.reviewerId || "unassigned",
         serviceId: task.serviceId,
         workspaceId: task.workspaceId,
@@ -591,7 +590,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     const updatePayload: {
       name: string;
       description: string;
-      assigneeId: string;
+      assigneeIds: string;
       reviewerId: string;
       serviceId: string;
       workspaceId: string;
@@ -603,7 +602,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     } = {
       name: editForm.name,
       description: editForm.description,
-      assigneeId: editForm.assigneeId === "unassigned" ? "" : editForm.assigneeId,
+      assigneeIds: JSON.stringify(editForm.assigneeIds),
       reviewerId: editForm.reviewerId === "unassigned" ? "" : editForm.reviewerId,
       serviceId: editForm.serviceId,
       workspaceId: editForm.workspaceId,
@@ -717,7 +716,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       name: task.name,
       description: task.description || "",
       status: newStatus,
-      assigneeId: task.assigneeId || "",
+      assigneeIds: JSON.stringify(assignees.map(a => a.id)),
       serviceId: task.serviceId,
       dueDate: task.dueDate || new Date().toISOString(),
       attachmentId: task.attachmentId || "",
@@ -863,9 +862,9 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   <UserIcon className="size-4 text-blue-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Assignee</p>
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Assignee{assignees.length > 1 ? 's' : ''}</p>
                   <p className="text-sm font-semibold text-gray-900 truncate">
-                    {assignee?.name || "Unassigned"}
+                    {assignees.length > 0 ? assignees.map(a => a.name).join(', ') : "Unassigned"}
                   </p>
                 </div>
               </div>
@@ -1121,7 +1120,6 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
           name: task.name,
           status: task.status as TaskStatus,
           workspaceId: task.workspaceId,
-          assigneeId: task.assigneeId,
           reviewerId: task.reviewerId || null,
           serviceId: task.serviceId,
           position: task.position,

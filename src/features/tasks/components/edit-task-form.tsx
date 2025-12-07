@@ -34,7 +34,6 @@ import { TaskStatus, Task } from "../types";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select-simple";
-import { AssigneeSelect } from "@/components/ui/assignee-select";
 import { useState, useEffect } from "react";
 import { MemberRole } from "@/features/members/types";
 import { Switch } from "@/components/ui/switch";
@@ -46,6 +45,7 @@ interface EditTaskFormProps {
   membertOptions: { id: string; name: string; role: MemberRole }[];
   followerOptions: MultiSelectOption[];
   initialValues: Task;
+  initialAssignees?: { id: string; name: string }[];
   /** Callback when form actions are available (for external footer rendering) */
   onFormReady?: (actions: { submit: () => void; isPending: boolean }) => void;
 }
@@ -56,6 +56,7 @@ export const EditTaskForm = ({
   membertOptions,
   followerOptions,
   initialValues,
+  initialAssignees,
   onFormReady,
 }: EditTaskFormProps) => {
   const workspaceId = useWorkspaceId();
@@ -76,7 +77,7 @@ export const EditTaskForm = ({
     }
   }, [onFormReady, isPending]);
 
-  // Create assignee options for the AssigneeSelect component
+  // Create assignee options for the MultiSelect component
   const assigneeOptions = membertOptions
     .filter(member => member.role !== MemberRole.CUSTOMER)
     .map((member) => ({
@@ -84,6 +85,11 @@ export const EditTaskForm = ({
       label: member.name,
       role: member.role,
     }));
+
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>(() => {
+    return initialAssignees?.map(a => a.id) || [];
+  });
+
   const [selectedFollowers, setSelectedFollowers] = useState<string[]>(() => {
     try {
       return initialValues.followedIds ? JSON.parse(initialValues.followedIds) : [];
@@ -97,21 +103,11 @@ export const EditTaskForm = ({
     status: z.nativeEnum(TaskStatus, { required_error: "Required" }),
     serviceId: z.string().trim().min(1, "Required"),
     dueDate: z.date({ required_error: "Due date is required" }),
-    assigneeId: z.string().optional(),
     description: z.string().optional(),
     attachmentId: z.string().optional(),
     followedIds: z.string().optional(),
     creatorId: z.string().optional(),
     isConfidential: z.boolean().optional(),
-  }).refine((data) => {
-    // If task is confidential, assignee must be required and not "unassigned"
-    if (data.isConfidential && (!data.assigneeId || data.assigneeId === "unassigned" || data.assigneeId === "")) {
-      return false;
-    }
-    return true;
-  }, {
-    message: "Assignee is required for confidential tasks",
-    path: ["assigneeId"],
   });
 
   const form = useForm<z.infer<typeof trimmedSchema>>({
@@ -121,7 +117,6 @@ export const EditTaskForm = ({
       name: initialValues.name,
       description: initialValues.description || undefined,
       serviceId: initialValues.serviceId,
-      assigneeId: initialValues.assigneeId || "unassigned",
       dueDate: initialValues.dueDate
         ? new Date(initialValues.dueDate)
         : undefined,
@@ -135,18 +130,16 @@ export const EditTaskForm = ({
   // Watch the confidential field to enforce assignee requirement
   const isConfidentialValue = form.watch("isConfidential");
 
-  // Clear assignee if it's "unassigned" when confidential is toggled on
-  useEffect(() => {
-    if (isConfidentialValue && (form.getValues("assigneeId") === "unassigned" || !form.getValues("assigneeId"))) {
-      form.setValue("assigneeId", "");
-    }
-  }, [isConfidentialValue, form]);
-
   const onSubmit = (values: z.infer<typeof trimmedSchema>) => {
+    // Validate that confidential tasks have at least one assignee
+    if (values.isConfidential && selectedAssignees.length === 0) {
+      return;
+    }
+
     const payload = {
       ...values,
       dueDate: values.dueDate ? new Date(values.dueDate).toISOString() : "",
-      assigneeId: values.assigneeId === "unassigned" ? "" : values.assigneeId || "", // Ensure empty string instead of undefined
+      assigneeIds: JSON.stringify(selectedAssignees), // JSON string array of assignee IDs
       attachmentId: initialValues.attachmentId || "", // Preserve existing attachment
       workspaceId,
       followedIds: JSON.stringify(selectedFollowers), // JSON string array of follower IDs
@@ -232,33 +225,29 @@ export const EditTaskForm = ({
                 )}
               />
 
-              {/* Assignee */}
-              <FormField
-                control={form.control}
-                name="assigneeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      Assignee
-                      {isConfidentialValue && (
-                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
-                          Required for confidential tasks
-                        </span>
-                      )}
-                    </FormLabel>
-                    <FormControl>
-                      <AssigneeSelect
-                        options={assigneeOptions}
-                        selected={field.value || "unassigned"}
-                        onChange={field.onChange}
-                        allowUnassigned={!isConfidentialValue}
-                        placeholder="Select assignee"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
+              {/* Assignees */}
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  Assignees
+                  {isConfidentialValue && (
+                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+                      Required for confidential tasks
+                    </span>
+                  )}
+                </FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    options={assigneeOptions}
+                    selected={selectedAssignees}
+                    onChange={setSelectedAssignees}
+                    placeholder="Select assignees..."
+                    className="w-full"
+                  />
+                </FormControl>
+                {isConfidentialValue && selectedAssignees.length === 0 && (
+                  <p className="text-sm text-red-500">At least one assignee is required for confidential tasks</p>
                 )}
-              />
+              </FormItem>
 
               {/* Status */}
               <FormField
