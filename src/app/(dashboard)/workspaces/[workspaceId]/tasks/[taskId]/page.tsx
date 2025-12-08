@@ -14,7 +14,7 @@ import { TaskHistoryAction } from "@/features/tasks/types/history";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, EditIcon, FileTextIcon, ArchiveIcon } from "@/lib/lucide-icons";
+import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, UsersIcon, EditIcon, FileTextIcon, ArchiveIcon } from "@/lib/lucide-icons";
 import { useRouter } from "next/navigation";
 import { useDeleteTask } from "@/features/tasks/api/use-delete-task";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -947,72 +947,95 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
             </h1>
 
             {/* Enhanced Meta Information */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <UserIcon className="size-4 text-blue-600" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <UserIcon className="size-3.5 text-indigo-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Assignee{assignees.length > 1 ? 's' : ''}</p>
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Assignee{assignees.length > 1 ? 's' : ''}</p>
+                  <p className="text-xs font-semibold text-gray-900 truncate">
                     {assignees.length > 0 ? assignees.map(a => a.name).join(', ') : "Unassigned"}
                   </p>
                 </div>
               </div>
 
               {task.status === 'IN_REVIEW' && (
-                <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                  <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <UserIcon className="size-4 text-purple-600" />
+                <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                  <div className="flex-shrink-0 w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <UserIcon className="size-3.5 text-purple-600" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Reviewer</p>
-                    <p className="text-sm font-semibold text-gray-900 truncate">
+                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Reviewer</p>
+                    <p className="text-xs font-semibold text-gray-900 truncate">
                       {reviewer?.name || "No Reviewer"}
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <CalendarIcon className="size-4 text-orange-600" />
+              <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <CalendarIcon className="size-3.5 text-orange-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Due Date</p>
-                  <div className="text-sm font-semibold text-gray-900">
+                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Due Date</p>
+                  <div className="text-xs font-semibold text-gray-900">
                     <TaskDate value={task.dueDate} />
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Package className="size-4 text-green-600" />
+              <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Package className="size-3.5 text-green-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Service</p>
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Service</p>
+                  <p className="text-xs font-semibold text-gray-900 truncate">
                     {service?.name || "No service"}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <UserIcon className="size-4 text-purple-600" />
+              <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-7 h-7 bg-cyan-100 rounded-lg flex items-center justify-center">
+                  <UsersIcon className="size-3.5 text-cyan-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Followers</p>
+                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Collaborators</p>
                   <div className="flex items-center gap-1">
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-xs font-semibold text-gray-900">
+                      {collaborators.length}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsCollaboratorsModalOpen(true)}
+                      className="text-[10px] text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 p-0.5 h-auto transition-all duration-200 hover:scale-105"
+                      aria-label={`Manage collaborators for task ${task.name}`}
+                    >
+                      Manage
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-7 h-7 bg-teal-100 rounded-lg flex items-center justify-center">
+                  <UserIcon className="size-3.5 text-teal-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Followers</p>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-semibold text-gray-900">
                       {followers.length}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setIsFollowersModalOpen(true)}
-                      className="text-xs text-purple-600 hover:text-purple-700 hover:bg-purple-50 p-1 h-auto transition-all duration-200 hover:scale-105"
+                      className="text-[10px] text-teal-600 hover:text-teal-700 hover:bg-teal-50 p-0.5 h-auto transition-all duration-200 hover:scale-105"
                       aria-label={`Manage followers for task ${task.name}`}
                     >
                       Manage
