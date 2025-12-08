@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -39,6 +39,13 @@ interface TeamOverallKPIResponse {
     highPerformers: number; // KPI >= 60
     totalTasks: number;
     totalCompleted: number;
+  };
+  pagination: {
+    page: number;
+    limit: number;
+    totalMembers: number;
+    totalPages: number;
+    hasMore: boolean;
   };
 }
 
@@ -135,13 +142,19 @@ function calculateMemberKPI(
   };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Parse query params
+    const { searchParams } = new URL(request.url);
+    const filterWorkspaceId = searchParams.get("workspaceId"); // Optional filter
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "10")));
 
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -219,12 +232,19 @@ export async function GET() {
             totalTasks: 0,
             totalCompleted: 0,
           },
+          pagination: {
+            page: 1,
+            limit,
+            totalMembers: 0,
+            totalPages: 0,
+            hasMore: false,
+          },
         },
       });
     }
 
     // Combine workspace IDs from both sources
-    const adminWorkspaceIds = [
+    const allAdminWorkspaceIds = [
       ...adminMemberships.map(m => m.workspace.id),
       ...additionalWorkspaces.map(ws => ws.id),
     ];
@@ -235,10 +255,16 @@ export async function GET() {
       ...additionalWorkspaces,
     ];
 
-    // Get all unique members from admin's workspaces (excluding customers and the admin themselves)
+    // Determine which workspace IDs to use for filtering members
+    let targetWorkspaceIds = allAdminWorkspaceIds;
+    if (filterWorkspaceId && allAdminWorkspaceIds.includes(filterWorkspaceId)) {
+      targetWorkspaceIds = [filterWorkspaceId];
+    }
+
+    // Get all unique members from target workspaces (excluding customers)
     const allMembers = await prisma.member.findMany({
       where: {
-        workspaceId: { in: adminWorkspaceIds },
+        workspaceId: { in: targetWorkspaceIds },
         role: { not: MemberRole.CUSTOMER },
       },
       include: {
@@ -355,18 +381,23 @@ export async function GET() {
     // Sort by overall KPI descending
     teamMemberKPIs.sort((a, b) => b.overallKPI - a.overallKPI);
 
-    // Calculate team stats
-    const totalMembers = teamMemberKPIs.length;
-    const averageKPI = totalMembers > 0
-      ? Math.round(teamMemberKPIs.reduce((sum, m) => sum + m.overallKPI, 0) / totalMembers)
+    // Calculate team stats (before pagination)
+    const totalMembersCount = teamMemberKPIs.length;
+    const averageKPI = totalMembersCount > 0
+      ? Math.round(teamMemberKPIs.reduce((sum, m) => sum + m.overallKPI, 0) / totalMembersCount)
       : 0;
     const highPerformers = teamMemberKPIs.filter(m => m.overallKPI >= 60).length;
     const totalTasks = teamMemberKPIs.reduce((sum, m) => sum + m.totalTasksAcrossWorkspaces, 0);
     const totalCompleted = teamMemberKPIs.reduce((sum, m) => sum + m.totalCompletedAcrossWorkspaces, 0);
 
-    // Get workspace info for admin workspaces
+    // Apply pagination
+    const totalPages = Math.ceil(totalMembersCount / limit);
+    const startIndex = (page - 1) * limit;
+    const paginatedMembers = teamMemberKPIs.slice(startIndex, startIndex + limit);
+
+    // Get workspace info for ALL admin workspaces (not filtered)
     const adminWorkspaces = await Promise.all(
-      adminWorkspaceIds.map(async (wsId) => {
+      allAdminWorkspaceIds.map(async (wsId) => {
         const memberCount = await prisma.member.count({
           where: {
             workspaceId: wsId,
@@ -383,14 +414,21 @@ export async function GET() {
     );
 
     const response: TeamOverallKPIResponse = {
-      members: teamMemberKPIs,
+      members: paginatedMembers,
       adminWorkspaces,
       teamStats: {
-        totalMembers,
+        totalMembers: totalMembersCount,
         averageKPI,
         highPerformers,
         totalTasks,
         totalCompleted,
+      },
+      pagination: {
+        page,
+        limit,
+        totalMembers: totalMembersCount,
+        totalPages,
+        hasMore: page < totalPages,
       },
     };
 

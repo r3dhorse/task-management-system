@@ -35,21 +35,45 @@ export interface TeamStats {
   totalCompleted: number;
 }
 
+export interface Pagination {
+  page: number;
+  limit: number;
+  totalMembers: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export interface TeamOverallKPIData {
   members: TeamMemberKPI[];
   adminWorkspaces: AdminWorkspace[];
   teamStats: TeamStats;
+  pagination: Pagination;
 }
 
 interface UseGetTeamOverallKPIProps {
+  workspaceId?: string | null; // Optional filter by workspace
+  page?: number;
+  limit?: number;
   enabled?: boolean;
 }
 
-export const useGetTeamOverallKPI = ({ enabled = true }: UseGetTeamOverallKPIProps = {}) => {
+export const useGetTeamOverallKPI = ({
+  workspaceId,
+  page = 1,
+  limit = 10,
+  enabled = true,
+}: UseGetTeamOverallKPIProps = {}) => {
   return useQuery({
-    queryKey: ["team-overall-kpi"],
+    queryKey: ["team-overall-kpi", workspaceId, page, limit],
     queryFn: async (): Promise<TeamOverallKPIData> => {
-      const response = await fetch("/api/team-overall-kpi");
+      const params = new URLSearchParams();
+      if (workspaceId) {
+        params.set("workspaceId", workspaceId);
+      }
+      params.set("page", page.toString());
+      params.set("limit", limit.toString());
+
+      const response = await fetch(`/api/team-overall-kpi?${params.toString()}`);
 
       if (!response.ok) {
         const error = await response.json();

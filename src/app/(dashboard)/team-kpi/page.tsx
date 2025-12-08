@@ -28,6 +28,8 @@ import {
   BuildingIcon,
   InfoIcon,
   ChevronRightIcon,
+  ChevronLeft,
+  ChevronRight,
   ArrowLeftIcon,
   TargetIcon,
   CheckCircle2Icon,
@@ -52,22 +54,37 @@ function getKPIRating(kpiScore: number): {
   return { label: "Needs Improvement", colorClass: "text-red-600", bgClass: "bg-red-500" };
 }
 
-function getRankBadgeStyle(index: number): string {
-  if (index === 0) return "bg-gradient-to-r from-yellow-400 to-yellow-600";
-  if (index === 1) return "bg-gradient-to-r from-gray-300 to-gray-500";
-  if (index === 2) return "bg-gradient-to-r from-amber-500 to-amber-700";
+function getRankBadgeStyle(index: number, page: number, limit: number): string {
+  const globalIndex = (page - 1) * limit + index;
+  if (globalIndex === 0) return "bg-gradient-to-r from-yellow-400 to-yellow-600";
+  if (globalIndex === 1) return "bg-gradient-to-r from-gray-300 to-gray-500";
+  if (globalIndex === 2) return "bg-gradient-to-r from-amber-500 to-amber-700";
   return "bg-gradient-to-r from-blue-400 to-blue-600";
 }
 
 export default function TeamKPIPage() {
   const router = useRouter();
   const { data: currentUser, isLoading: isLoadingUser } = useCurrent();
-  const { data: teamKPIData, isLoading, error } = useGetTeamOverallKPI();
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedMember, setSelectedMember] = useState<TeamMemberKPI | null>(null);
-  const [showAllMembers, setShowAllMembers] = useState(false);
+
+  const ITEMS_PER_PAGE = 10;
+
+  const { data: teamKPIData, isLoading, error } = useGetTeamOverallKPI({
+    workspaceId: selectedWorkspaceId,
+    page: currentPage,
+    limit: ITEMS_PER_PAGE,
+  });
 
   // Check if user is admin (has admin workspaces)
   const isAdmin = currentUser?.isAdmin || currentUser?.isSuperAdmin;
+
+  // Handle workspace filter change
+  const handleWorkspaceFilter = (workspaceId: string | null) => {
+    setSelectedWorkspaceId(workspaceId);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
 
   if (isLoadingUser || isLoading) {
     return (
@@ -156,41 +173,11 @@ export default function TeamKPIPage() {
     );
   }
 
-  if (!teamKPIData || teamKPIData.members.length === 0) {
-    return (
-      <div className="flex flex-col gap-y-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="gap-2"
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-            Back
-          </Button>
-        </div>
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-indigo-50 to-purple-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg">
-                <UsersIcon className="h-6 w-6 text-white" />
-              </div>
-              Team Overall KPI
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center text-muted-foreground py-8">
-              No team members found in your workspaces.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  if (!teamKPIData) {
+    return null;
   }
 
-  const { members, adminWorkspaces, teamStats } = teamKPIData;
-  const topPerformers = members.slice(0, 10);
+  const { members, adminWorkspaces, teamStats, pagination } = teamKPIData;
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -261,27 +248,48 @@ export default function TeamKPIPage() {
         </Card>
       </div>
 
-      {/* Workspaces You Manage */}
+      {/* Workspace Filter */}
       <Card className="border-0 shadow-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <BuildingIcon className="h-5 w-5 text-gray-600" />
-            Workspaces You Manage
+            Filter by Workspace
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
+            {/* All Workspaces button */}
+            <button
+              onClick={() => handleWorkspaceFilter(null)}
+              className={cn(
+                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                selectedWorkspaceId === null
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              )}
+            >
+              All Workspaces
+            </button>
+            {/* Workspace filter buttons */}
             {adminWorkspaces.map((ws) => (
-              <Badge
+              <button
                 key={ws.id}
-                variant="secondary"
-                className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200"
+                onClick={() => handleWorkspaceFilter(ws.id)}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                  selectedWorkspaceId === ws.id
+                    ? "bg-indigo-600 text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                )}
               >
                 {ws.name}
-                <span className="ml-2 text-xs text-gray-500">
-                  ({ws.memberCount} members)
+                <span className={cn(
+                  "ml-2 text-xs",
+                  selectedWorkspaceId === ws.id ? "text-indigo-200" : "text-gray-500"
+                )}>
+                  ({ws.memberCount})
                 </span>
-              </Badge>
+              </button>
             ))}
           </div>
         </CardContent>
@@ -310,64 +318,123 @@ export default function TeamKPIPage() {
                 </Tooltip>
               </TooltipProvider>
             </CardTitle>
-            {members.length > 10 && (
-              <button
-                onClick={() => setShowAllMembers(true)}
-                className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
-              >
-                View All ({members.length})
-                <ChevronRightIcon className="h-4 w-4" />
-              </button>
-            )}
+            <span className="text-sm text-gray-500">
+              {teamStats.totalMembers} member{teamStats.totalMembers !== 1 ? "s" : ""}
+            </span>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {topPerformers.map((member, index) => (
-              <div
-                key={member.userId}
-                onClick={() => setSelectedMember(member)}
-                className="flex items-center justify-between p-3 rounded-lg bg-white/70 hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-indigo-200"
-              >
-                <div className="flex items-center gap-3">
+          {members.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No members found in this workspace.
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                {members.map((member, index) => (
                   <div
-                    className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white",
-                      getRankBadgeStyle(index)
-                    )}
+                    key={member.userId}
+                    onClick={() => setSelectedMember(member)}
+                    className="flex items-center justify-between p-3 rounded-lg bg-white/70 hover:bg-white transition-colors cursor-pointer border border-transparent hover:border-indigo-200"
                   >
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{member.userName}</p>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <BuildingIcon className="h-3 w-3" />
-                      <span>{member.workspaceCount} workspace{member.workspaceCount !== 1 ? "s" : ""}</span>
-                      <span>-</span>
-                      <span>{member.totalCompletedAcrossWorkspaces}/{member.totalTasksAcrossWorkspaces} tasks</span>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white",
+                          getRankBadgeStyle(index, currentPage, ITEMS_PER_PAGE)
+                        )}
+                      >
+                        {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{member.userName}</p>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <BuildingIcon className="h-3 w-3" />
+                          <span>{member.workspaceCount} workspace{member.workspaceCount !== 1 ? "s" : ""}</span>
+                          <span>-</span>
+                          <span>{member.totalCompletedAcrossWorkspaces}/{member.totalTasksAcrossWorkspaces} tasks</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        className={cn(
+                          "font-bold min-w-[60px] justify-center",
+                          member.overallKPI >= 80
+                            ? "bg-green-100 text-green-700"
+                            : member.overallKPI >= 60
+                            ? "bg-blue-100 text-blue-700"
+                            : member.overallKPI >= 40
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-gray-100 text-gray-700"
+                        )}
+                      >
+                        {member.overallKPI}%
+                      </Badge>
+                      <ChevronRightIcon className="h-4 w-4 text-gray-400" />
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    className={cn(
-                      "font-bold min-w-[60px] justify-center",
-                      member.overallKPI >= 80
-                        ? "bg-green-100 text-green-700"
-                        : member.overallKPI >= 60
-                        ? "bg-blue-100 text-blue-700"
-                        : member.overallKPI >= 40
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-gray-100 text-gray-700"
-                    )}
-                  >
-                    {member.overallKPI}%
-                  </Badge>
-                  <ChevronRightIcon className="h-4 w-4 text-gray-400" />
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+
+              {/* Pagination */}
+              {pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-500">
+                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, pagination.totalMembers)} of {pagination.totalMembers}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="gap-1"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                        .filter(p => {
+                          // Show first, last, current, and pages around current
+                          return p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1;
+                        })
+                        .map((pageNum, idx, arr) => {
+                          // Add ellipsis if there's a gap
+                          const showEllipsisBefore = idx > 0 && pageNum - arr[idx - 1] > 1;
+                          return (
+                            <div key={pageNum} className="flex items-center gap-1">
+                              {showEllipsisBefore && (
+                                <span className="px-2 text-gray-400">...</span>
+                              )}
+                              <Button
+                                variant={currentPage === pageNum ? "primary" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                                className="w-8 h-8 p-0"
+                              >
+                                {pageNum}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(pagination.totalPages, p + 1))}
+                      disabled={currentPage === pagination.totalPages}
+                      className="gap-1"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -459,72 +526,6 @@ export default function TeamKPIPage() {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* All Members Modal */}
-      <Dialog open={showAllMembers} onOpenChange={setShowAllMembers}>
-        <DialogContent className="max-w-2xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
-              <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg">
-                <UsersIcon className="h-5 w-5 text-white" />
-              </div>
-              All Team Members
-              <span className="text-sm font-normal text-muted-foreground ml-2">
-                ({members.length} members)
-              </span>
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-            {members.map((member, index) => (
-              <div
-                key={member.userId}
-                onClick={() => {
-                  setShowAllMembers(false);
-                  setSelectedMember(member);
-                }}
-                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white",
-                      getRankBadgeStyle(index)
-                    )}
-                  >
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{member.userName}</p>
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <BuildingIcon className="h-3 w-3" />
-                      <span>{member.workspaceCount} workspace{member.workspaceCount !== 1 ? "s" : ""}</span>
-                      <span>-</span>
-                      <span>{member.totalCompletedAcrossWorkspaces}/{member.totalTasksAcrossWorkspaces} tasks</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    className={cn(
-                      "font-bold min-w-[60px] justify-center",
-                      member.overallKPI >= 80
-                        ? "bg-green-100 text-green-700"
-                        : member.overallKPI >= 60
-                        ? "bg-blue-100 text-blue-700"
-                        : member.overallKPI >= 40
-                        ? "bg-amber-100 text-amber-700"
-                        : "bg-gray-100 text-gray-700"
-                    )}
-                  >
-                    {member.overallKPI}%
-                  </Badge>
-                  <ChevronRightIcon className="h-4 w-4 text-gray-400" />
-                </div>
-              </div>
-            ))}
-          </div>
         </DialogContent>
       </Dialog>
     </div>
