@@ -13,13 +13,13 @@ import { Member, MemberRole } from "@/features/members/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/date-picker";
-import { CalendarIcon, BarChart3Icon, TrendingUpIcon, GlobeIcon } from "@/lib/lucide-icons";
+import { CalendarIcon, BarChart3Icon, TrendingUpIcon } from "@/lib/lucide-icons";
 import { PopulatedTask } from "@/features/tasks/types";
 import { subDays, isAfter, isBefore } from "date-fns";
 import { DottedSeparator } from "@/components/dotted-separator";
 
 // Extracted tab components
-import { OverviewTab, DeadlinesTab, AnalyticsTab, OverallKPISection } from "./components";
+import { OverviewTab, DeadlinesTab, AnalyticsTab } from "./components";
 
 
 const WorkspaceIdPage = () => {
@@ -31,7 +31,7 @@ const WorkspaceIdPage = () => {
 
   // Get initial tab from URL or default to 'overview'
   const tabFromUrl = searchParams?.get('tab') ?? null;
-  const validTabs = useMemo(() => ['overview', 'deadlines', 'analytics', 'overall-kpi'], []);
+  const validTabs = useMemo(() => ['overview', 'deadlines', 'analytics'], []);
   const initialTab = tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : 'overview';
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -140,7 +140,7 @@ const WorkspaceIdPage = () => {
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className={`grid w-full max-w-2xl ${(currentMember?.role === MemberRole.ADMIN || currentUser?.isSuperAdmin) ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <TabsList className="grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3Icon className="h-4 w-4" />
             Overview
@@ -153,16 +153,10 @@ const WorkspaceIdPage = () => {
             <TrendingUpIcon className="h-4 w-4" />
             Analytics
           </TabsTrigger>
-          {(currentMember?.role === MemberRole.ADMIN || currentUser?.isSuperAdmin) && (
-            <TabsTrigger value="overall-kpi" className="flex items-center gap-2">
-              <GlobeIcon className="h-4 w-4" />
-              Overall KPI
-            </TabsTrigger>
-          )}
         </TabsList>
 
-      {/* Date Range Filter - Hide on Task Deadline and Overall KPI tabs */}
-      {activeTab !== "deadlines" && activeTab !== "overall-kpi" && (
+      {/* Date Range Filter - Hide on Task Deadline tab */}
+      {activeTab !== "deadlines" && (
         <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full relative z-10 mt-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
           <div className="flex items-center gap-2">
@@ -264,12 +258,6 @@ const WorkspaceIdPage = () => {
         />
       </TabsContent>
 
-      {/* Overall KPI Tab Content - Admin Only */}
-      {(currentMember?.role === MemberRole.ADMIN || currentUser?.isSuperAdmin) && (
-        <TabsContent value="overall-kpi" className="mt-6">
-          <OverallKPISection workspaceId={workspaceId} />
-        </TabsContent>
-      )}
       </Tabs>
     </div>
   );

@@ -153,6 +153,8 @@ export const GlobeIcon = getIcon('Globe', ['GlobeIcon', 'Globe2']);
 export const TrophyIcon = getIcon('Trophy', ['TrophyIcon']);
 export const BuildingIcon = getIcon('Building', ['BuildingIcon', 'Building2']);
 export const ChevronRightIcon = getIcon('ChevronRight', ['ChevronRightIcon']);
+export const Users2Icon = getIcon('Users2', ['Users2Icon', 'Users']);
+export const TargetIcon = getIcon('Target', ['TargetIcon']);
 
 // Export all lucide icons as a namespace for direct access
 export * from "lucide-react";

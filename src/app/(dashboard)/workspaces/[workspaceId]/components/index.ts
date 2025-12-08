@@ -8,4 +8,3 @@
 export { OverviewTab } from "./overview-tab";
 export { DeadlinesTab } from "./deadlines-tab";
 export { AnalyticsTab } from "./analytics-tab";
-export { OverallKPISection } from "./overall-kpi-section";

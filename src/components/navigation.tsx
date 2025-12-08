@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon, ChevronDown, ChevronRight, Briefcase, Building2 } from "@/lib/lucide-icons";
+import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon, ChevronDown, ChevronRight, Briefcase, Building2, Users2Icon } from "@/lib/lucide-icons";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -193,6 +193,11 @@ export const Navigation = () => {
       return null;
     }
 
+    // If no workspaceId, don't render workspace-specific menu items
+    if (!workspaceId) {
+      return null;
+    }
+
     let fullHref: string;
     if (item.serviceAware && isInServiceContext && serviceId) {
       fullHref = `/workspaces/${workspaceId}/services/${serviceId}${item.href}`;
@@ -329,7 +334,13 @@ export const Navigation = () => {
     );
   };
 
-  const renderServicesButton = () => (
+  const renderServicesButton = () => {
+    // If no workspaceId, don't render services
+    if (!workspaceId) {
+      return null;
+    }
+
+    return (
     <>
       <button
         onClick={() => setServicesExpanded(!servicesExpanded)}
@@ -434,6 +445,36 @@ export const Navigation = () => {
       )}
     </>
   );
+  };
+
+  // Render Team KPI button (only for admins)
+  const renderTeamKPIButton = () => {
+    if (!isAdmin && !isSuperAdmin) return null;
+
+    const isActive = pathname === "/team-kpi";
+
+    return (
+      <Link href="/team-kpi" className="block">
+        <button
+          className={cn(
+            "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
+            isActive
+              ? "bg-white shadow-sm text-primary"
+              : "text-neutral-500 hover:bg-white/70 hover:text-primary",
+            "focus:outline-none focus:ring-2 focus:ring-primary/20"
+          )}
+        >
+          <Users2Icon className={cn(
+            "size-5 flex-shrink-0 transition-colors",
+            isActive ? "text-primary" : "text-neutral-500 group-hover:text-primary"
+          )} />
+          <span className="text-sm sm:text-base truncate text-left">
+            Team KPI
+          </span>
+        </button>
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -450,6 +491,8 @@ export const Navigation = () => {
               {index === 1 && renderServicesButton()}
             </div>
           ))}
+          {/* Team KPI link for admins */}
+          {renderTeamKPIButton()}
         </div>
 
       </nav>

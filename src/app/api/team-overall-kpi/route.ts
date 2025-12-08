@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +14,8 @@ interface WorkspaceKPI {
   weight: number;
 }
 
-interface MemberOverallKPI {
+interface TeamMemberKPI {
+  memberId: string;
   userId: string;
   userName: string;
   userEmail: string;
@@ -23,6 +24,22 @@ interface MemberOverallKPI {
   totalTasksAcrossWorkspaces: number;
   totalCompletedAcrossWorkspaces: number;
   workspaceCount: number;
+}
+
+interface TeamOverallKPIResponse {
+  members: TeamMemberKPI[];
+  adminWorkspaces: Array<{
+    id: string;
+    name: string;
+    memberCount: number;
+  }>;
+  teamStats: {
+    totalMembers: number;
+    averageKPI: number;
+    highPerformers: number; // KPI >= 60
+    totalTasks: number;
+    totalCompleted: number;
+  };
 }
 
 /**
@@ -118,7 +135,7 @@ function calculateMemberKPI(
   };
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
@@ -126,76 +143,139 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const workspaceId = searchParams.get("workspaceId");
-
-    if (!workspaceId) {
-      return NextResponse.json({ error: "Workspace ID is required" }, { status: 400 });
-    }
-
-    // Check if current user is admin of the workspace or super admin
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { id: true, isSuperAdmin: true },
     });
 
-    const currentMember = await prisma.member.findUnique({
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Get all workspaces where current user is ADMIN
+    const adminMemberships = await prisma.member.findMany({
       where: {
-        userId_workspaceId: {
-          userId: session.user.id,
-          workspaceId,
+        userId: currentUser.id,
+        role: MemberRole.ADMIN,
+      },
+      include: {
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+            withReviewStage: true,
+            kpiCompletionWeight: true,
+            kpiProductivityWeight: true,
+            kpiSlaWeight: true,
+            kpiCollaborationWeight: true,
+            kpiReviewWeight: true,
+          },
         },
       },
     });
 
-    if (!currentMember || (currentMember.role !== MemberRole.ADMIN && !currentUser?.isSuperAdmin)) {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+    // For super admins, also get workspaces they own (that they're not already admin of)
+    let additionalWorkspaces: Array<{
+      id: string;
+      name: string;
+      withReviewStage: boolean;
+      kpiCompletionWeight: number;
+      kpiProductivityWeight: number;
+      kpiSlaWeight: number;
+      kpiCollaborationWeight: number;
+      kpiReviewWeight: number;
+    }> = [];
+
+    if (currentUser.isSuperAdmin) {
+      const ownedWorkspaces = await prisma.workspace.findMany({
+        where: { userId: currentUser.id },
+        select: {
+          id: true,
+          name: true,
+          withReviewStage: true,
+          kpiCompletionWeight: true,
+          kpiProductivityWeight: true,
+          kpiSlaWeight: true,
+          kpiCollaborationWeight: true,
+          kpiReviewWeight: true,
+        },
+      });
+
+      // Filter out workspaces already in admin memberships
+      additionalWorkspaces = ownedWorkspaces.filter(
+        ws => !adminMemberships.some(m => m.workspace.id === ws.id)
+      );
     }
 
-    // Get all members of the current workspace (excluding customers)
-    const workspaceMembers = await prisma.member.findMany({
+    if (adminMemberships.length === 0 && additionalWorkspaces.length === 0) {
+      return NextResponse.json({
+        data: {
+          members: [],
+          adminWorkspaces: [],
+          teamStats: {
+            totalMembers: 0,
+            averageKPI: 0,
+            highPerformers: 0,
+            totalTasks: 0,
+            totalCompleted: 0,
+          },
+        },
+      });
+    }
+
+    // Combine workspace IDs from both sources
+    const adminWorkspaceIds = [
+      ...adminMemberships.map(m => m.workspace.id),
+      ...additionalWorkspaces.map(ws => ws.id),
+    ];
+
+    // Combine workspace info for later use
+    const allAdminWorkspaceInfo = [
+      ...adminMemberships.map(m => m.workspace),
+      ...additionalWorkspaces,
+    ];
+
+    // Get all unique members from admin's workspaces (excluding customers and the admin themselves)
+    const allMembers = await prisma.member.findMany({
       where: {
-        workspaceId,
+        workspaceId: { in: adminWorkspaceIds },
         role: { not: MemberRole.CUSTOMER },
       },
       include: {
         user: {
           select: { id: true, name: true, email: true },
         },
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+            withReviewStage: true,
+            kpiCompletionWeight: true,
+            kpiProductivityWeight: true,
+            kpiSlaWeight: true,
+            kpiCollaborationWeight: true,
+            kpiReviewWeight: true,
+          },
+        },
       },
     });
 
-    const overallKPIData: MemberOverallKPI[] = [];
+    // Group members by userId to get unique users
+    const userMembersMap = new Map<string, typeof allMembers>();
+    for (const member of allMembers) {
+      const existing = userMembersMap.get(member.userId) || [];
+      existing.push(member);
+      userMembersMap.set(member.userId, existing);
+    }
 
-    // For each member, calculate their overall KPI across all workspaces
-    for (const member of workspaceMembers) {
-      // Get all workspaces this user belongs to
-      const userMemberships = await prisma.member.findMany({
-        where: {
-          userId: member.userId,
-          role: { not: MemberRole.CUSTOMER },
-        },
-        include: {
-          workspace: {
-            select: {
-              id: true,
-              name: true,
-              withReviewStage: true,
-              kpiCompletionWeight: true,
-              kpiProductivityWeight: true,
-              kpiSlaWeight: true,
-              kpiCollaborationWeight: true,
-              kpiReviewWeight: true,
-            },
-          },
-        },
-      });
+    const teamMemberKPIs: TeamMemberKPI[] = [];
 
+    // Calculate KPI for each unique user across all their workspaces (within admin's scope)
+    for (const [userId, userMemberships] of userMembersMap) {
       const workspaceBreakdown: WorkspaceKPI[] = [];
       let totalTasksAcrossWorkspaces = 0;
       let totalCompletedAcrossWorkspaces = 0;
 
-      // Calculate KPI for each workspace
       for (const membership of userMemberships) {
         const workspace = membership.workspace;
 
@@ -258,10 +338,12 @@ export async function GET(request: NextRequest) {
         return sum + (w.kpiScore * w.weight);
       }, 0);
 
-      overallKPIData.push({
-        userId: member.userId,
-        userName: member.user.name || "Unknown",
-        userEmail: member.user.email,
+      const firstMembership = userMemberships[0];
+      teamMemberKPIs.push({
+        memberId: firstMembership.id,
+        userId,
+        userName: firstMembership.user.name || "Unknown",
+        userEmail: firstMembership.user.email,
         overallKPI: Math.round(overallKPI),
         workspaceBreakdown,
         totalTasksAcrossWorkspaces,
@@ -271,11 +353,50 @@ export async function GET(request: NextRequest) {
     }
 
     // Sort by overall KPI descending
-    overallKPIData.sort((a, b) => b.overallKPI - a.overallKPI);
+    teamMemberKPIs.sort((a, b) => b.overallKPI - a.overallKPI);
 
-    return NextResponse.json({ data: overallKPIData });
+    // Calculate team stats
+    const totalMembers = teamMemberKPIs.length;
+    const averageKPI = totalMembers > 0
+      ? Math.round(teamMemberKPIs.reduce((sum, m) => sum + m.overallKPI, 0) / totalMembers)
+      : 0;
+    const highPerformers = teamMemberKPIs.filter(m => m.overallKPI >= 60).length;
+    const totalTasks = teamMemberKPIs.reduce((sum, m) => sum + m.totalTasksAcrossWorkspaces, 0);
+    const totalCompleted = teamMemberKPIs.reduce((sum, m) => sum + m.totalCompletedAcrossWorkspaces, 0);
+
+    // Get workspace info for admin workspaces
+    const adminWorkspaces = await Promise.all(
+      adminWorkspaceIds.map(async (wsId) => {
+        const memberCount = await prisma.member.count({
+          where: {
+            workspaceId: wsId,
+            role: { not: MemberRole.CUSTOMER },
+          },
+        });
+        const ws = allAdminWorkspaceInfo.find(w => w.id === wsId);
+        return {
+          id: wsId,
+          name: ws?.name || "Unknown",
+          memberCount,
+        };
+      })
+    );
+
+    const response: TeamOverallKPIResponse = {
+      members: teamMemberKPIs,
+      adminWorkspaces,
+      teamStats: {
+        totalMembers,
+        averageKPI,
+        highPerformers,
+        totalTasks,
+        totalCompleted,
+      },
+    };
+
+    return NextResponse.json({ data: response });
   } catch (error) {
-    console.error("Overall KPI API error:", error);
-    return NextResponse.json({ error: "Failed to calculate overall KPI" }, { status: 500 });
+    console.error("Team Overall KPI API error:", error);
+    return NextResponse.json({ error: "Failed to calculate team KPI" }, { status: 500 });
   }
 }
