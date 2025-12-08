@@ -12,6 +12,10 @@ let lastExecutionLog: {
   error?: string;
 } | null = null;
 
+// Track routinary tasks execution
+let lastRoutinaryExecution: Date | null = null;
+let isRoutinaryRunning = false;
+
 export const updateOverdueTasks = async () => {
   try {
     console.log('[CRON] Starting overdue tasks update job at', new Date().toISOString());
@@ -107,18 +111,51 @@ export const updateOverdueTasks = async () => {
   }
 };
 
+// Execute routinary tasks with safeguards
+const executeRoutinaryTasks = async () => {
+  const timezone = 'Asia/Manila';
+  const currentTime = new Date().toLocaleString('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+
+  // Prevent concurrent executions
+  if (isRoutinaryRunning) {
+    console.log(`[CRON] ⏭️ Routinary tasks already running, skipping at ${currentTime}`);
+    return;
+  }
+
+  isRoutinaryRunning = true;
+  console.log(`[CRON] ⏰ Routinary tasks creation started at ${currentTime} (${timezone})`);
+
+  try {
+    const result = await createRoutinaryTasks();
+    lastRoutinaryExecution = new Date();
+    console.log(`[CRON] ✅ Routinary tasks creation completed. Created ${result.created} tasks, skipped ${result.skipped} at ${currentTime}`);
+  } catch (error) {
+    console.error(`[CRON] ❌ Routinary tasks creation failed at ${currentTime}:`, error);
+  } finally {
+    isRoutinaryRunning = false;
+  }
+};
+
 let cronJob: cron.ScheduledTask | null = null;
-let routinaryCronJob: cron.ScheduledTask | null = null;
+let routinaryInterval: NodeJS.Timeout | null = null;
 
 export const initializeCronJobs = () => {
-  if (cronJob && routinaryCronJob) {
+  if (cronJob && routinaryInterval) {
     console.log('[CRON] Cron jobs already initialized');
     return;
   }
 
   const timezone = 'Asia/Manila';
 
-  // Overdue tasks job - runs at midnight
+  // Overdue tasks job - runs at midnight using node-cron (less frequent, more tolerant)
   const overdueCronExpression = '0 0 * * *';
   cronJob = cron.schedule(
     overdueCronExpression,
@@ -164,41 +201,24 @@ export const initializeCronJobs = () => {
   );
 
   cronJob.start();
-
   console.log(`[CRON] Initialized overdue tasks cron job. Will run at midnight ${timezone} time daily.`);
 
-  // Routinary tasks job - runs every 5 minutes to ensure scheduled recurring tasks are created promptly
-  const routinaryCronExpression = '*/5 * * * *';
-  routinaryCronJob = cron.schedule(
-    routinaryCronExpression,
-    async () => {
-      const currentTime = new Date().toLocaleString('en-US', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
+  // Routinary tasks job - using setInterval for reliability (every 5 minutes = 300000ms)
+  // setInterval is more reliable than node-cron for frequent executions in Next.js standalone mode
+  const FIVE_MINUTES_MS = 5 * 60 * 1000;
 
-      console.log(`[CRON] ⏰ Routinary tasks creation started at ${currentTime} (${timezone})`);
+  // Run immediately on startup after a short delay (to let the server fully start)
+  setTimeout(async () => {
+    console.log('[CRON] 🚀 Running initial routinary tasks check on startup...');
+    await executeRoutinaryTasks();
+  }, 10000); // 10 second delay for startup
 
-      try {
-        const result = await createRoutinaryTasks();
-        console.log(`[CRON] ✅ Routinary tasks creation completed. Created ${result.created} tasks, skipped ${result.skipped} at ${currentTime}`);
-      } catch (error) {
-        console.error(`[CRON] ❌ Routinary tasks creation failed at ${currentTime}:`, error);
-      }
-    },
-    {
-      timezone: timezone
-    }
-  );
+  // Then run every 5 minutes
+  routinaryInterval = setInterval(async () => {
+    await executeRoutinaryTasks();
+  }, FIVE_MINUTES_MS);
 
-  routinaryCronJob.start();
-
-  console.log(`[CRON] Initialized routinary tasks cron job. Will run every 5 minutes ${timezone} time.`);
+  console.log(`[CRON] Initialized routinary tasks scheduler. Will run every 5 minutes using setInterval (${timezone} time).`);
 
   if (process.env.NODE_ENV === 'development') {
     console.log('[CRON] Development mode: You can manually trigger jobs using the /api/cron/* endpoints');
@@ -210,9 +230,9 @@ export const stopCronJobs = () => {
     cronJob.stop();
     cronJob = null;
   }
-  if (routinaryCronJob) {
-    routinaryCronJob.stop();
-    routinaryCronJob = null;
+  if (routinaryInterval) {
+    clearInterval(routinaryInterval);
+    routinaryInterval = null;
   }
   console.log('[CRON] All cron jobs stopped');
 };
@@ -227,12 +247,15 @@ export const getCronJobStatus = () => {
       lastExecution: lastExecutionLog
     },
     routinaryTasks: {
-      isRunning: routinaryCronJob !== null,
-      cronExpression: '*/5 * * * *',
+      isRunning: routinaryInterval !== null,
+      interval: '5 minutes (setInterval)',
       timezone: 'Asia/Manila',
-      description: 'Runs every 5 minutes',
-      nextExecution: routinaryCronJob ? getNextRoutinaryExecution() : null,
-      lastExecution: getRoutinaryTasksStatus().lastExecution
+      description: 'Runs every 5 minutes using setInterval for reliability',
+      lastExecution: lastRoutinaryExecution ? {
+        timestamp: lastRoutinaryExecution,
+        ...getRoutinaryTasksStatus().lastExecution
+      } : getRoutinaryTasksStatus().lastExecution,
+      isCurrentlyRunning: isRoutinaryRunning
     }
   };
 };
@@ -249,37 +272,6 @@ const getNextExecution = (hour: number = 0) => {
       nextExecution.setDate(nextExecution.getDate() + 1);
     }
     nextExecution.setHours(hour, 0, 0, 0);
-
-    return nextExecution.toLocaleString('en-US', {
-      timeZone: 'Asia/Manila',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  } catch {
-    return 'Unable to calculate';
-  }
-};
-
-// Get next execution for routinary tasks (runs every 5 minutes)
-const getNextRoutinaryExecution = () => {
-  try {
-    const now = new Date();
-    const manila = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
-    const nextExecution = new Date(manila);
-
-    // Next run is at the next 5-minute mark
-    const currentMinutes = nextExecution.getMinutes();
-    const nextFiveMinuteMark = Math.ceil((currentMinutes + 1) / 5) * 5;
-
-    if (nextFiveMinuteMark >= 60) {
-      nextExecution.setHours(nextExecution.getHours() + 1, 0, 0, 0);
-    } else {
-      nextExecution.setMinutes(nextFiveMinuteMark, 0, 0);
-    }
 
     return nextExecution.toLocaleString('en-US', {
       timeZone: 'Asia/Manila',
