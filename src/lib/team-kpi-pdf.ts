@@ -120,21 +120,6 @@ export function generateTeamKPIPDF({
 
   yPos += cardHeight + 15;
 
-  // ===== WORKSPACES SECTION =====
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("Workspaces Included", margin, yPos);
-  yPos += 6;
-
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(...secondaryColor);
-  const workspaceNames = adminWorkspaces.map(ws => `${ws.name} (${ws.memberCount})`).join("  |  ");
-  const workspaceLines = doc.splitTextToSize(workspaceNames, pageWidth - margin * 2);
-  doc.text(workspaceLines, margin, yPos);
-  yPos += workspaceLines.length * 5 + 10;
-
   // ===== TEAM PERFORMANCE TABLE =====
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(14);

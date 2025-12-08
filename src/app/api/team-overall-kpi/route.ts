@@ -285,11 +285,11 @@ export async function GET(request: NextRequest) {
       targetWorkspaceIds = [filterWorkspaceId];
     }
 
-    // Get all unique members from target workspaces (excluding customers)
+    // Get all unique members from target workspaces (only regular members - exclude customers and admins)
     const allMembers = await prisma.member.findMany({
       where: {
         workspaceId: { in: targetWorkspaceIds },
-        role: { not: MemberRole.CUSTOMER },
+        role: MemberRole.MEMBER, // Only get regular members (exclude admins and customers)
       },
       include: {
         user: {
