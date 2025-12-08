@@ -17,6 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { DatePicker } from "@/components/date-picker";
 import {
   useGetTeamOverallKPI,
   TeamMemberKPI,
@@ -34,8 +35,12 @@ import {
   TargetIcon,
   CheckCircle2Icon,
   TrendingUpIcon,
+  CalendarIcon,
+  FileDown,
 } from "@/lib/lucide-icons";
 import { cn } from "@/lib/utils";
+import { generateTeamKPIPDF } from "@/lib/team-kpi-pdf";
+import { format } from "date-fns";
 
 function getKPIRating(kpiScore: number): {
   label: string;
@@ -69,12 +74,21 @@ export default function TeamKPIPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedMember, setSelectedMember] = useState<TeamMemberKPI | null>(null);
 
+  // Date range state
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+
+  // PDF loading state
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
   const ITEMS_PER_PAGE = 10;
 
   const { data: teamKPIData, isLoading, error } = useGetTeamOverallKPI({
     workspaceId: selectedWorkspaceId,
     page: currentPage,
     limit: ITEMS_PER_PAGE,
+    startDate: startDate || null,
+    endDate: endDate || null,
   });
 
   // Check if user is admin (has admin workspaces)
@@ -83,7 +97,72 @@ export default function TeamKPIPage() {
   // Handle workspace filter change
   const handleWorkspaceFilter = (workspaceId: string | null) => {
     setSelectedWorkspaceId(workspaceId);
-    setCurrentPage(1); // Reset to first page when filter changes
+    setCurrentPage(1);
+  };
+
+  // Handle date range change
+  const handleDateChange = (type: "start" | "end", date: Date | undefined) => {
+    if (type === "start") {
+      setStartDate(date);
+    } else {
+      setEndDate(date);
+    }
+    setCurrentPage(1);
+  };
+
+  // Clear date filter
+  const handleClearDates = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setCurrentPage(1);
+  };
+
+  // Handle PDF download
+  const handleDownloadReport = async () => {
+    if (!teamKPIData || !currentUser) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      // Fetch all members for PDF (not paginated)
+      const params = new URLSearchParams();
+      if (selectedWorkspaceId) {
+        params.set("workspaceId", selectedWorkspaceId);
+      }
+      params.set("page", "1");
+      params.set("limit", "1000"); // Get all members
+      if (startDate) {
+        params.set("startDate", startDate.toISOString());
+      }
+      if (endDate) {
+        params.set("endDate", endDate.toISOString());
+      }
+
+      const response = await fetch(`/api/team-overall-kpi?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch data for PDF");
+      }
+
+      const { data } = await response.json();
+
+      // Get selected workspace name if filtered
+      const selectedWorkspaceName = selectedWorkspaceId
+        ? teamKPIData.adminWorkspaces.find(ws => ws.id === selectedWorkspaceId)?.name
+        : undefined;
+
+      generateTeamKPIPDF({
+        members: data.members,
+        teamStats: data.teamStats,
+        adminWorkspaces: data.adminWorkspaces,
+        startDate: startDate || null,
+        endDate: endDate || null,
+        selectedWorkspaceName,
+        generatedBy: currentUser.name || currentUser.email || "Admin",
+      });
+    } catch (error) {
+      console.error("Failed to generate PDF:", error);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   if (isLoadingUser || isLoading) {
@@ -194,6 +273,14 @@ export default function TeamKPIPage() {
             Back
           </Button>
         </div>
+        <Button
+          onClick={handleDownloadReport}
+          disabled={isGeneratingPDF || members.length === 0}
+          className="gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+        >
+          <FileDown className="h-4 w-4" />
+          {isGeneratingPDF ? "Generating..." : "Download Report"}
+        </Button>
       </div>
 
       {/* Page Title */}
@@ -208,6 +295,68 @@ export default function TeamKPIPage() {
           </p>
         </div>
       </div>
+
+      {/* Date Range Filter */}
+      <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 to-purple-50">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <CalendarIcon className="h-5 w-5 text-blue-600" />
+            Date Range
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4">
+            {/* Date Pickers */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">From:</span>
+                <DatePicker
+                  value={startDate}
+                  onChange={(date) => handleDateChange("start", date)}
+                  placeholder="Start date"
+                  className="w-40"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">To:</span>
+                <DatePicker
+                  value={endDate}
+                  onChange={(date) => handleDateChange("end", date)}
+                  placeholder="End date"
+                  className="w-40"
+                />
+              </div>
+              {(startDate || endDate) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearDates}
+                  className="text-gray-600"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            {/* Current Filter Display */}
+            {(startDate || endDate) && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 bg-white/60 rounded-lg px-3 py-2">
+                <CalendarIcon className="h-4 w-4" />
+                <span>
+                  Showing data from{" "}
+                  <span className="font-medium">
+                    {startDate ? format(startDate, "MMM dd, yyyy") : "beginning"}
+                  </span>
+                  {" "}to{" "}
+                  <span className="font-medium">
+                    {endDate ? format(endDate, "MMM dd, yyyy") : "now"}
+                  </span>
+                </span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Team Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -326,7 +475,7 @@ export default function TeamKPIPage() {
         <CardContent>
           {members.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No members found in this workspace.
+              No members found for the selected filters.
             </div>
           ) : (
             <>
@@ -397,11 +546,9 @@ export default function TeamKPIPage() {
                     <div className="flex items-center gap-1">
                       {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
                         .filter(p => {
-                          // Show first, last, current, and pages around current
                           return p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1;
                         })
                         .map((pageNum, idx, arr) => {
-                          // Add ellipsis if there's a gap
                           const showEllipsisBefore = idx > 0 && pageNum - arr[idx - 1] > 1;
                           return (
                             <div key={pageNum} className="flex items-center gap-1">

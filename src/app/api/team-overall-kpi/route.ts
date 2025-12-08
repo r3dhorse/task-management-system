@@ -47,6 +47,10 @@ interface TeamOverallKPIResponse {
     totalPages: number;
     hasMore: boolean;
   };
+  dateRange: {
+    startDate: string | null;
+    endDate: string | null;
+  };
 }
 
 /**
@@ -156,6 +160,22 @@ export async function GET(request: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "10")));
 
+    // Parse date range params
+    const startDateParam = searchParams.get("startDate");
+    const endDateParam = searchParams.get("endDate");
+
+    let startDate: Date | null = null;
+    let endDate: Date | null = null;
+
+    if (startDateParam) {
+      startDate = new Date(startDateParam);
+      startDate.setHours(0, 0, 0, 0); // Start of day
+    }
+    if (endDateParam) {
+      endDate = new Date(endDateParam);
+      endDate.setHours(23, 59, 59, 999); // End of day
+    }
+
     const currentUser = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { id: true, isSuperAdmin: true },
@@ -239,6 +259,10 @@ export async function GET(request: NextRequest) {
             totalPages: 0,
             hasMore: false,
           },
+          dateRange: {
+            startDate: startDate?.toISOString() || null,
+            endDate: endDate?.toISOString() || null,
+          },
         },
       });
     }
@@ -305,11 +329,18 @@ export async function GET(request: NextRequest) {
       for (const membership of userMemberships) {
         const workspace = membership.workspace;
 
+        // Build task query with date range filter
         // Get tasks for this workspace
         const tasks = await prisma.task.findMany({
           where: {
             workspaceId: workspace.id,
             status: { not: TaskStatus.ARCHIVED },
+            ...(startDate || endDate ? {
+              createdAt: {
+                ...(startDate && { gte: startDate }),
+                ...(endDate && { lte: endDate }),
+              },
+            } : {}),
           },
           select: {
             id: true,
@@ -429,6 +460,10 @@ export async function GET(request: NextRequest) {
         totalMembers: totalMembersCount,
         totalPages,
         hasMore: page < totalPages,
+      },
+      dateRange: {
+        startDate: startDate?.toISOString() || null,
+        endDate: endDate?.toISOString() || null,
       },
     };
 

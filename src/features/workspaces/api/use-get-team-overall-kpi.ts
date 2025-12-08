@@ -43,17 +43,25 @@ export interface Pagination {
   hasMore: boolean;
 }
 
+export interface DateRange {
+  startDate: string | null;
+  endDate: string | null;
+}
+
 export interface TeamOverallKPIData {
   members: TeamMemberKPI[];
   adminWorkspaces: AdminWorkspace[];
   teamStats: TeamStats;
   pagination: Pagination;
+  dateRange: DateRange;
 }
 
 interface UseGetTeamOverallKPIProps {
   workspaceId?: string | null; // Optional filter by workspace
   page?: number;
   limit?: number;
+  startDate?: Date | null;
+  endDate?: Date | null;
   enabled?: boolean;
 }
 
@@ -61,10 +69,12 @@ export const useGetTeamOverallKPI = ({
   workspaceId,
   page = 1,
   limit = 10,
+  startDate,
+  endDate,
   enabled = true,
 }: UseGetTeamOverallKPIProps = {}) => {
   return useQuery({
-    queryKey: ["team-overall-kpi", workspaceId, page, limit],
+    queryKey: ["team-overall-kpi", workspaceId, page, limit, startDate?.toISOString(), endDate?.toISOString()],
     queryFn: async (): Promise<TeamOverallKPIData> => {
       const params = new URLSearchParams();
       if (workspaceId) {
@@ -72,6 +82,13 @@ export const useGetTeamOverallKPI = ({
       }
       params.set("page", page.toString());
       params.set("limit", limit.toString());
+
+      if (startDate) {
+        params.set("startDate", startDate.toISOString());
+      }
+      if (endDate) {
+        params.set("endDate", endDate.toISOString());
+      }
 
       const response = await fetch(`/api/team-overall-kpi?${params.toString()}`);
 

@@ -74,7 +74,6 @@ const calculateNextRunDate = (currentDate: Date, frequency: RoutinaryFrequency):
 // For bi-daily tasks, adds suffix like "1st" or "2nd"
 const generateTaskTitle = (serviceName: string, taskDate: Date, suffix?: string): string => {
   const monthYear = format(taskDate, 'MMMM yyyy'); // e.g., "July 2026"
-  const dayOfMonth = format(taskDate, 'd'); // e.g., "15"
 
   if (suffix) {
     // For bi-daily: "Service Name - December 6 (1st)"
@@ -215,7 +214,6 @@ export const createRoutinaryTasks = async () => {
         }
 
         let allTasksExist = true;
-        let someTasksExist = false;
 
         // Check which tasks already exist
         for (const taskInfo of tasksToCreate) {
@@ -226,7 +224,6 @@ export const createRoutinaryTasks = async () => {
             }
           });
           if (existingTask) {
-            someTasksExist = true;
             console.log(`[CRON] Task "${taskInfo.name}" already exists for service ${service.name}`);
           } else {
             allTasksExist = false;

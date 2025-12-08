@@ -2094,8 +2094,8 @@ const app = new Hono()
         },
       });
 
-      if (!targetMember || targetMember.role === MemberRole.CUSTOMER) {
-        return c.json({ error: "Insufficient permissions to create tasks in the target workspace" }, 403);
+      if (!targetMember) {
+        return c.json({ error: "You must be a member of the target workspace to create sub-tasks" }, 403);
       }
 
       // Generate task number
