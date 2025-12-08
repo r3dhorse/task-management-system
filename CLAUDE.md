@@ -117,7 +117,7 @@ nano .env.production
 
 **Cron Jobs (Asia/Manila timezone):**
 - Midnight: Move overdue tasks to Backlog
-- Every hour: Create routinary (recurring) tasks
+- Every 5 minutes: Create routinary (recurring) tasks
 - 2 AM: Automated database backup
 
 **Documentation:**

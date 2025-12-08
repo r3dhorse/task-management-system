@@ -167,8 +167,8 @@ export const initializeCronJobs = () => {
 
   console.log(`[CRON] Initialized overdue tasks cron job. Will run at midnight ${timezone} time daily.`);
 
-  // Routinary tasks job - runs every hour to ensure scheduled recurring tasks are created promptly
-  const routinaryCronExpression = '0 * * * *';
+  // Routinary tasks job - runs every 5 minutes to ensure scheduled recurring tasks are created promptly
+  const routinaryCronExpression = '*/5 * * * *';
   routinaryCronJob = cron.schedule(
     routinaryCronExpression,
     async () => {
@@ -198,7 +198,7 @@ export const initializeCronJobs = () => {
 
   routinaryCronJob.start();
 
-  console.log(`[CRON] Initialized routinary tasks cron job. Will run every hour ${timezone} time.`);
+  console.log(`[CRON] Initialized routinary tasks cron job. Will run every 5 minutes ${timezone} time.`);
 
   if (process.env.NODE_ENV === 'development') {
     console.log('[CRON] Development mode: You can manually trigger jobs using the /api/cron/* endpoints');
@@ -228,9 +228,9 @@ export const getCronJobStatus = () => {
     },
     routinaryTasks: {
       isRunning: routinaryCronJob !== null,
-      cronExpression: '0 * * * *',
+      cronExpression: '*/5 * * * *',
       timezone: 'Asia/Manila',
-      description: 'Runs every hour at minute 0',
+      description: 'Runs every 5 minutes',
       nextExecution: routinaryCronJob ? getNextRoutinaryExecution() : null,
       lastExecution: getRoutinaryTasksStatus().lastExecution
     }
@@ -264,15 +264,22 @@ const getNextExecution = (hour: number = 0) => {
   }
 };
 
-// Get next execution for routinary tasks (runs every hour at minute 0)
+// Get next execution for routinary tasks (runs every 5 minutes)
 const getNextRoutinaryExecution = () => {
   try {
     const now = new Date();
     const manila = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
     const nextExecution = new Date(manila);
 
-    // Next run is at the start of the next hour
-    nextExecution.setHours(nextExecution.getHours() + 1, 0, 0, 0);
+    // Next run is at the next 5-minute mark
+    const currentMinutes = nextExecution.getMinutes();
+    const nextFiveMinuteMark = Math.ceil((currentMinutes + 1) / 5) * 5;
+
+    if (nextFiveMinuteMark >= 60) {
+      nextExecution.setHours(nextExecution.getHours() + 1, 0, 0, 0);
+    } else {
+      nextExecution.setMinutes(nextFiveMinuteMark, 0, 0);
+    }
 
     return nextExecution.toLocaleString('en-US', {
       timeZone: 'Asia/Manila',
