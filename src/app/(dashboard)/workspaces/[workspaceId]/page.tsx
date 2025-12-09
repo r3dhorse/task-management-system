@@ -28,19 +28,31 @@ const WorkspaceIdPage = () => {
   const workspaceId = useWorkspaceId();
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Get initial tab from URL or default to 'overview'
-  const tabFromUrl = searchParams?.get('tab') ?? null;
+  // Valid tabs list
   const validTabs = useMemo(() => ['overview', 'deadlines', 'analytics'], []);
-  const initialTab = tabFromUrl && validTabs.includes(tabFromUrl) ? tabFromUrl : 'overview';
-  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Always start with 'overview' to avoid hydration mismatch
+  const [activeTab, setActiveTab] = useState('overview');
+
+  // Set mounted state and sync tab from URL after hydration
+  useEffect(() => {
+    setIsMounted(true);
+    const tabFromUrl = searchParams?.get('tab');
+    if (tabFromUrl && validTabs.includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams, validTabs]);
 
   // Update URL when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    const newUrl = new URL(window.location.href);
-    newUrl.searchParams.set('tab', value);
-    router.push(newUrl.pathname + newUrl.search);
+    if (isMounted) {
+      const params = new URLSearchParams(searchParams?.toString() || '');
+      params.set('tab', value);
+      router.push(`?${params.toString()}`);
+    }
   };
 
   // Initialize dates after component mounts to avoid SSR issues
@@ -52,14 +64,6 @@ const WorkspaceIdPage = () => {
       setDateTo(new Date());
     }
   }, [dateFrom, dateTo]);
-
-  // Update activeTab state when URL changes
-  useEffect(() => {
-    const tab = searchParams?.get('tab');
-    if (tab && validTabs.includes(tab) && tab !== activeTab) {
-      setActiveTab(tab);
-    }
-  }, [searchParams, activeTab, validTabs]);
 
   const { data: currentUser } = useCurrent();
   const { workspace, isLoading: isLoadingWorkspace, isAuthorized } = useWorkspaceAuthorization({ workspaceId });

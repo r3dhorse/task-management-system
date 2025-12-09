@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Eye, EyeOff } from "@/lib/lucide-icons";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { loginSchema } from "../schemas";
 import { useLogin } from "../api/use-login";
 import { ForgotPasswordModal } from "./forgot-password-modal";
@@ -132,7 +133,7 @@ export const SignInCard = () => {
             >
               {isPending ? (
                 <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <LoadingSpinner size="xs" variant="inline" color="white" />
                   Signing in...
                 </div>
               ) : "Sign in"}

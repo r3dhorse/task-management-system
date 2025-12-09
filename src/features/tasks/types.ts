@@ -43,6 +43,7 @@ export type PopulatedTask = Task & {
   };
   assignees?: Array<{
     id: string;
+    userId: string;
     name: string;
     email: string;
   }>;

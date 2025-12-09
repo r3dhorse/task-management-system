@@ -15,9 +15,20 @@ if [ -f .env ]; then
     export $(cat .env | grep -v '^#' | xargs)
 fi
 
-# Start development environment with full Docker setup
-echo "🐳 Starting full Docker development containers..."
-docker-compose -f docker-compose.dev.yml up --build
+# Check for --build or --fresh flag
+BUILD_FLAG=""
+if [ "$1" = "--build" ] || [ "$1" = "--fresh" ]; then
+    echo "🔨 Forcing rebuild of containers..."
+    BUILD_FLAG="--build"
+    if [ "$1" = "--fresh" ]; then
+        echo "🧹 Removing old volumes for fresh start..."
+        docker-compose -f docker-compose.dev.yml down -v
+    fi
+fi
+
+# Start development environment
+echo "🐳 Starting Docker development containers..."
+docker-compose -f docker-compose.dev.yml up $BUILD_FLAG
 
 echo "✅ Full Docker Development environment started!"
 echo "📱 Application: http://localhost:3000 (running in Docker)"

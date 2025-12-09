@@ -45,57 +45,109 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
   const mentionDropdownRef = useRef<HTMLDivElement>(null);
-  const workspaceId = useWorkspaceId();
-  
+  const urlWorkspaceId = useWorkspaceId();
+
   const { data: currentUser } = useCurrent();
-  const { data: messagesData, isLoading: isLoadingMessages, error: messagesError } = useGetTaskMessages({ 
-    taskId, 
-    workspaceId 
+  const { data: task } = useGetTask({ taskId });
+
+  // Use the task's workspaceId to ensure messages are fetched from the correct workspace
+  const workspaceId = task?.workspaceId || urlWorkspaceId;
+
+  const { data: messagesData, isLoading: isLoadingMessages, error: messagesError } = useGetTaskMessages({
+    taskId,
+    workspaceId
   });
   const { mutate: createMessage, isPending: isCreatingMessage } = useCreateTaskMessage();
-  const { data: task } = useGetTask({ taskId });
   const { mutate: markNotificationsRead } = useMarkNotificationsRead();
 
-  // Filter task followers for mention dropdown (confidentiality)
+  // Filter task members (assignees, collaborators, followers) for mention dropdown
   const filteredMembers = useMemo(() => {
-    if (!task?.followers || !showMentionDropdown) return [];
-    
-    const members = task.followers
-      .filter(follower => 
-        follower.user?.name && 
-        follower.user.id !== currentUser?.id && // Don't include current user
-        follower.user.name.toLowerCase().includes(mentionQuery.toLowerCase())
-      )
-      .map(follower => ({
-        id: follower.id,
-        name: follower.user.name!, // We've already filtered for non-null names
-        email: follower.user.email,
-        userId: follower.user.id,
-        role: follower.role || 'MEMBER', // Default role
-        workspaceId: task.workspaceId,
-        joinedAt: new Date().toISOString(), // Default joinedAt for followers
-      }))
-      .slice(0, 7); // Limit to 7 results to make room for @all
-    
-    // Add @all option if query matches and there are followers
-    const shouldShowAll = 'all'.includes(mentionQuery.toLowerCase()) && 
-                         task.followers.length > 1; // Only show @all if there are multiple followers
-    
+    if (!showMentionDropdown) return [];
+
+    // Collect all mentionable members with their roles
+    const memberMap = new Map<string, MemberForMention & { taskRole: string }>();
+
+    // Add assignees (highest priority - shown first)
+    task?.assignees?.forEach(assignee => {
+      if (assignee.name && assignee.userId !== currentUser?.id) {
+        memberMap.set(assignee.userId, {
+          id: assignee.id,
+          name: assignee.name,
+          email: assignee.email,
+          userId: assignee.userId,
+          role: 'ASSIGNEE',
+          taskRole: 'Assignee',
+          workspaceId: task.workspaceId,
+          joinedAt: new Date().toISOString(),
+        });
+      }
+    });
+
+    // Add collaborators
+    task?.collaborators?.forEach(collaborator => {
+      if (collaborator.user?.name && collaborator.user.id !== currentUser?.id) {
+        // Don't override if already an assignee
+        if (!memberMap.has(collaborator.user.id)) {
+          memberMap.set(collaborator.user.id, {
+            id: collaborator.id,
+            name: collaborator.user.name,
+            email: collaborator.user.email,
+            userId: collaborator.user.id,
+            role: 'COLLABORATOR',
+            taskRole: 'Collaborator',
+            workspaceId: task.workspaceId,
+            joinedAt: new Date().toISOString(),
+          });
+        }
+      }
+    });
+
+    // Add followers
+    task?.followers?.forEach(follower => {
+      if (follower.user?.name && follower.user.id !== currentUser?.id) {
+        // Don't override if already an assignee or collaborator
+        if (!memberMap.has(follower.user.id)) {
+          memberMap.set(follower.user.id, {
+            id: follower.id,
+            name: follower.user.name,
+            email: follower.user.email,
+            userId: follower.user.id,
+            role: 'FOLLOWER',
+            taskRole: 'Follower',
+            workspaceId: task.workspaceId,
+            joinedAt: new Date().toISOString(),
+          });
+        }
+      }
+    });
+
+    // Filter by search query and convert to array
+    const members = Array.from(memberMap.values())
+      .filter(member => member.name.toLowerCase().includes(mentionQuery.toLowerCase()))
+      .slice(0, 7);
+
+    // Count total mentionable members for @all option
+    const totalMembers = memberMap.size;
+
+    // Add @all option if query matches and there are multiple members
+    const shouldShowAll = 'all'.includes(mentionQuery.toLowerCase()) && totalMembers > 1;
+
     if (shouldShowAll) {
-      const allOption: MemberForMention = {
+      const allOption: MemberForMention & { taskRole?: string } = {
         id: 'all',
-        name: 'All followers',
+        name: 'All members',
         email: '',
         userId: 'all',
         role: 'ALL',
-        workspaceId: task.workspaceId,
+        taskRole: `${totalMembers} people`,
+        workspaceId: task?.workspaceId || '',
         joinedAt: new Date().toISOString(),
       };
       return [allOption, ...members];
     }
-    
+
     return members;
-  }, [task?.followers, task?.workspaceId, currentUser?.id, showMentionDropdown, mentionQuery]);
+  }, [task?.assignees, task?.collaborators, task?.followers, task?.workspaceId, currentUser?.id, showMentionDropdown, mentionQuery]);
 
   // Transform API messages to include isOwn property
   const messages = useMemo(() => {
@@ -281,18 +333,60 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       messageData.attachmentType = attachmentData.type;
     }
 
-    // Detect mentions in the message content (use task followers only)
+    // Detect mentions in the message content (include assignees, collaborators, and followers)
     const messageContent = messageData.content;
-    const taskFollowers = task?.followers?.map(follower => ({
-      id: follower.id,
-      name: follower.user?.name || '',
-      email: follower.user?.email || '',
-      userId: follower.user?.id || '',
-      role: follower.role || 'MEMBER',
-      workspaceId: task.workspaceId,
-      joinedAt: new Date().toISOString(), // Default joinedAt for followers
-    })) || [];
-    const mentions = extractMentions(messageContent, taskFollowers, currentUser.id);
+    const taskMembers: MemberForMention[] = [];
+    const seenUserIds = new Set<string>();
+
+    // Add assignees
+    task?.assignees?.forEach(assignee => {
+      if (assignee.userId && !seenUserIds.has(assignee.userId)) {
+        seenUserIds.add(assignee.userId);
+        taskMembers.push({
+          id: assignee.id,
+          name: assignee.name || '',
+          email: assignee.email || '',
+          userId: assignee.userId,
+          role: 'ASSIGNEE',
+          workspaceId: task.workspaceId,
+          joinedAt: new Date().toISOString(),
+        });
+      }
+    });
+
+    // Add collaborators
+    task?.collaborators?.forEach(collaborator => {
+      if (collaborator.user?.id && !seenUserIds.has(collaborator.user.id)) {
+        seenUserIds.add(collaborator.user.id);
+        taskMembers.push({
+          id: collaborator.id,
+          name: collaborator.user?.name || '',
+          email: collaborator.user?.email || '',
+          userId: collaborator.user?.id || '',
+          role: 'COLLABORATOR',
+          workspaceId: task.workspaceId,
+          joinedAt: new Date().toISOString(),
+        });
+      }
+    });
+
+    // Add followers
+    task?.followers?.forEach(follower => {
+      if (follower.user?.id && !seenUserIds.has(follower.user.id)) {
+        seenUserIds.add(follower.user.id);
+        taskMembers.push({
+          id: follower.id,
+          name: follower.user?.name || '',
+          email: follower.user?.email || '',
+          userId: follower.user?.id || '',
+          role: 'FOLLOWER',
+          workspaceId: task.workspaceId,
+          joinedAt: new Date().toISOString(),
+        });
+      }
+    });
+
+    const mentions = extractMentions(messageContent, taskMembers, currentUser.id);
     
     createMessage(
       { json: messageData },
@@ -448,17 +542,43 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Memoize today's date to avoid hydration mismatches
+  // This ensures consistent date comparison between server and client renders
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setCurrentDate(new Date());
+  }, []);
+
   const formatDate = (date: Date) => {
-    const today = new Date();
+    // Before hydration, use a safe format that won't cause mismatch
+    if (!currentDate) {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+
+    const today = currentDate;
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
+    // Compare using UTC dates to avoid timezone issues
+    const dateStr = date.toDateString();
+    const todayStr = today.toDateString();
+    const yesterdayStr = yesterday.toDateString();
+
+    if (dateStr === todayStr) {
       return "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
+    } else if (dateStr === yesterdayStr) {
       return "Yesterday";
     } else {
-      return date.toLocaleDateString();
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
     }
   };
 
@@ -622,18 +742,60 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                         {message.content && (
                           <p className="whitespace-pre-wrap break-words overflow-wrap-anywhere">
                             {(() => {
-                              // Use task followers for message mention highlighting (confidentiality)
-                              const taskFollowers = task?.followers?.map(follower => ({
-                                id: follower.id,
-                                name: follower.user?.name || '',
-                                email: follower.user?.email || '',
-                                userId: follower.user?.id || '',
-                                role: follower.role || 'MEMBER',
-                                workspaceId: task.workspaceId,
-                                joinedAt: new Date().toISOString(), // Default joinedAt for followers
-                              })) || [];
-                              const mentions = extractMentions(message.content, taskFollowers, currentUser?.id);
-                              return mentions.length > 0 
+                              // Use all task members for mention highlighting (assignees, collaborators, followers)
+                              const allTaskMembers: MemberForMention[] = [];
+                              const seenIds = new Set<string>();
+
+                              // Add assignees
+                              task?.assignees?.forEach(assignee => {
+                                if (assignee.userId && !seenIds.has(assignee.userId)) {
+                                  seenIds.add(assignee.userId);
+                                  allTaskMembers.push({
+                                    id: assignee.id,
+                                    name: assignee.name || '',
+                                    email: assignee.email || '',
+                                    userId: assignee.userId,
+                                    role: 'ASSIGNEE',
+                                    workspaceId: task.workspaceId,
+                                    joinedAt: new Date().toISOString(),
+                                  });
+                                }
+                              });
+
+                              // Add collaborators
+                              task?.collaborators?.forEach(collaborator => {
+                                if (collaborator.user?.id && !seenIds.has(collaborator.user.id)) {
+                                  seenIds.add(collaborator.user.id);
+                                  allTaskMembers.push({
+                                    id: collaborator.id,
+                                    name: collaborator.user?.name || '',
+                                    email: collaborator.user?.email || '',
+                                    userId: collaborator.user?.id || '',
+                                    role: 'COLLABORATOR',
+                                    workspaceId: task.workspaceId,
+                                    joinedAt: new Date().toISOString(),
+                                  });
+                                }
+                              });
+
+                              // Add followers
+                              task?.followers?.forEach(follower => {
+                                if (follower.user?.id && !seenIds.has(follower.user.id)) {
+                                  seenIds.add(follower.user.id);
+                                  allTaskMembers.push({
+                                    id: follower.id,
+                                    name: follower.user?.name || '',
+                                    email: follower.user?.email || '',
+                                    userId: follower.user?.id || '',
+                                    role: 'FOLLOWER',
+                                    workspaceId: task.workspaceId,
+                                    joinedAt: new Date().toISOString(),
+                                  });
+                                }
+                              });
+
+                              const mentions = extractMentions(message.content, allTaskMembers, currentUser?.id);
+                              return mentions.length > 0
                                 ? renderMessageWithMentions(message.content, mentions)
                                 : message.content;
                             })()}
@@ -814,40 +976,50 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                     <AtSign className="w-3 h-3 inline mr-1" />
                     Mention someone
                   </div>
-                  {filteredMembers.map((member, index) => (
-                    <button
-                      key={member.id}
-                      onClick={() => selectMention(member)}
-                      className={cn(
-                        "w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2 transition-colors",
-                        index === selectedMentionIndex && "bg-blue-50 border-l-2 border-blue-500"
-                      )}
-                    >
-                      <Avatar className="w-6 h-6">
-                        <AvatarFallback className="text-xs bg-blue-100 text-blue-600">
-                          {getInitials(member.name || '')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">
-                          {member.name}
+                  {filteredMembers.map((member, index) => {
+                    const memberWithRole = member as MemberForMention & { taskRole?: string };
+                    return (
+                      <button
+                        key={member.id}
+                        onClick={() => selectMention(member)}
+                        className={cn(
+                          "w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center gap-2 transition-colors",
+                          index === selectedMentionIndex && "bg-blue-50 border-l-2 border-blue-500"
+                        )}
+                      >
+                        <Avatar className="w-6 h-6">
+                          <AvatarFallback className={cn(
+                            "text-xs",
+                            member.role === 'ASSIGNEE' && "bg-green-100 text-green-600",
+                            member.role === 'COLLABORATOR' && "bg-purple-100 text-purple-600",
+                            member.role === 'FOLLOWER' && "bg-blue-100 text-blue-600",
+                            member.role === 'ALL' && "bg-orange-100 text-orange-600"
+                          )}>
+                            {member.userId === 'all' ? '👥' : getInitials(member.name || '')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
+                            {member.name}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate">
+                            @{member.userId === 'all' ? 'all' : (member.name || '').toLowerCase().replace(/\s+/g, '')}
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500 truncate">
-                          @{member.userId === 'all' ? 'all' : (member.name || '').toLowerCase().replace(/\s+/g, '')}
-                        </div>
-                      </div>
-                      {member.role === 'ADMIN' && (
-                        <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          Admin
-                        </div>
-                      )}
-                      {member.userId === 'all' && (
-                        <div className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">
-                          All
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                        {memberWithRole.taskRole && (
+                          <div className={cn(
+                            "text-xs px-2 py-1 rounded",
+                            member.role === 'ASSIGNEE' && "bg-green-100 text-green-800",
+                            member.role === 'COLLABORATOR' && "bg-purple-100 text-purple-800",
+                            member.role === 'FOLLOWER' && "bg-blue-100 text-blue-800",
+                            member.role === 'ALL' && "bg-orange-100 text-orange-800"
+                          )}>
+                            {memberWithRole.taskRole}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
               

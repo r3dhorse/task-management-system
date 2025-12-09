@@ -927,17 +927,19 @@ const app = new Hono()
           }
         }
 
-        // Ensure creator is always included in collaborators (if they are a team member and not an assignee)
-        if (member.role !== MemberRole.CUSTOMER && !collaboratorIdsList.includes(member.id) && !parsedAssigneeIds.includes(member.id)) {
-          collaboratorIdsList.push(member.id);
+        // Add creator as a follower automatically
+        if (!followerIds.includes(member.id)) {
+          followerIds.push(member.id);
         }
 
-        // IMPORTANT: Remove assignees from collaborators to avoid redundancy
-        // Assignees already have full access to monitor the task
+        // ENFORCE SINGLE ROLE PER USER: A user can only be assignee, collaborator, OR follower
+        // Priority: Assignee > Collaborator > Follower
+        // 1. Remove assignees from collaborators and followers
         collaboratorIdsList = collaboratorIdsList.filter(id => !parsedAssigneeIds.includes(id));
-
-        // Also remove assignees from followers for consistency
         const filteredFollowerIds = followerIds.filter(id => !parsedAssigneeIds.includes(id));
+
+        // 2. Remove collaborators from followers (collaborators have higher priority than followers)
+        const finalFollowerIds = filteredFollowerIds.filter(id => !collaboratorIdsList.includes(id));
 
         // Validate required fields and convert string 'undefined' to proper values
         if (!serviceId || serviceId === 'undefined' || serviceId === '') {
@@ -962,7 +964,7 @@ const app = new Hono()
               connect: parsedAssigneeIds.map(id => ({ id }))
             },
             followers: {
-              connect: filteredFollowerIds.map(id => ({ id }))
+              connect: finalFollowerIds.map(id => ({ id }))
             },
             collaborators: {
               connect: collaboratorIdsList.map(id => ({ id }))
@@ -1409,93 +1411,111 @@ const app = new Hono()
           updateData.status = status;
         }
 
-        // Handle followers update (for customers - skip if workspace is being transferred as it's already handled above)
-        if (followedIds !== undefined && !isWorkspaceTransfer) {
-          try {
-            const parsedIds = JSON.parse(followedIds);
-            if (Array.isArray(parsedIds)) {
-              // Filter out null, undefined, empty strings, and non-string values
-              let validIds = parsedIds.filter((id: unknown) =>
-                id && typeof id === 'string' && id.trim().length > 0
-              ) as string[];
+        // ENFORCE SINGLE ROLE PER USER: A user can only be assignee, collaborator, OR follower
+        // Priority: Assignee > Collaborator > Follower
+        // Get the effective assignees (either new ones being set or existing ones)
+        const effectiveAssigneeIds = parsedAssigneeIds !== undefined
+          ? parsedAssigneeIds
+          : existingTask.assignees.map(a => a.id);
 
-              // IMPORTANT: Remove assignees from followers to avoid redundancy
-              // Get the effective assignees (either new ones being set or existing ones)
-              const effectiveAssigneeIds = parsedAssigneeIds !== undefined
-                ? parsedAssigneeIds
-                : existingTask.assignees.map(a => a.id);
-              validIds = validIds.filter(id => !effectiveAssigneeIds.includes(id));
-
-              // Use the target workspace ID if provided, otherwise use existing
-              const targetWorkspaceId = updateData.workspaceId || existingTask.workspaceId;
-
-              // Verify that these member IDs exist in the workspace
-              const existingMembers = await prisma.member.findMany({
-                where: {
-                  id: { in: validIds },
-                  workspaceId: targetWorkspaceId
-                }
-              });
-
-              const existingMemberIds = existingMembers.map(m => m.id);
-              updateData.followers = {
-                set: existingMemberIds.map((id: string) => ({ id }))
-              };
-            }
-          } catch (error) {
-            console.error("Error processing followers:", error);
-            // Invalid JSON, ignore followers update
-          }
-        }
-
-        // Handle collaborators update (for team members - skip if workspace is being transferred)
-        if (collaboratorIds !== undefined && !isWorkspaceTransfer) {
+        // Parse collaborator IDs
+        let effectiveCollaboratorIds: string[] = existingTask.collaborators.map(c => c.id);
+        if (collaboratorIds !== undefined) {
           try {
             const parsedIds = JSON.parse(collaboratorIds);
             if (Array.isArray(parsedIds)) {
-              // Filter out null, undefined, empty strings, and non-string values
-              let validIds = parsedIds.filter((id: unknown) =>
+              effectiveCollaboratorIds = parsedIds.filter((id: unknown) =>
                 id && typeof id === 'string' && id.trim().length > 0
               ) as string[];
+            }
+          } catch {
+            // Invalid JSON, keep existing
+          }
+        }
 
-              // IMPORTANT: Remove assignees from collaborators to avoid redundancy
-              // Assignees already have full access to monitor the task
-              const effectiveAssigneeIds = parsedAssigneeIds !== undefined
-                ? parsedAssigneeIds
-                : existingTask.assignees.map(a => a.id);
-              validIds = validIds.filter(id => !effectiveAssigneeIds.includes(id));
+        // Parse follower IDs
+        let effectiveFollowerIds: string[] = existingTask.followers.map(f => f.id);
+        if (followedIds !== undefined) {
+          try {
+            const parsedIds = JSON.parse(followedIds);
+            if (Array.isArray(parsedIds)) {
+              effectiveFollowerIds = parsedIds.filter((id: unknown) =>
+                id && typeof id === 'string' && id.trim().length > 0
+              ) as string[];
+            }
+          } catch {
+            // Invalid JSON, keep existing
+          }
+        }
 
-              // Use the target workspace ID if provided, otherwise use existing
-              const targetWorkspaceId = updateData.workspaceId || existingTask.workspaceId;
+        // Apply single role enforcement:
+        // 1. Remove assignees from collaborators and followers
+        effectiveCollaboratorIds = effectiveCollaboratorIds.filter(id => !effectiveAssigneeIds.includes(id));
+        effectiveFollowerIds = effectiveFollowerIds.filter(id => !effectiveAssigneeIds.includes(id));
 
-              // Verify that these member IDs exist in the workspace
-              const existingMembers = await prisma.member.findMany({
-                where: {
-                  id: { in: validIds },
-                  workspaceId: targetWorkspaceId
-                }
-              });
+        // 2. Remove collaborators from followers (collaborators have higher priority)
+        effectiveFollowerIds = effectiveFollowerIds.filter(id => !effectiveCollaboratorIds.includes(id));
 
-              const existingMemberIds = existingMembers.map(m => m.id);
+        // Handle followers update (skip if workspace is being transferred as it's already handled above)
+        if (followedIds !== undefined && !isWorkspaceTransfer) {
+          // Use the target workspace ID if provided, otherwise use existing
+          const targetWorkspaceId = updateData.workspaceId || existingTask.workspaceId;
+
+          // Verify that these member IDs exist in the workspace
+          const existingMembers = await prisma.member.findMany({
+            where: {
+              id: { in: effectiveFollowerIds },
+              workspaceId: targetWorkspaceId
+            }
+          });
+
+          const existingMemberIds = existingMembers.map(m => m.id);
+          updateData.followers = {
+            set: existingMemberIds.map((id: string) => ({ id }))
+          };
+        }
+
+        // Handle collaborators update (skip if workspace is being transferred)
+        if (collaboratorIds !== undefined && !isWorkspaceTransfer) {
+          // Use the target workspace ID if provided, otherwise use existing
+          const targetWorkspaceId = updateData.workspaceId || existingTask.workspaceId;
+
+          // Verify that these member IDs exist in the workspace
+          const existingMembers = await prisma.member.findMany({
+            where: {
+              id: { in: effectiveCollaboratorIds },
+              workspaceId: targetWorkspaceId
+            }
+          });
+
+          const existingMemberIds = existingMembers.map(m => m.id);
+          updateData.collaborators = {
+            set: existingMemberIds.map((id: string) => ({ id }))
+          };
+        }
+
+        // If assignees changed but collaborators/followers not explicitly updated, enforce single role
+        if (parsedAssigneeIds !== undefined && !isWorkspaceTransfer) {
+          // Remove new assignees from current collaborators
+          if (collaboratorIds === undefined) {
+            const currentCollaboratorIds = existingTask.collaborators.map(c => c.id);
+            const newCollaboratorIds = currentCollaboratorIds.filter(id => !parsedAssigneeIds.includes(id));
+            if (newCollaboratorIds.length !== currentCollaboratorIds.length) {
               updateData.collaborators = {
-                set: existingMemberIds.map((id: string) => ({ id }))
+                set: newCollaboratorIds.map((id: string) => ({ id }))
               };
             }
-          } catch (error) {
-            console.error("Error processing collaborators:", error);
-            // Invalid JSON, ignore collaborators update
           }
-        } else if (parsedAssigneeIds && parsedAssigneeIds.length > 0 && !isWorkspaceTransfer) {
-          // If collaborators are not being explicitly updated but assignees are changing,
-          // remove any new assignees from current collaborators
-          const currentCollaboratorIds = existingTask.collaborators.map(c => c.id);
-          const newCollaboratorIds = currentCollaboratorIds.filter(id => !parsedAssigneeIds.includes(id));
 
-          // Only update if there are changes
-          if (newCollaboratorIds.length !== currentCollaboratorIds.length) {
-            updateData.collaborators = {
-              set: newCollaboratorIds.map((id: string) => ({ id }))
-            };
+          // Remove new assignees from current followers
+          if (followedIds === undefined) {
+            const currentFollowerIds = existingTask.followers.map(f => f.id);
+            const newFollowerIds = currentFollowerIds.filter(id => !parsedAssigneeIds.includes(id));
+            if (newFollowerIds.length !== currentFollowerIds.length) {
+              updateData.followers = {
+                set: newFollowerIds.map((id: string) => ({ id }))
+              };
+            }
           }
         }
 
@@ -2116,6 +2136,13 @@ const app = new Hono()
         }
       }
 
+      // ENFORCE SINGLE ROLE: Creator is auto-added as follower unless they are an assignee
+      // Prepare followers - creator is automatically a follower
+      const subTaskFollowerIds: string[] = [];
+      if (!subTaskAssigneeIds.includes(targetMember.id)) {
+        subTaskFollowerIds.push(targetMember.id);
+      }
+
       // Create the sub-task (can be in a different workspace)
       const subTask = await prisma.task.create({
         data: {
@@ -2129,6 +2156,9 @@ const app = new Hono()
           serviceId: values.serviceId,
           assignees: {
             connect: subTaskAssigneeIds.map(id => ({ id }))
+          },
+          followers: {
+            connect: subTaskFollowerIds.map(id => ({ id }))
           },
           parentTaskId: taskId,
           creatorId: user.id,
@@ -2202,6 +2232,113 @@ const app = new Hono()
           canComplete: incompleteSubTasks === 0,
           incompleteSubTasksCount: incompleteSubTasks
         }
+      });
+    }
+  )
+
+  // Get all attachments for a task (parent + subtasks with DONE status)
+  .get(
+    "/:taskId/all-attachments",
+    sessionMiddleware,
+    zValidator("param", z.object({ taskId: z.string() })),
+    async (c) => {
+      const user = c.get("user");
+      const prisma = c.get("prisma");
+      const { taskId } = c.req.valid("param");
+
+      // Check if task exists and user has access
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: {
+          workspace: {
+            include: {
+              members: {
+                where: { userId: user.id }
+              }
+            }
+          },
+          attachments: {
+            orderBy: { uploadedAt: 'desc' }
+          }
+        }
+      });
+
+      if (!task) {
+        return c.json({ error: "Task not found" }, 404);
+      }
+
+      if (task.workspace.members.length === 0) {
+        return c.json({ error: "You must be a member of the workspace to view attachments" }, 403);
+      }
+
+      // Get subtasks that are in DONE status only
+      const subTasks = await prisma.task.findMany({
+        where: {
+          parentTaskId: taskId,
+          status: TaskStatus.DONE  // Only include subtasks with DONE status
+        },
+        select: {
+          id: true,
+          taskNumber: true,
+          name: true,
+        }
+      });
+
+      const subTaskIds = subTasks.map(st => st.id);
+
+      // Get attachments from DONE subtasks only
+      const subTaskAttachments = subTaskIds.length > 0
+        ? await prisma.taskAttachment.findMany({
+            where: {
+              taskId: { in: subTaskIds }
+            },
+            include: {
+              task: {
+                select: {
+                  id: true,
+                  taskNumber: true,
+                  name: true,
+                }
+              }
+            },
+            orderBy: { uploadedAt: 'desc' }
+          })
+        : [];
+
+      // Format parent task attachments
+      const parentAttachments = task.attachments.map(att => ({
+        id: att.id,
+        taskId: task.id,
+        taskNumber: task.taskNumber,
+        taskName: task.name,
+        fileName: att.fileName,
+        originalName: att.originalName,
+        fileSize: att.fileSize,
+        mimeType: att.mimeType,
+        uploadedAt: att.uploadedAt.toISOString(),
+        isParentTask: true,
+      }));
+
+      // Format subtask attachments
+      const subtaskAttachmentsList = subTaskAttachments.map(att => ({
+        id: att.id,
+        taskId: att.task.id,
+        taskNumber: att.task.taskNumber,
+        taskName: att.task.name,
+        fileName: att.fileName,
+        originalName: att.originalName,
+        fileSize: att.fileSize,
+        mimeType: att.mimeType,
+        uploadedAt: att.uploadedAt.toISOString(),
+        isParentTask: false,
+      }));
+
+      // Combine and sort by uploadedAt (most recent first)
+      const allAttachments = [...parentAttachments, ...subtaskAttachmentsList]
+        .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+
+      return c.json({
+        data: allAttachments,
       });
     }
   )

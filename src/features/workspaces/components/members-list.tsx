@@ -5,6 +5,7 @@ import { useWorkspaceId } from "../hooks/use-workspace-id";
 import { useWorkspaceAuthorization } from "../hooks/use-workspace-authorization";
 import { Card, CardTitle } from "@/components/ui/card";
 import { ArrowLeftIcon, MoreVerticalIcon, UserPlusIcon, ShieldIcon, UserIcon, UsersIcon, UserCheckIcon } from "@/lib/lucide-icons";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import Link from "next/link";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { useGetMembersPaginated } from "@/features/members/api/use-get-members-paginated";
@@ -195,11 +196,9 @@ export const MembersList = () => {
           {/* Members List */}
           <div className="space-y-4">
             {isLoading ? (
-              <div className="flex items-center justify-center py-6 sm:py-8">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Loading members...</p>
-                </div>
+              <div className="flex flex-col items-center justify-center py-6 sm:py-8 gap-4">
+                <LoadingSpinner size="md" variant="minimal" color="blue" />
+                <p className="text-xs sm:text-sm text-muted-foreground">Loading members...</p>
               </div>
             ) : filteredMembers.length > 0 ? (
               filteredMembers.map((member) => {

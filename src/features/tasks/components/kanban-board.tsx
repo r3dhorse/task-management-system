@@ -7,6 +7,7 @@ import { KanbanCard } from "./kanban-card";
 import { useUpdateTask } from "../api/use-update-task";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, AlertTriangleIcon } from "@/lib/lucide-icons";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -774,7 +775,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
           >
             {isLoadingMore ? (
               <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
+                <LoadingSpinner size="xs" variant="inline" color="blue" />
                 <span>Loading...</span>
               </div>
             ) : (
@@ -791,7 +792,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
         <div className="absolute inset-0 bg-white/20 backdrop-blur-sm flex items-center justify-center pointer-events-none z-10">
           <div className="bg-white/90 backdrop-blur-md rounded-lg px-4 py-2 shadow-lg border">
             <div className="flex items-center gap-x-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
+              <LoadingSpinner size="xs" variant="inline" color="blue" />
               <span className="text-sm font-medium text-neutral-700">
                 Updating task...
               </span>

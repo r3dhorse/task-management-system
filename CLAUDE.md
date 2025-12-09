@@ -8,7 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Development
 npm run dev              # Start development server on port 3001
 npm run dev:docker       # Docker development with hot reload
-./dev.sh                 # Full Docker environment (app + PostgreSQL)
+
+# Docker Development (with PostgreSQL)
+./dev.sh                 # Fast start (uses cached volumes)
+./dev.sh --build         # Rebuild when package.json or Dockerfile changes
+./dev.sh --fresh         # Full reset (removes volumes + rebuilds)
 
 # Database Management
 npm run db:generate      # Generate Prisma client after schema changes

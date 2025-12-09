@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { MultiSelect } from "@/components/ui/multi-select-simple";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { UserIcon, XIcon, CheckIcon } from "@/lib/lucide-icons";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Member, MemberRole } from "@/features/members/types";
 
 interface ManageAssigneesModalProps {
@@ -184,8 +185,8 @@ export const ManageAssigneesModal = ({
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Saving...
+                  <LoadingSpinner size="xs" variant="inline" color="white" />
+                  <span className="ml-2">Saving...</span>
                 </>
               ) : (
                 <>

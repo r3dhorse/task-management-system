@@ -31,7 +31,8 @@ import { MultiSelect, MultiSelectOption } from "@/components/ui/multi-select-sim
 import { AssigneeSelect } from "@/components/ui/assignee-select";
 import { TaskStatus, Task } from "../types";
 import { MemberRole } from "@/features/members/types";
-import { EyeOff as EyeOffIcon, Clock as ClockIcon, Loader2 } from "@/lib/lucide-icons";
+import { EyeOff as EyeOffIcon, Clock as ClockIcon } from "@/lib/lucide-icons";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { calculateSLADueDate, formatSLAInfo } from "@/lib/sla-utils";
 import { TASK_STATUS_CONFIG } from "@/lib/constants/task-constants";
 
@@ -735,8 +736,8 @@ export function BaseTaskForm({
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {mode === "create" ? "Creating..." : "Updating..."}
+                      <LoadingSpinner size="xs" variant="inline" color="white" />
+                      <span className="ml-2">{mode === "create" ? "Creating..." : "Updating..."}</span>
                     </>
                   ) : mode === "create" ? (
                     parentTaskId ? "Create Subtask" : "Create Task"

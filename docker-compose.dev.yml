@@ -50,8 +50,9 @@ services:
     volumes:
       # Mount source code for hot reload
       - .:/app
-      - /app/node_modules
-      - /app/.next
+      # Use named volumes to persist and cache between runs
+      - node_modules_dev:/app/node_modules
+      - next_cache_dev:/app/.next
       - uploads_dev_data:/app/uploads
     depends_on:
       postgres:
@@ -63,6 +64,10 @@ volumes:
   postgres_dev_data:
     driver: local
   uploads_dev_data:
+    driver: local
+  node_modules_dev:
+    driver: local
+  next_cache_dev:
     driver: local
 
 networks:

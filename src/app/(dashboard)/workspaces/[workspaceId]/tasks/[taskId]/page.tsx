@@ -33,6 +33,7 @@ import { ManageAssigneesModal } from "@/features/tasks/components/manage-assigne
 import { TaskPropertiesModal } from "@/features/tasks/components/task-properties-modal";
 import { EnhancedStageIndicator } from "@/features/tasks/components/enhanced-stage-indicator";
 import { SubTasksTable } from "@/features/tasks/components/sub-tasks-table";
+import { TaskAttachmentsTable } from "@/features/tasks/components/task-attachments-table";
 
 interface TaskDetailsPageProps {
   params: {
@@ -311,25 +312,30 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                       </div>
                     </div>
                     <div className="space-y-4 h-96 overflow-hidden">
-                      {[...Array(6)].map((_, i) => (
-                        <div
-                          key={i}
-                          className={`flex gap-3 animate-fade-in ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}
-                          style={{animationDelay: `${1.9 + i * 0.1}s`}}
-                        >
-                          {i % 2 !== 0 && (
-                            <div className="w-8 h-8 bg-gradient-to-r from-gray-200/40 via-gray-400/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded-full flex-shrink-0" />
-                          )}
-                          <div className={`${
-                            i % 2 === 0
-                              ? 'bg-gradient-to-r from-blue-200/40 via-blue-300/60 to-blue-200/40'
-                              : 'bg-gradient-to-r from-gray-200/40 via-gray-300/60 to-gray-200/40'
-                          } bg-size-200 bg-pos-0 animate-shimmer p-3 rounded-lg space-y-2 max-w-xs`}>
-                            <div className="h-3 bg-white/60 rounded" style={{width: `${50 + Math.random() * 40}%`}} />
-                            {Math.random() > 0.5 && <div className="h-3 bg-white/40 rounded" style={{width: `${30 + Math.random() * 30}%`}} />}
+                      {[...Array(6)].map((_, i) => {
+                        // Use deterministic widths based on index to avoid hydration mismatch
+                        const widths = [75, 60, 85, 55, 70, 65];
+                        const showSecondLine = i % 2 === 0;
+                        return (
+                          <div
+                            key={i}
+                            className={`flex gap-3 animate-fade-in ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}
+                            style={{animationDelay: `${1.9 + i * 0.1}s`}}
+                          >
+                            {i % 2 !== 0 && (
+                              <div className="w-8 h-8 bg-gradient-to-r from-gray-200/40 via-gray-400/60 to-gray-200/40 bg-size-200 bg-pos-0 animate-shimmer rounded-full flex-shrink-0" />
+                            )}
+                            <div className={`${
+                              i % 2 === 0
+                                ? 'bg-gradient-to-r from-blue-200/40 via-blue-300/60 to-blue-200/40'
+                                : 'bg-gradient-to-r from-gray-200/40 via-gray-300/60 to-gray-200/40'
+                            } bg-size-200 bg-pos-0 animate-shimmer p-3 rounded-lg space-y-2 max-w-xs`}>
+                              <div className="h-3 bg-white/60 rounded" style={{width: `${widths[i]}%`}} />
+                              {showSecondLine && <div className="h-3 bg-white/40 rounded" style={{width: `${widths[(i + 3) % 6]}%`}} />}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                   <div className="border-t p-4">
@@ -1107,6 +1113,9 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                     <TabsTrigger value="subtasks" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                       Sub Tasks
                     </TabsTrigger>
+                    <TabsTrigger value="attachments" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                      Attachments
+                    </TabsTrigger>
                   </TabsList>
                   <TabsContent value="timeline" className="m-0">
                     {/* Fixed height to align with chat */}
@@ -1122,6 +1131,18 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                       <div className="px-6 py-6">
                         <SubTasksTable
                           parentTaskId={task.id}
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="attachments" className="m-0">
+                    {/* Fixed height to align with chat */}
+                    <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      <div className="px-6 py-6">
+                        <TaskAttachmentsTable
+                          taskId={task.id}
+                          workspaceId={task.workspaceId}
+                          taskNumber={task.taskNumber}
                         />
                       </div>
                     </div>
