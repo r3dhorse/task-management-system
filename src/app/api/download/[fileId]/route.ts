@@ -23,6 +23,10 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       );
     }
 
+    // Check if inline viewing is requested
+    const { searchParams } = new URL(request.url);
+    const viewInline = searchParams.get("view") === "inline";
+
     let { fileId } = params;
 
     // Decode the fileId in case it's URL encoded
@@ -73,10 +77,10 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
           if (!fallbackFile) {
             throw new Error('File not found in local storage');
           }
-          return serveFile(fallbackFile.filePath, taskAttachment.mimeType, taskAttachment.originalName);
+          return serveFile(fallbackFile.filePath, taskAttachment.mimeType, taskAttachment.originalName, viewInline);
         }
 
-        return serveFile(localFile.filePath, taskAttachment.mimeType, taskAttachment.originalName);
+        return serveFile(localFile.filePath, taskAttachment.mimeType, taskAttachment.originalName, viewInline);
       } catch (error) {
         console.error("File download error:", error);
         return NextResponse.json(
@@ -123,14 +127,16 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
           return serveFile(
             fileByPath.filePath,
             messageAttachment.attachmentType || 'application/octet-stream',
-            messageAttachment.attachmentName || 'attachment'
+            messageAttachment.attachmentName || 'attachment',
+            viewInline
           );
         }
 
         return serveFile(
           localFile.filePath,
           messageAttachment.attachmentType || localFile.mimeType,
-          messageAttachment.attachmentName || 'attachment'
+          messageAttachment.attachmentName || 'attachment',
+          viewInline
         );
       } catch (error) {
         console.error("Message attachment download error:", error);
@@ -161,15 +167,21 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
 /**
  * Helper function to serve a file with proper headers
  */
-async function serveFile(filePath: string, mimeType: string, originalName: string): Promise<NextResponse> {
+async function serveFile(filePath: string, mimeType: string, originalName: string, viewInline: boolean = false): Promise<NextResponse> {
   const fileBuffer = await readFile(filePath);
 
-  // For images, use inline disposition to allow viewing in browser
-  // For PDFs and other files, use attachment to force download
+  // For images, always use inline disposition to allow viewing in browser
+  // For PDFs, use inline if viewInline is true, otherwise force download
+  // For other files, always force download
   const isImage = mimeType.startsWith('image/');
-  const disposition = isImage
-    ? `inline; filename="${encodeURIComponent(originalName)}"`
-    : `attachment; filename="${encodeURIComponent(originalName)}"`;
+  const isPdf = mimeType === 'application/pdf';
+
+  let disposition: string;
+  if (isImage || (isPdf && viewInline)) {
+    disposition = `inline; filename="${encodeURIComponent(originalName)}"`;
+  } else {
+    disposition = `attachment; filename="${encodeURIComponent(originalName)}"`;
+  }
 
   // Return the file as a response with proper headers
   return new NextResponse(new Uint8Array(fileBuffer), {

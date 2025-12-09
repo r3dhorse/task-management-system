@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PlusIcon, Download, Trash2, Paperclip } from "@/lib/lucide-icons";
+import { PlusIcon, Download, Trash2, Paperclip, Eye } from "@/lib/lucide-icons";
 import { useGetAllAttachments, TaskAttachment } from "../api/use-get-all-attachments";
 import { useDeleteAttachment } from "../api/use-delete-attachment";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -54,6 +54,7 @@ export const TaskAttachmentsTable = ({
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [viewingAttachment, setViewingAttachment] = useState<TaskAttachment | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [DeleteConfirmDialog, confirmDelete] = useConfirm(
@@ -88,6 +89,10 @@ export const TaskAttachmentsTable = ({
 
   const handleAddFiles = () => {
     setIsUploadDialogOpen(true);
+  };
+
+  const handleViewFile = (attachment: TaskAttachment) => {
+    setViewingAttachment(attachment);
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,7 +208,7 @@ export const TaskAttachmentsTable = ({
                 <TableHead className="w-[150px]">Task Number</TableHead>
                 <TableHead>File Name</TableHead>
                 <TableHead className="w-[100px]">Size</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
+                <TableHead className="w-[130px] text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -222,16 +227,17 @@ export const TaskAttachmentsTable = ({
                       onClick={() => handleTaskClick(attachment)}
                       className="flex items-center gap-2 hover:underline"
                     >
-                      <span className="font-mono text-sm text-blue-600">
-                        {attachment.taskNumber}
-                      </span>
-                      {attachment.isParentTask && (
+                      {attachment.isParentTask ? (
                         <Badge
                           variant="secondary"
                           className="text-xs bg-purple-100 text-purple-700"
                         >
-                          Parent
+                          Main Task
                         </Badge>
+                      ) : (
+                        <span className="font-mono text-sm text-blue-600">
+                          {attachment.taskNumber}
+                        </span>
                       )}
                     </button>
                   </TableCell>
@@ -243,6 +249,18 @@ export const TaskAttachmentsTable = ({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleViewFile(attachment)}
+                        className={cn(
+                          "h-8 w-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50",
+                          hoveredRowId === attachment.id && "opacity-100"
+                        )}
+                        title="View file"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button
                         size="icon"
                         variant="ghost"
@@ -340,6 +358,44 @@ export const TaskAttachmentsTable = ({
                 )}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Viewer Dialog */}
+      <Dialog open={!!viewingAttachment} onOpenChange={(open) => !open && setViewingAttachment(null)}>
+        <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <Paperclip className="h-5 w-5 text-gray-500" />
+              <span className="truncate">{viewingAttachment?.originalName}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {viewingAttachment && (
+              <iframe
+                src={`/api/download/${encodeURIComponent(viewingAttachment.id)}?view=inline`}
+                className="w-full h-full border-0"
+                title={viewingAttachment.originalName}
+              />
+            )}
+          </div>
+          <div className="px-6 py-3 border-t bg-gray-50 flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setViewingAttachment(null)}
+            >
+              Close
+            </Button>
+            {viewingAttachment && (
+              <Button
+                onClick={() => handleDownloadFile(viewingAttachment.id, viewingAttachment.originalName)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>
