@@ -476,6 +476,11 @@ export const Navigation = () => {
     );
   };
 
+  // Find specific routes by label
+  const homeRoute = routes.find(r => r.label === "Home");
+  const tasksRoute = routes.find(r => r.label === "Tasks");
+  const settingsRoute = routes.find(r => r.label === "Settings");
+
   return (
     <>
       <nav className="flex flex-col space-y-1">
@@ -484,15 +489,12 @@ export const Navigation = () => {
           <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">
             Menu
           </div>
-          {routes.map((item, index) => (
-            <div key={item.href || index}>
-              {renderMenuItem(item)}
-              {/* Insert Services button after Tasks (index 1) */}
-              {index === 1 && renderServicesButton()}
-            </div>
-          ))}
-          {/* Team KPI link for admins */}
+          {/* Menu order: Home, Team KPI, Tasks, Services, Settings */}
+          {homeRoute && renderMenuItem(homeRoute)}
           {renderTeamKPIButton()}
+          {tasksRoute && renderMenuItem(tasksRoute)}
+          {renderServicesButton()}
+          {settingsRoute && renderMenuItem(settingsRoute)}
         </div>
 
       </nav>

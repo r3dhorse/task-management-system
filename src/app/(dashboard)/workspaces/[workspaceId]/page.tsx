@@ -255,6 +255,8 @@ const WorkspaceIdPage = () => {
             kpiCollaborationWeight: workspace.kpiCollaborationWeight,
             kpiReviewWeight: workspace.kpiReviewWeight,
           } : undefined}
+          workspaceName={workspace?.name || "Workspace"}
+          generatedBy={currentUser?.name || currentUser?.email || "System"}
         />
       </TabsContent>
 

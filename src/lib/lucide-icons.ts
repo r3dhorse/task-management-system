@@ -120,8 +120,10 @@ export const FileIcon = getIcon('File', ['FileIcon']);
 export const ImageIcon = getIcon('Image', ['ImageIcon']);
 export const X = getIcon('X', ['XIcon']);
 export const Download = getIcon('Download', ['DownloadIcon']);
+export const DownloadIcon = getIcon('Download', ['DownloadIcon']);
 export const FileDown = getIcon('FileDown', ['FileDownIcon', 'Download']);
 export const AtSign = getIcon('AtSign', ['AtSignIcon']);
+export const Loader2Icon = getIcon('Loader2', ['Loader2Icon', 'Loader']);
 
 // Additional missing icons
 export const AlertTriangle = getIcon('AlertTriangle', ['AlertTriangleIcon']);

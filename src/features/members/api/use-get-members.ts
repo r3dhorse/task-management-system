@@ -16,7 +16,13 @@ export const useGetMembers = ({
         throw new Error("Workspace ID is required");
       }
 
-      const response = await client.api.members.$get({ query: { workspaceId } });
+      // Fetch all members (limit: 100) for analytics and dashboard purposes
+      const response = await client.api.members.$get({
+        query: {
+          workspaceId,
+          limit: "100" // Fetch all members, not just 6
+        }
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch members")
