@@ -412,7 +412,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
           );
 
           if (currentMember) {
-            newAssignees = [{ id: currentMember.id, name: currentMember.name || '', email: currentMember.email || '' }];
+            newAssignees = [{ id: currentMember.id, userId: currentMember.userId, name: currentMember.name || '', email: currentMember.email || '' }];
             taskToMove.assignees = newAssignees;
           }
         }
@@ -610,8 +610,11 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
     const taskToMove = data.find((task) => task.id === taskId);
     if (!taskToMove) return;
 
+    // Find the member to get userId
+    const selectedMember = (membersData?.documents as Member[] || []).find(m => m.id === assigneeId);
+
     // Update the task with both status change and assignee assignment
-    const newAssignees = [{ id: assigneeId, name: '', email: '' }];
+    const newAssignees = [{ id: assigneeId, userId: selectedMember?.userId || '', name: selectedMember?.name || '', email: selectedMember?.email || '' }];
     const updatedTask = { ...taskToMove, status: TaskStatus.IN_PROGRESS, assignees: newAssignees };
 
     // Update local state

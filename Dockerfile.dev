@@ -22,11 +22,10 @@ RUN npx prisma generate
 # Make startup script executable
 RUN chmod +x ./docker-start-dev.sh
 
-# Create necessary directories
-RUN mkdir -p ./uploads ./.next
-
-# Set proper permissions for all directories (run as root to avoid volume mount issues)
-RUN chmod -R 777 /app
+# Create necessary directories with proper ownership
+# Note: Using node user (uid 1000) which is built into node:alpine image
+RUN mkdir -p ./uploads ./.next && \
+    chown -R node:node ./uploads ./.next
 
 # Expose development port
 EXPOSE 3000

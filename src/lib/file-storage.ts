@@ -25,6 +25,16 @@ export class FileStorageError extends Error {
 }
 
 /**
+ * Sanitize task number to prevent path traversal attacks
+ * Only allows alphanumeric characters, hyphens, and underscores
+ */
+function sanitizeTaskNumber(taskNumber: string): string {
+  // Remove any characters that could be used for path traversal
+  // Only allow alphanumeric, hyphens, and underscores
+  return taskNumber.replace(/[^a-zA-Z0-9\-_]/g, '')
+}
+
+/**
  * Generate folder name in format: dd-mm-yyyy - task#
  * Uses task number which is unique per task
  */
@@ -34,7 +44,10 @@ export function generateFolderName(taskNumber: string, date?: Date): string {
   const month = String(dateObj.getMonth() + 1).padStart(2, '0')
   const year = dateObj.getFullYear()
 
-  return `${day}-${month}-${year} - ${taskNumber}`
+  // Sanitize taskNumber to prevent path traversal attacks
+  const safeTaskNumber = sanitizeTaskNumber(taskNumber)
+
+  return `${day}-${month}-${year} - ${safeTaskNumber}`
 }
 
 /**
@@ -185,6 +198,7 @@ export async function getFile(fileId: string): Promise<{
 
 /**
  * Get file by relative path (stored in database)
+ * Includes path traversal protection
  */
 export async function getFileByPath(relativePath: string): Promise<{
   filePath: string
@@ -192,7 +206,21 @@ export async function getFileByPath(relativePath: string): Promise<{
   mimeType: string
 } | null> {
   try {
-    const absolutePath = path.join(UPLOAD_DIR, relativePath)
+    // Prevent path traversal attacks
+    const normalizedPath = path.normalize(relativePath)
+    if (normalizedPath.startsWith('..') || path.isAbsolute(normalizedPath)) {
+      return null
+    }
+
+    const absolutePath = path.join(UPLOAD_DIR, normalizedPath)
+
+    // Ensure the resolved path is still within UPLOAD_DIR
+    const resolvedUploadDir = path.resolve(UPLOAD_DIR)
+    const resolvedPath = path.resolve(absolutePath)
+    if (!resolvedPath.startsWith(resolvedUploadDir)) {
+      return null
+    }
+
     await fs.access(absolutePath)
 
     const fileName = path.basename(relativePath)
@@ -260,15 +288,30 @@ export async function deleteFile(fileId: string): Promise<boolean> {
 
 /**
  * Delete a file by relative path
+ * Includes path traversal protection
  */
 export async function deleteFileByPath(relativePath: string): Promise<boolean> {
   try {
-    const absolutePath = path.join(UPLOAD_DIR, relativePath)
+    // Prevent path traversal attacks
+    const normalizedPath = path.normalize(relativePath)
+    if (normalizedPath.startsWith('..') || path.isAbsolute(normalizedPath)) {
+      return false
+    }
+
+    const absolutePath = path.join(UPLOAD_DIR, normalizedPath)
+
+    // Ensure the resolved path is still within UPLOAD_DIR
+    const resolvedUploadDir = path.resolve(UPLOAD_DIR)
+    const resolvedPath = path.resolve(absolutePath)
+    if (!resolvedPath.startsWith(resolvedUploadDir)) {
+      return false
+    }
+
     await fs.unlink(absolutePath)
 
     // Try to remove empty parent folder
     const parentDir = path.dirname(absolutePath)
-    if (parentDir !== path.resolve(UPLOAD_DIR)) {
+    if (parentDir !== resolvedUploadDir) {
       try {
         const remainingFiles = await fs.readdir(parentDir)
         if (remainingFiles.length === 0) {
@@ -343,8 +386,8 @@ export async function listAllFiles(): Promise<Array<{
         }
       }
     }
-  } catch (error) {
-    console.error('Error listing files:', error)
+  } catch {
+    // Silently fail - this is an admin utility function
   }
 
   return files

@@ -141,27 +141,9 @@ export async function GET(request: NextRequest, { params }: RouteProps) {
       }
     }
 
-    // If not found in database, try to find by file ID in storage directly
-    // This handles legacy files or direct file ID access
-    const directFile = await getFile(fileId);
-    if (directFile) {
-      // For direct file access without database record, we still need to verify access
-      // Since we can't verify workspace membership, we'll allow it if the user is authenticated
-      // This is a fallback for edge cases
-      console.log('Serving file directly by ID (no database record):', fileId);
-      return serveFile(directFile.filePath, directFile.mimeType, directFile.fileName);
-    }
-
-    // If fileId contains path separators, try as a relative path
-    if (fileId.includes('/') || fileId.includes('\\')) {
-      const fileByPath = await getFileByPath(fileId);
-      if (fileByPath) {
-        console.log('Serving file by path:', fileId);
-        return serveFile(fileByPath.filePath, fileByPath.mimeType, fileByPath.fileName);
-      }
-    }
-
-    // If not found anywhere
+    // SECURITY: Do not allow direct file access without database record
+    // All files must have a database record with proper workspace membership verification
+    // This prevents unauthorized access to files by guessing file IDs
     return NextResponse.json(
       { error: "File not found or access denied" },
       { status: 404 }

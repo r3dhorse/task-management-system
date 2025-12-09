@@ -11,27 +11,19 @@ type FileType = "task" | "message";
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📤 Upload request received');
-
     // Check authentication
     const user = await getCurrentUser();
     if (!user) {
-      console.log('❌ Upload failed: Unauthorized');
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       );
     }
 
-    console.log('✅ User authenticated:', user.email);
-
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const source = formData.get("source") as string; // 'chat' or 'task'
     const taskId = formData.get("taskId") as string;
-    const workspaceId = formData.get("workspaceId") as string;
-
-    console.log('📋 Upload details:', { source, taskId, workspaceId, fileName: file?.name, fileSize: file?.size });
 
     if (!file) {
       return NextResponse.json(
@@ -78,8 +70,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Upload to local storage with organized folder structure
-    console.log('📁 Uploading to local storage with folder:', taskNumber ? `${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')} - ${taskNumber}` : 'date-only folder');
-
     const localResult = await uploadToLocal(file, fileType, taskNumber);
 
     const uploadResult = {
@@ -103,12 +93,6 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log('✅ Upload successful:', {
-      id: uploadResult.id,
-      filePath: uploadResult.filePath,
-      location: uploadResult.location,
-    });
-
     return NextResponse.json({
       data: {
         $id: uploadResult.id,
@@ -122,12 +106,10 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("❌ File upload error:", error);
-    console.error("Error details:", {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    });
+    // Log error without exposing stack trace in production
+    if (process.env.NODE_ENV !== 'production') {
+      console.error("File upload error:", error);
+    }
 
     if (error instanceof FileStorageError) {
       return NextResponse.json(

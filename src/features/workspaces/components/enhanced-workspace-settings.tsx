@@ -150,8 +150,6 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
   };
 
   const onKpiSubmit = (values: z.infer<typeof kpiWeightsSchema>) => {
-    console.log("Submitting KPI values:", values);
-
     // Convert any empty strings to 0 before submission
     const processedValues = {
       kpiCompletionWeight: Number(values.kpiCompletionWeight) || 0,
@@ -735,12 +733,6 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
                           type="submit"
                           disabled={isPending}
                           className="bg-blue-600 hover:bg-blue-700"
-                          onClick={() => {
-                            console.log("KPI Save button clicked");
-                            console.log("Form values:", kpiForm.getValues());
-                            console.log("Form errors:", kpiForm.formState.errors);
-                            console.log("Form valid:", kpiForm.formState.isValid);
-                          }}
                         >
                           {isPending ? (
                             <>
