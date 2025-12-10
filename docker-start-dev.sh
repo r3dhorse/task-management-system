@@ -19,7 +19,10 @@ echo "✅ Database connection established!"
 
 # Run database migrations (development)
 echo "🔧 Running database migrations..."
-npx prisma migrate dev --name="dev_migration_$(date +%s)" || npx prisma db push
+npx prisma migrate deploy || {
+    echo "⚠️  migrate deploy failed, trying db push as fallback..."
+    npx prisma db push
+}
 
 # Generate Prisma client
 echo "🔄 Generating Prisma client..."

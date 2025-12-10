@@ -1,5 +1,17 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { format, isToday, addDays, isSameDay, isBefore, startOfDay, eachDayOfInterval } from "date-fns";
+import { format, addDays, eachDayOfInterval } from "date-fns";
+
+// Helper to get date components in Manila timezone without external dependency
+function getDateInManila(date: Date): { year: number; month: number; day: number; dayOfWeek: number } {
+  const manilaString = date.toLocaleString('en-US', { timeZone: 'Asia/Manila' });
+  const manilaDate = new Date(manilaString);
+  return {
+    year: manilaDate.getFullYear(),
+    month: manilaDate.getMonth(),
+    day: manilaDate.getDate(),
+    dayOfWeek: manilaDate.getDay()
+  };
+}
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -99,8 +111,12 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
   };
 
   const timelineData = useMemo(() => {
-    const today = new Date();
-    const baseDate = addDays(today, dateOffset);
+    // Get "today" in Manila timezone
+    const todayManila = getDateInManila(new Date());
+
+    // Create a date object representing today at midnight (for date arithmetic)
+    const todayDate = new Date(todayManila.year, todayManila.month, todayManila.day);
+    const baseDate = addDays(todayDate, dateOffset);
     const startDate = addDays(baseDate, -2); // Start 2 days ago to show overdue
     const endDate = addDays(baseDate, 14); // Show next 14 days
 
@@ -109,21 +125,41 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
       start: startDate,
       end: endDate
     }).map(date => {
+      // Get year, month, day from the timeline date
+      const timelineYear = date.getFullYear();
+      const timelineMonth = date.getMonth();
+      const timelineDay = date.getDate();
+
       const dayTasks = tasks.filter(task => {
         if (!task.dueDate || task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
           return false;
         }
-        const taskDueDate = new Date(task.dueDate);
-        return isSameDay(taskDueDate, date);
+
+        // Parse the task due date and get its date components in Manila timezone
+        const taskDueDateUTC = new Date(task.dueDate);
+        const taskDateManila = getDateInManila(taskDueDateUTC);
+
+        // Compare the date components directly
+        return taskDateManila.year === timelineYear &&
+               taskDateManila.month === timelineMonth &&
+               taskDateManila.day === timelineDay;
       });
+
+      // Check if this timeline day is "today" in Manila
+      const isTodayInManila = timelineYear === todayManila.year &&
+                              timelineMonth === todayManila.month &&
+                              timelineDay === todayManila.day;
+
+      // Check if this day is in the past (before today in Manila)
+      const isPastInManila = date < todayDate;
 
       return {
         date,
         dayLabel: format(date, 'EEE'),
         dateLabel: format(date, 'd'),
         tasks: dayTasks,
-        isToday: isToday(date),
-        isPast: isBefore(date, startOfDay(today)),
+        isToday: isTodayInManila,
+        isPast: isPastInManila,
         isWeekend: date.getDay() === 0 || date.getDay() === 6
       };
     });

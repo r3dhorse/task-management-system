@@ -1,11 +1,17 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
-CREATE TYPE "public"."MemberRole" AS ENUM ('ADMIN', 'MEMBER', 'VISITOR');
+CREATE TYPE "public"."MemberRole" AS ENUM ('ADMIN', 'MEMBER', 'CUSTOMER');
+
+-- CreateEnum
+CREATE TYPE "public"."RoutinaryFrequency" AS ENUM ('DAILY', 'BIDAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'YEARLY', 'BIYEARLY');
 
 -- CreateEnum
 CREATE TYPE "public"."TaskStatus" AS ENUM ('BACKLOG', 'TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE', 'ARCHIVED');
 
 -- CreateEnum
-CREATE TYPE "public"."TaskHistoryAction" AS ENUM ('CREATED', 'UPDATED', 'STATUS_CHANGED', 'ASSIGNEE_CHANGED', 'REVIEWER_CHANGED', 'SERVICE_CHANGED', 'WORKSPACE_CHANGED', 'DUE_DATE_CHANGED', 'ATTACHMENT_ADDED', 'ATTACHMENT_REMOVED', 'ATTACHMENT_VIEWED', 'DESCRIPTION_UPDATED', 'NAME_CHANGED', 'REVIEW_SUBMITTED', 'FOLLOWERS_CHANGED', 'CONFIDENTIAL_CHANGED', 'ARCHIVED', 'SUB_TASK_ADDED', 'SUB_TASK_REMOVED', 'PARENT_TASK_CHANGED');
+CREATE TYPE "public"."TaskHistoryAction" AS ENUM ('CREATED', 'UPDATED', 'STATUS_CHANGED', 'ASSIGNEE_CHANGED', 'REVIEWER_CHANGED', 'SERVICE_CHANGED', 'WORKSPACE_CHANGED', 'DUE_DATE_CHANGED', 'ATTACHMENT_ADDED', 'ATTACHMENT_REMOVED', 'ATTACHMENT_VIEWED', 'DESCRIPTION_UPDATED', 'NAME_CHANGED', 'REVIEW_SUBMITTED', 'FOLLOWERS_CHANGED', 'COLLABORATORS_CHANGED', 'CONFIDENTIAL_CHANGED', 'ARCHIVED', 'SUB_TASK_ADDED', 'SUB_TASK_REMOVED', 'PARENT_TASK_CHANGED');
 
 -- CreateEnum
 CREATE TYPE "public"."NotificationType" AS ENUM ('MENTION', 'NEW_MESSAGE', 'TASK_ASSIGNED', 'TASK_UPDATE', 'TASK_COMMENT');
@@ -76,7 +82,7 @@ CREATE TABLE "public"."workspaces" (
     "kpiCompletionWeight" DOUBLE PRECISION NOT NULL DEFAULT 30.0,
     "kpiProductivityWeight" DOUBLE PRECISION NOT NULL DEFAULT 20.0,
     "kpiSlaWeight" DOUBLE PRECISION NOT NULL DEFAULT 20.0,
-    "kpiFollowerWeight" DOUBLE PRECISION NOT NULL DEFAULT 15.0,
+    "kpiCollaborationWeight" DOUBLE PRECISION NOT NULL DEFAULT 15.0,
     "kpiReviewWeight" DOUBLE PRECISION NOT NULL DEFAULT 15.0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -103,6 +109,11 @@ CREATE TABLE "public"."services" (
     "isPublic" BOOLEAN NOT NULL DEFAULT false,
     "slaDays" INTEGER,
     "includeWeekends" BOOLEAN NOT NULL DEFAULT false,
+    "isRoutinary" BOOLEAN NOT NULL DEFAULT false,
+    "routinaryFrequency" "public"."RoutinaryFrequency",
+    "routinaryStartDate" TIMESTAMP(3),
+    "routinaryNextRunDate" TIMESTAMP(3),
+    "routinaryLastRunDate" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -121,7 +132,6 @@ CREATE TABLE "public"."tasks" (
     "isConfidential" BOOLEAN NOT NULL DEFAULT false,
     "attachmentId" TEXT,
     "workspaceId" TEXT NOT NULL,
-    "assigneeId" TEXT,
     "reviewerId" TEXT,
     "serviceId" TEXT NOT NULL,
     "creatorId" TEXT,
@@ -211,11 +221,27 @@ CREATE TABLE "public"."task_reviews" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."_TaskAssignees" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_TaskAssignees_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateTable
 CREATE TABLE "public"."_TaskFollowers" (
     "A" TEXT NOT NULL,
     "B" TEXT NOT NULL,
 
     CONSTRAINT "_TaskFollowers_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateTable
+CREATE TABLE "public"."_TaskCollaborators" (
+    "A" TEXT NOT NULL,
+    "B" TEXT NOT NULL,
+
+    CONSTRAINT "_TaskCollaborators_AB_pkey" PRIMARY KEY ("A","B")
 );
 
 -- CreateIndex
@@ -273,6 +299,9 @@ CREATE INDEX "services_workspaceId_idx" ON "public"."services"("workspaceId");
 CREATE INDEX "services_isPublic_idx" ON "public"."services"("isPublic");
 
 -- CreateIndex
+CREATE INDEX "services_isRoutinary_routinaryNextRunDate_idx" ON "public"."services"("isRoutinary", "routinaryNextRunDate");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "tasks_taskNumber_key" ON "public"."tasks"("taskNumber");
 
 -- CreateIndex
@@ -280,9 +309,6 @@ CREATE INDEX "tasks_workspaceId_idx" ON "public"."tasks"("workspaceId");
 
 -- CreateIndex
 CREATE INDEX "tasks_serviceId_idx" ON "public"."tasks"("serviceId");
-
--- CreateIndex
-CREATE INDEX "tasks_assigneeId_idx" ON "public"."tasks"("assigneeId");
 
 -- CreateIndex
 CREATE INDEX "tasks_reviewerId_idx" ON "public"."tasks"("reviewerId");
@@ -310,9 +336,6 @@ CREATE INDEX "tasks_workspaceId_isConfidential_createdAt_idx" ON "public"."tasks
 
 -- CreateIndex
 CREATE INDEX "tasks_creatorId_workspaceId_status_idx" ON "public"."tasks"("creatorId", "workspaceId", "status");
-
--- CreateIndex
-CREATE INDEX "tasks_assigneeId_status_idx" ON "public"."tasks"("assigneeId", "status");
 
 -- CreateIndex
 CREATE INDEX "tasks_reviewerId_status_idx" ON "public"."tasks"("reviewerId", "status");
@@ -384,7 +407,13 @@ CREATE INDEX "task_reviews_status_idx" ON "public"."task_reviews"("status");
 CREATE INDEX "task_reviews_createdAt_idx" ON "public"."task_reviews"("createdAt");
 
 -- CreateIndex
+CREATE INDEX "_TaskAssignees_B_index" ON "public"."_TaskAssignees"("B");
+
+-- CreateIndex
 CREATE INDEX "_TaskFollowers_B_index" ON "public"."_TaskFollowers"("B");
+
+-- CreateIndex
+CREATE INDEX "_TaskCollaborators_B_index" ON "public"."_TaskCollaborators"("B");
 
 -- AddForeignKey
 ALTER TABLE "public"."Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -409,9 +438,6 @@ ALTER TABLE "public"."services" ADD CONSTRAINT "services_workspaceId_fkey" FOREI
 
 -- AddForeignKey
 ALTER TABLE "public"."tasks" ADD CONSTRAINT "tasks_workspaceId_fkey" FOREIGN KEY ("workspaceId") REFERENCES "public"."workspaces"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."tasks" ADD CONSTRAINT "tasks_assigneeId_fkey" FOREIGN KEY ("assigneeId") REFERENCES "public"."members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."tasks" ADD CONSTRAINT "tasks_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "public"."members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -471,7 +497,20 @@ ALTER TABLE "public"."task_reviews" ADD CONSTRAINT "task_reviews_taskId_fkey" FO
 ALTER TABLE "public"."task_reviews" ADD CONSTRAINT "task_reviews_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "public"."members"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_A_fkey" FOREIGN KEY ("A") REFERENCES "public"."members"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_B_fkey" FOREIGN KEY ("B") REFERENCES "public"."tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."_TaskFollowers" ADD CONSTRAINT "_TaskFollowers_A_fkey" FOREIGN KEY ("A") REFERENCES "public"."members"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."_TaskFollowers" ADD CONSTRAINT "_TaskFollowers_B_fkey" FOREIGN KEY ("B") REFERENCES "public"."tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_TaskCollaborators" ADD CONSTRAINT "_TaskCollaborators_A_fkey" FOREIGN KEY ("A") REFERENCES "public"."members"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."_TaskCollaborators" ADD CONSTRAINT "_TaskCollaborators_B_fkey" FOREIGN KEY ("B") REFERENCES "public"."tasks"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

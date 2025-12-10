@@ -9,8 +9,11 @@ const loginSchema = z.object({
   password: z.string().min(1),
 })
 
-// Validate critical environment variables at startup (server-side only)
-if (typeof window === 'undefined') {
+// Detect if we're in the build phase
+const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build'
+
+// Validate critical environment variables at startup (server-side only, not during build)
+if (typeof window === 'undefined' && !isBuildPhase) {
   // In production, NEXTAUTH_SECRET is required
   if (process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_SECRET) {
     throw new Error('CRITICAL: NEXTAUTH_SECRET must be set in production environment')
