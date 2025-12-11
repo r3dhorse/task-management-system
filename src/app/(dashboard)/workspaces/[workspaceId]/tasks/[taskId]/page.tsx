@@ -14,7 +14,7 @@ import { TaskHistoryAction } from "@/features/tasks/types/history";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, UsersIcon, EditIcon, FileTextIcon, ArchiveIcon, PlayIcon } from "@/lib/lucide-icons";
+import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, UsersIcon, EditIcon, FileTextIcon, ArchiveIcon, PlayIcon, CheckCircleIcon } from "@/lib/lucide-icons";
 import { useRouter } from "next/navigation";
 import { useDeleteTask } from "@/features/tasks/api/use-delete-task";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -101,6 +101,12 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     "Archive Task",
     "This task will be archived and moved out of active views. You can still access it by filtering for 'Archived' tasks in the table view.",
     "destructive"
+  );
+
+  const [ReviewConfirmDialog, confirmReview] = useConfirm(
+    "Mark as Reviewed & Done",
+    "Please confirm that your review is complete. This will mark the task as Done.",
+    "primary"
   );
 
   // Handle refresh parameter from notifications
@@ -865,9 +871,55 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     currentMember?.role !== MemberRole.CUSTOMER &&
     !isAssignee;
 
+  // Determine if Mark as Reviewed button should be shown
+  // Show when: task is in IN_REVIEW stage and:
+  // - For confidential tasks: only the assigned reviewer
+  // - For non-confidential tasks: any workspace member (non-customer)
+  const canMarkAsReviewed = task.status === TaskStatus.IN_REVIEW &&
+    (task.isConfidential
+      ? isReviewer
+      : (currentMember?.role !== MemberRole.CUSTOMER));
+
+  // Handle Mark as Reviewed - updates status to DONE and records the reviewer
+  const handleMarkAsReviewed = async () => {
+    const ok = await confirmReview();
+    if (!ok || !task || !currentMember) return;
+
+    const updatePayload = {
+      name: task.name,
+      description: task.description || "",
+      status: TaskStatus.DONE,
+      assigneeIds: JSON.stringify(assignees.map(a => a.id)),
+      reviewerId: currentMember.id, // Record the current user as the reviewer
+      serviceId: task.serviceId,
+      dueDate: task.dueDate || new Date().toISOString(),
+      attachmentId: task.attachmentId || "",
+      followedIds: task.followedIds || "[]",
+      collaboratorIds: task.collaboratorIds || "[]",
+      isConfidential: task.isConfidential || false,
+    };
+
+    updateTask(
+      {
+        param: { taskId: task.id },
+        json: updatePayload,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Task marked as reviewed and completed!");
+        },
+        onError: (error) => {
+          console.error("Failed to mark task as reviewed:", error);
+          toast.error("Failed to mark task as reviewed");
+        },
+      }
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       <ConfirmDialog />
+      <ReviewConfirmDialog />
       <ManageFollowersModal
         isOpen={isFollowersModalOpen}
         onClose={() => setIsFollowersModalOpen(false)}
@@ -937,6 +989,17 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                 >
                   <PlayIcon className="size-4 mr-2" />
                   <span className="hidden sm:inline">Start</span> Task
+                </Button>
+              )}
+              {canMarkAsReviewed && (
+                <Button
+                  size="sm"
+                  onClick={handleMarkAsReviewed}
+                  disabled={isUpdating}
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md transition-all duration-200"
+                >
+                  <CheckCircleIcon className="size-4 mr-2" />
+                  <span className="hidden sm:inline">Mark as Reviewed &</span> Done
                 </Button>
               )}
               {canEdit && isAssignee && (
@@ -1250,6 +1313,18 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                         >
                           <PlayIcon className="size-3 mr-1" />
                           Start Task
+                        </Button>
+                      )}
+                      {canMarkAsReviewed && (
+                        <Button
+                          size="sm"
+                          onClick={handleMarkAsReviewed}
+                          disabled={isUpdating}
+                          className="justify-start bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white text-xs h-8"
+                          aria-label="Mark task as reviewed and done"
+                        >
+                          <CheckCircleIcon className="size-3 mr-1" />
+                          Reviewed & Done
                         </Button>
                       )}
                       {canEdit && isAssignee && (
