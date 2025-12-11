@@ -645,7 +645,7 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
       taskName: "",
       pendingOperation: null,
     });
-  }, [assigneeModal, data, onChange, updateTask]);
+  }, [assigneeModal, data, membersData?.documents, onChange, updateTask]);
 
 
   // Handle assignee modal cancellation

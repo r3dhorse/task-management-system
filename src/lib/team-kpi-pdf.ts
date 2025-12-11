@@ -30,7 +30,7 @@ function getKPIColor(kpiScore: number): [number, number, number] {
 export function generateTeamKPIPDF({
   members,
   teamStats,
-  adminWorkspaces,
+  adminWorkspaces: _adminWorkspaces,
   startDate,
   endDate,
   selectedWorkspaceName,

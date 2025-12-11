@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { MemberRole } from "@/features/members/types";
 import { TaskStatus } from "@/features/tasks/types";
 
+// Force dynamic rendering since this route uses headers (auth)
+export const dynamic = 'force-dynamic';
+
 interface WorkspaceKPI {
   workspaceId: string;
   workspaceName: string;
