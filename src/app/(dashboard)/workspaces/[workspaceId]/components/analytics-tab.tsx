@@ -36,6 +36,8 @@ interface AnalyticsTabProps {
   members: Member[];
   /** List of services */
   services: ServiceType[];
+  /** Current workspace ID */
+  workspaceId: string;
   /** Start date for filtering */
   dateFrom?: Date;
   /** End date for filtering */
@@ -67,6 +69,7 @@ export function AnalyticsTab({
   tasks,
   members,
   services,
+  workspaceId,
   dateFrom,
   dateTo,
   withReviewStage = true,
@@ -141,6 +144,7 @@ export function AnalyticsTab({
         tasks={tasks}
         members={members}
         services={services}
+        workspaceId={workspaceId}
         dateFrom={dateFrom}
         dateTo={dateTo}
         withReviewStage={withReviewStage}

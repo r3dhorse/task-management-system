@@ -1,7 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -13,10 +20,13 @@ import {
   Award, BarChart3, Briefcase,
   AlertCircle, Timer, Info,
   CheckCircle2, Clock, UserCheck,
-  Target
+  Target, AlertTriangle
 } from "@/lib/lucide-icons";
 import { TaskStatus, PopulatedTask } from "@/features/tasks/types";
 import { Member, MemberRole } from "@/features/members/types";
+import { cn } from "@/lib/utils";
+import { TASK_STATUS_CONFIG } from "@/lib/constants/task-constants";
+import { formatDistanceToNow } from "date-fns";
 
 interface ServiceType {
   id: string;
@@ -31,6 +41,7 @@ interface WorkspaceAnalyticsProps {
   tasks: PopulatedTask[];
   members: Member[];
   services: ServiceType[];
+  workspaceId: string;
   dateFrom?: Date;
   dateTo?: Date;
   withReviewStage?: boolean;
@@ -49,11 +60,24 @@ export const WorkspaceAnalytics = ({
   tasks,
   members,
   services,
+  workspaceId,
   dateFrom: _dateFrom,
   dateTo: _dateTo,
   withReviewStage = true,
   kpiWeights
 }: WorkspaceAnalyticsProps) => {
+  const router = useRouter();
+  const [showOverdueModal, setShowOverdueModal] = useState(false);
+
+  // Calculate overdue tasks for modal
+  const overdueTasks = useMemo(() => {
+    return tasks
+      .filter(task => {
+        if (!task.dueDate || task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) return false;
+        return new Date(task.dueDate) < new Date();
+      })
+      .sort((a, b) => new Date(a.dueDate!).getTime() - new Date(b.dueDate!).getTime());
+  }, [tasks]);
 
   // Default KPI weights - use provided weights or fallback to defaults
   const weights = kpiWeights || {
@@ -92,7 +116,7 @@ export const WorkspaceAnalytics = ({
   // Calculate member analytics with enhanced KPI metrics
   const memberAnalytics = useMemo(() => {
     const memberStats = members
-      .filter(member => member.role !== MemberRole.CUSTOMER) // Exclude customers from performance metrics
+      .filter(member => member.role === MemberRole.MEMBER) // Only include regular members (exclude Admin and Customer)
       .map(member => {
         // Assigned tasks - member is one of the assignees
         const memberTasks = tasks.filter(task =>
@@ -308,7 +332,10 @@ export const WorkspaceAnalytics = ({
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-pink-50">
+        <Card
+          className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-pink-50 cursor-pointer hover:shadow-xl transition-shadow"
+          onClick={() => router.push(`/workspaces/${workspaceId}/members`)}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-purple-900">Active Members</CardTitle>
           </CardHeader>
@@ -327,7 +354,10 @@ export const WorkspaceAnalytics = ({
           </CardContent>
         </Card>
 
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-red-50">
+        <Card
+          className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-red-50 cursor-pointer hover:shadow-xl transition-shadow"
+          onClick={() => setShowOverdueModal(true)}
+        >
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-orange-900">Overdue Rate</CardTitle>
           </CardHeader>
@@ -337,7 +367,7 @@ export const WorkspaceAnalytics = ({
                 <p className="text-2xl font-bold text-orange-600">
                   {productivityMetrics.overdueRate.toFixed(1)}%
                 </p>
-                <p className="text-xs text-orange-600">Tasks Overdue</p>
+                <p className="text-xs text-orange-600">{overdueTasks.length} Tasks Overdue</p>
               </div>
               <div className="p-3 bg-orange-100 rounded-full">
                 <AlertCircle className="h-5 w-5 text-orange-600" />
@@ -349,8 +379,11 @@ export const WorkspaceAnalytics = ({
 
       {/* Task Status Breakdown & Weekly Trend */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Task Status Breakdown */}
-        <Card className="border-0 shadow-lg">
+        {/* Task Status Breakdown - Clickable */}
+        <Card
+          className="border-0 shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+          onClick={() => router.push(`/workspaces/${workspaceId}/workspace-tasks`)}
+        >
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
@@ -362,31 +395,26 @@ export const WorkspaceAnalytics = ({
           <CardContent>
             <div className="space-y-4">
               {Object.entries(statusDistribution).map(([status, count]) => {
+                const config = TASK_STATUS_CONFIG[status as TaskStatus];
                 const percentage = tasks.length > 0 ? (count / tasks.length) * 100 : 0;
-                const colors: Record<string, string> = {
-                  [TaskStatus.BACKLOG]: "bg-gray-500",
-                  [TaskStatus.TODO]: "bg-blue-500",
-                  [TaskStatus.IN_PROGRESS]: "bg-yellow-500",
-                  [TaskStatus.IN_REVIEW]: "bg-purple-500",
-                  [TaskStatus.DONE]: "bg-green-500"
-                };
 
                 return (
-                  <div key={status}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium">
-                        {status === TaskStatus.IN_PROGRESS ? 'In Progress' :
-                         status === TaskStatus.IN_REVIEW ? 'In Review' :
-                         status.charAt(0) + status.slice(1).toLowerCase()}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        {count} ({percentage.toFixed(1)}%)
+                  <div key={status} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">{config.emoji}</span>
+                      <span className="text-sm font-medium">{config.label}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full", config.color)}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-gray-600 w-16 text-right">
+                        {count} ({Math.round(percentage)}%)
                       </span>
                     </div>
-                    <Progress value={percentage} className="h-2">
-                      <div className={`h-full ${colors[status] || "bg-gray-500"} rounded-full`}
-                           style={{ width: `${percentage}%` }} />
-                    </Progress>
                   </div>
                 );
               })}
@@ -831,6 +859,103 @@ export const WorkspaceAnalytics = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Overdue Tasks Modal */}
+      <Dialog open={showOverdueModal} onOpenChange={setShowOverdueModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <div className="p-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg">
+                <AlertTriangle className="h-5 w-5 text-white" />
+              </div>
+              Overdue Tasks
+              <Badge variant="destructive" className="ml-2">
+                {overdueTasks.length}
+              </Badge>
+            </DialogTitle>
+          </DialogHeader>
+          <div className={cn(
+            "space-y-3 pr-2",
+            overdueTasks.length > 5 && "max-h-[400px] overflow-y-auto"
+          )}>
+            {overdueTasks.length > 0 ? (
+              overdueTasks.map((task) => {
+                const dueDate = new Date(task.dueDate!);
+                const overdueDays = Math.ceil((new Date().getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+                const config = TASK_STATUS_CONFIG[task.status as TaskStatus];
+
+                return (
+                  <div
+                    key={task.id}
+                    className="p-4 rounded-lg border border-red-200 bg-red-50/50 hover:bg-red-100/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setShowOverdueModal(false);
+                      router.push(`/workspaces/${workspaceId}/tasks/${task.id}`);
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-gray-900 truncate">
+                            {task.name}
+                          </span>
+                          <Badge variant="outline" className={cn("text-xs shrink-0", config.color)}>
+                            {config.emoji} {config.label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <span className="text-red-600 font-medium">
+                            Due: {dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                          <span className="text-red-500">
+                            ({formatDistanceToNow(dueDate, { addSuffix: true })})
+                          </span>
+                        </div>
+                        {task.assignees && task.assignees.length > 0 && (
+                          <div className="flex items-center gap-1 mt-2">
+                            <span className="text-xs text-gray-500">Assignees:</span>
+                            <div className="flex items-center gap-1">
+                              {task.assignees.slice(0, 3).map((assignee, idx) => (
+                                <Badge key={idx} variant="secondary" className="text-xs py-0">
+                                  {assignee.name || 'Unknown'}
+                                </Badge>
+                              ))}
+                              {task.assignees.length > 3 && (
+                                <span className="text-xs text-gray-500">
+                                  +{task.assignees.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <Badge
+                          variant="destructive"
+                          className={cn(
+                            "text-xs",
+                            overdueDays > 7 ? "bg-red-600" : overdueDays > 3 ? "bg-orange-500" : "bg-amber-500"
+                          )}
+                        >
+                          {overdueDays} {overdueDays === 1 ? 'day' : 'days'} overdue
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-12">
+                <div className="p-4 bg-green-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                </div>
+                <p className="text-gray-600 font-medium">No overdue tasks!</p>
+                <p className="text-sm text-gray-500 mt-1">All tasks are on track</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

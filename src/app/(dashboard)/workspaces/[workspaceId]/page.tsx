@@ -249,6 +249,7 @@ const WorkspaceIdPage = () => {
           tasks={filteredTasks}
           members={membersList}
           services={servicesList}
+          workspaceId={workspaceId}
           dateFrom={dateFrom}
           dateTo={dateTo}
           withReviewStage={workspace?.withReviewStage}
