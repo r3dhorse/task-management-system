@@ -3,6 +3,26 @@ import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
+// Default regular users by role
+const defaultUsers = [
+  // Security Officers
+  { email: 'security1@mail.com', name: 'Security Officer 1', role: 'Security Officer' },
+  { email: 'security2@mail.com', name: 'Security Officer 2', role: 'Security Officer' },
+  { email: 'security3@mail.com', name: 'Security Officer 3', role: 'Security Officer' },
+  // Safety Officers
+  { email: 'safety1@mail.com', name: 'Safety Officer 1', role: 'Safety Officer' },
+  { email: 'safety2@mail.com', name: 'Safety Officer 2', role: 'Safety Officer' },
+  { email: 'safety3@mail.com', name: 'Safety Officer 3', role: 'Safety Officer' },
+  // Investigators
+  { email: 'investigator1@mail.com', name: 'Investigator 1', role: 'Investigator' },
+  { email: 'investigator2@mail.com', name: 'Investigator 2', role: 'Investigator' },
+  { email: 'investigator3@mail.com', name: 'Investigator 3', role: 'Investigator' },
+  // CCTV Operators
+  { email: 'cctv1@mail.com', name: 'CCTV Operator 1', role: 'CCTV Operator' },
+  { email: 'cctv2@mail.com', name: 'CCTV Operator 2', role: 'CCTV Operator' },
+  { email: 'cctv3@mail.com', name: 'CCTV Operator 3', role: 'CCTV Operator' },
+]
+
 async function main() {
   console.log('🌱 Seeding database...')
 
@@ -46,33 +66,42 @@ async function main() {
 
   console.log('✅ Admin user created:', adminUser.email)
 
-  // Create regular member user for testing
-  const memberPassword = await bcrypt.hash('member123', 12)
-  const memberUser = await prisma.user.upsert({
-    where: { email: 'member@example.com' },
-    update: {
-      password: memberPassword,
-      isAdmin: false,
-      isSuperAdmin: false,
-    },
-    create: {
-      email: 'member@example.com',
-      name: 'Member User',
-      password: memberPassword,
-      isAdmin: false,
-      isSuperAdmin: false,
-    },
-  })
+  // Create default regular users (all with password: user123)
+  const userPassword = await bcrypt.hash('user123', 12)
 
-  console.log('✅ Member user created:', memberUser.email)
+  console.log('\n👥 Creating default regular users...')
 
-  console.log('⏭️ No workspaces created - all users will route to /no-workspace')
+  for (const userData of defaultUsers) {
+    const user = await prisma.user.upsert({
+      where: { email: userData.email },
+      update: {
+        password: userPassword,
+        name: userData.name,
+        isAdmin: false,
+        isSuperAdmin: false,
+      },
+      create: {
+        email: userData.email,
+        name: userData.name,
+        password: userPassword,
+        isAdmin: false,
+        isSuperAdmin: false,
+      },
+    })
+    console.log(`   ✅ ${userData.role}: ${user.email}`)
+  }
+
+  console.log('\n⏭️ No workspaces created - all users will route to /no-workspace')
 
   console.log('\n🎉 Database seeded successfully!')
-  console.log('\n📝 Test users created (all will route to /no-workspace):')
+  console.log('\n📝 Users created (all will route to /no-workspace):')
   console.log('   - SuperAdmin: superadmin@example.com / super123')
   console.log('   - Admin: admin@example.com / admin123')
-  console.log('   - Member: member@example.com / member123')
+  console.log('\n   Regular Users (all use password: user123):')
+  console.log('   - Security Officers: security1@mail.com, security2@mail.com, security3@mail.com')
+  console.log('   - Safety Officers: safety1@mail.com, safety2@mail.com, safety3@mail.com')
+  console.log('   - Investigators: investigator1@mail.com, investigator2@mail.com, investigator3@mail.com')
+  console.log('   - CCTV Operators: cctv1@mail.com, cctv2@mail.com, cctv3@mail.com')
   console.log('\n📍 All users have no workspace memberships and will be redirected to /no-workspace')
 }
 

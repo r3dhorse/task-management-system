@@ -489,12 +489,12 @@ export const Navigation = () => {
           <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">
             Menu
           </div>
-          {/* Menu order: Home, Team KPI, Tasks, Services, Settings */}
+          {/* Menu order: Home, Team KPI, Tasks, Services (admin only), Settings (admin only) */}
           {homeRoute && renderMenuItem(homeRoute)}
           {renderTeamKPIButton()}
           {tasksRoute && renderMenuItem(tasksRoute)}
-          {renderServicesButton()}
-          {settingsRoute && renderMenuItem(settingsRoute)}
+          {(isAdmin || isSuperAdmin) && renderServicesButton()}
+          {(isAdmin || isSuperAdmin) && settingsRoute && renderMenuItem(settingsRoute)}
         </div>
 
       </nav>
