@@ -125,10 +125,11 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
       start: startDate,
       end: endDate
     }).map(date => {
-      // Get year, month, day from the timeline date
-      const timelineYear = date.getFullYear();
-      const timelineMonth = date.getMonth();
-      const timelineDay = date.getDate();
+      // Convert timeline date to Manila timezone for consistent comparison
+      const timelineManila = getDateInManila(date);
+      const timelineYear = timelineManila.year;
+      const timelineMonth = timelineManila.month;
+      const timelineDay = timelineManila.day;
 
       const dayTasks = tasks.filter(task => {
         if (!task.dueDate || task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED) {
@@ -139,7 +140,7 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
         const taskDueDateUTC = new Date(task.dueDate);
         const taskDateManila = getDateInManila(taskDueDateUTC);
 
-        // Compare the date components directly
+        // Compare both dates in Manila timezone
         return taskDateManila.year === timelineYear &&
                taskDateManila.month === timelineMonth &&
                taskDateManila.day === timelineDay;
@@ -160,7 +161,7 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
         tasks: dayTasks,
         isToday: isTodayInManila,
         isPast: isPastInManila,
-        isWeekend: date.getDay() === 0 || date.getDay() === 6
+        isWeekend: timelineManila.dayOfWeek === 0 || timelineManila.dayOfWeek === 6
       };
     });
 

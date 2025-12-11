@@ -89,15 +89,22 @@ const generateDailyTaskTitle = (serviceName: string, taskDate: Date): string => 
 };
 
 // Calculate SLA due date based on service configuration
-// For DAILY and BIDAILY frequencies, due date is end of the same day
+// For DAILY and BIDAILY frequencies, due date is end of the same day in Manila timezone
 const calculateDueDate = (slaDays: number | null, includeWeekends: boolean, frequency?: RoutinaryFrequency): Date => {
   const startDate = new Date();
 
-  // For daily/bi-daily tasks, due date is end of today (same day SLA)
+  // For daily/bi-daily tasks, due date is end of today in Manila timezone (same day SLA)
   if (frequency === "DAILY" || frequency === "BIDAILY") {
-    const endOfDay = new Date(startDate);
-    endOfDay.setHours(23, 59, 59, 999);
-    return endOfDay;
+    // Get current date in Manila timezone
+    const nowInManila = new Date(startDate.getTime() + (PHT_OFFSET_HOURS * 60 * 60 * 1000));
+    const year = nowInManila.getUTCFullYear();
+    const month = nowInManila.getUTCMonth();
+    const day = nowInManila.getUTCDate();
+
+    // Set to end of day in Manila (23:59:59.999 Manila = 15:59:59.999 UTC)
+    // Create the date in UTC that represents 23:59:59.999 in Manila
+    const endOfDayManila = new Date(Date.UTC(year, month, day, 23 - PHT_OFFSET_HOURS, 59, 59, 999));
+    return endOfDayManila;
   }
 
   if (!slaDays) {
