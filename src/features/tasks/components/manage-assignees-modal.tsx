@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ResponsiveModal } from "@/components/responsive-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,11 @@ export const ManageAssigneesModal = ({
   isLoading = false
 }: ManageAssigneesModalProps) => {
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>(currentAssignees);
+
+  // Sync selectedAssignees when currentAssignees changes (e.g., after task update)
+  useEffect(() => {
+    setSelectedAssignees(currentAssignees);
+  }, [currentAssignees]);
 
   // Reset when modal opens
   const handleOpenChange = (open: boolean) => {

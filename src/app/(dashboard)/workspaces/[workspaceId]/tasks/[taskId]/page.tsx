@@ -14,7 +14,7 @@ import { TaskHistoryAction } from "@/features/tasks/types/history";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, UsersIcon, EditIcon, FileTextIcon, ArchiveIcon } from "@/lib/lucide-icons";
+import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, UsersIcon, EditIcon, FileTextIcon, ArchiveIcon, PlayIcon } from "@/lib/lucide-icons";
 import { useRouter } from "next/navigation";
 import { useDeleteTask } from "@/features/tasks/api/use-delete-task";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -819,6 +819,52 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     );
   };
 
+  // Handle Start Task - updates status to IN_PROGRESS and adds current user as assignee
+  const handleStartTask = () => {
+    if (!task || !currentMember) return;
+
+    // Get current assignee IDs and add current user if not already assigned
+    const currentAssigneeIds = assignees.map(a => a.id);
+    const newAssigneeIds = currentAssigneeIds.includes(currentMember.id)
+      ? currentAssigneeIds
+      : [...currentAssigneeIds, currentMember.id];
+
+    const updatePayload = {
+      name: task.name,
+      description: task.description || "",
+      status: TaskStatus.IN_PROGRESS,
+      assigneeIds: JSON.stringify(newAssigneeIds),
+      serviceId: task.serviceId,
+      dueDate: task.dueDate || new Date().toISOString(),
+      attachmentId: task.attachmentId || "",
+      followedIds: task.followedIds || "[]",
+      collaboratorIds: task.collaboratorIds || "[]",
+      isConfidential: task.isConfidential || false,
+    };
+
+    updateTask(
+      {
+        param: { taskId: task.id },
+        json: updatePayload,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Task started! You've been added as an assignee.");
+        },
+        onError: (error) => {
+          console.error("Failed to start task:", error);
+          toast.error("Failed to start task");
+        },
+      }
+    );
+  };
+
+  // Determine if Start Task button should be shown
+  // Show when: task is in TODO or BACKLOG, user is not a customer, and user is not already assigned
+  const canStartTask = (task.status === TaskStatus.TODO || task.status === TaskStatus.BACKLOG) &&
+    currentMember?.role !== MemberRole.CUSTOMER &&
+    !isAssignee;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       <ConfirmDialog />
@@ -882,7 +928,18 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   <span className="hidden sm:inline">View</span> Attachment
                 </Button>
               )}
-              {canEdit && (
+              {canStartTask && (
+                <Button
+                  size="sm"
+                  onClick={handleStartTask}
+                  disabled={isUpdating}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md transition-all duration-200"
+                >
+                  <PlayIcon className="size-4 mr-2" />
+                  <span className="hidden sm:inline">Start</span> Task
+                </Button>
+              )}
+              {canEdit && isAssignee && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -1183,7 +1240,19 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                           Attachment
                         </Button>
                       )}
-                      {canEdit && (
+                      {canStartTask && (
+                        <Button
+                          size="sm"
+                          onClick={handleStartTask}
+                          disabled={isUpdating}
+                          className="justify-start bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white text-xs h-8"
+                          aria-label="Start this task"
+                        >
+                          <PlayIcon className="size-3 mr-1" />
+                          Start Task
+                        </Button>
+                      )}
+                      {canEdit && isAssignee && (
                         <Button
                           variant="outline"
                           size="sm"
