@@ -69,10 +69,11 @@ export const CreateServiceForm = ({ onCancel }: CreateServiceFormProps) => {
 
   const onSubmit = (values: FormData) => {
     // Build final values - only include routinary fields if isRoutinary is true
+    // If routinary service, isPublic must always be false
     const finalValues: Record<string, string> = {
       name: values.name,
       workspaceId,
-      isPublic: values.isPublic ? "true" : "false",
+      isPublic: values.isRoutinary ? "false" : (values.isPublic ? "true" : "false"),
       includeWeekends: values.includeWeekends ? "true" : "false",
       isRoutinary: values.isRoutinary ? "true" : "false",
     };
@@ -265,17 +266,24 @@ export const CreateServiceForm = ({ onCancel }: CreateServiceFormProps) => {
                 control={form.control}
                 name="isPublic"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                  <FormItem className={cn(
+                    "flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm",
+                    isRoutinary && "bg-muted/50 opacity-60"
+                  )}>
                     <div className="space-y-0.5">
                       <FormLabel>Public Service</FormLabel>
                       <div className="text-sm text-muted-foreground">
-                        Allow workspace customers to see this service when creating tasks
+                        {isRoutinary
+                          ? "Routinary services cannot be public"
+                          : "Allow workspace customers to see this service when creating tasks"
+                        }
                       </div>
                     </div>
                     <FormControl>
                       <Switch
-                        checked={field.value}
+                        checked={isRoutinary ? false : field.value}
                         onCheckedChange={field.onChange}
+                        disabled={isRoutinary}
                       />
                     </FormControl>
                   </FormItem>

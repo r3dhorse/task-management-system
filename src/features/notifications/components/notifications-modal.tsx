@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { MessageCircle, CheckCheck, UserPlus, FileEdit, Bell, ChevronLeft, ChevronRight, X } from "@/lib/lucide-icons";
+import { MessageCircle, CheckCheck, UserPlus, FileEdit, Bell, ChevronLeft, ChevronRight, X, ClipboardCheck } from "@/lib/lucide-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -130,6 +130,8 @@ export function NotificationsModal({ open, onOpenChange }: NotificationsModalPro
         return <UserPlus className="w-5 h-5" />;
       case "TASK_UPDATE":
         return <FileEdit className="w-5 h-5" />;
+      case "REVIEWER_ASSIGNED":
+        return <ClipboardCheck className="w-5 h-5" />;
       default:
         return <Bell className="w-5 h-5" />;
     }
@@ -154,6 +156,8 @@ export function NotificationsModal({ open, onOpenChange }: NotificationsModalPro
         return "bg-green-100 text-green-600";
       case "TASK_UPDATE":
         return "bg-yellow-100 text-yellow-600";
+      case "REVIEWER_ASSIGNED":
+        return "bg-purple-100 text-purple-600";
       default:
         return "bg-gray-100 text-gray-600";
     }
@@ -262,11 +266,12 @@ export function NotificationsModal({ open, onOpenChange }: NotificationsModalPro
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex gap-2 border-b px-6">
+            <div className="flex gap-2 border-b px-6 overflow-x-auto">
               {[
                 { value: "", label: "All", count: totalCount },
                 { value: "MENTION", label: "Mentions" },
                 { value: "TASK_ASSIGNED", label: "Tasks" },
+                { value: "REVIEWER_ASSIGNED", label: "Reviews" },
                 { value: "TASK_UPDATE", label: "Updates" },
               ].map((filter) => (
                 <button

@@ -14,7 +14,7 @@ import { TaskHistoryAction } from "@/features/tasks/types/history";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, UsersIcon, EditIcon, FileTextIcon, ArchiveIcon, PlayIcon, CheckCircleIcon } from "@/lib/lucide-icons";
+import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, UsersIcon, EditIcon, FileTextIcon, ArchiveIcon, PlayIcon, CheckCircleIcon, SendIcon } from "@/lib/lucide-icons";
 import { useRouter } from "next/navigation";
 import { useDeleteTask } from "@/features/tasks/api/use-delete-task";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -106,6 +106,18 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   const [ReviewConfirmDialog, confirmReview] = useConfirm(
     "Mark as Reviewed & Done",
     "Please confirm that your review is complete. This will mark the task as Done.",
+    "primary"
+  );
+
+  const [StartTaskConfirmDialog, confirmStartTask] = useConfirm(
+    "Start Task",
+    "You will be assigned to this task and it will move to In Progress.",
+    "primary"
+  );
+
+  const [ForReviewConfirmDialog, confirmForReview] = useConfirm(
+    "Submit for Review",
+    "This task will be submitted for review.",
     "primary"
   );
 
@@ -826,8 +838,9 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   };
 
   // Handle Start Task - updates status to IN_PROGRESS and adds current user as assignee
-  const handleStartTask = () => {
-    if (!task || !currentMember) return;
+  const handleStartTask = async () => {
+    const ok = await confirmStartTask();
+    if (!ok || !task || !currentMember) return;
 
     // Get current assignee IDs and add current user if not already assigned
     const currentAssigneeIds = assignees.map(a => a.id);
@@ -880,6 +893,45 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       ? isReviewer
       : (currentMember?.role !== MemberRole.CUSTOMER));
 
+  // Determine if For Review button should be shown
+  // Show when: task is in IN_PROGRESS and user is an assignee
+  const canSubmitForReview = task.status === TaskStatus.IN_PROGRESS && isAssignee;
+
+  // Handle Submit for Review - updates status to IN_REVIEW
+  const handleSubmitForReview = async () => {
+    const ok = await confirmForReview();
+    if (!ok || !task) return;
+
+    const updatePayload = {
+      name: task.name,
+      description: task.description || "",
+      status: TaskStatus.IN_REVIEW,
+      assigneeIds: JSON.stringify(assignees.map(a => a.id)),
+      serviceId: task.serviceId,
+      dueDate: task.dueDate || new Date().toISOString(),
+      attachmentId: task.attachmentId || "",
+      followedIds: task.followedIds || "[]",
+      collaboratorIds: task.collaboratorIds || "[]",
+      isConfidential: task.isConfidential || false,
+    };
+
+    updateTask(
+      {
+        param: { taskId: task.id },
+        json: updatePayload,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Task submitted for review!");
+        },
+        onError: (error) => {
+          console.error("Failed to submit task for review:", error);
+          toast.error("Failed to submit task for review");
+        },
+      }
+    );
+  };
+
   // Handle Mark as Reviewed - updates status to DONE and records the reviewer
   const handleMarkAsReviewed = async () => {
     const ok = await confirmReview();
@@ -920,6 +972,8 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
       <ConfirmDialog />
       <ReviewConfirmDialog />
+      <StartTaskConfirmDialog />
+      <ForReviewConfirmDialog />
       <ManageFollowersModal
         isOpen={isFollowersModalOpen}
         onClose={() => setIsFollowersModalOpen(false)}
@@ -989,6 +1043,17 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                 >
                   <PlayIcon className="size-4 mr-2" />
                   <span className="hidden sm:inline">Start</span> Task
+                </Button>
+              )}
+              {canSubmitForReview && (
+                <Button
+                  size="sm"
+                  onClick={handleSubmitForReview}
+                  disabled={isUpdating}
+                  className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md transition-all duration-200"
+                >
+                  <SendIcon className="size-4 mr-2" />
+                  <span className="hidden sm:inline">For</span> Review
                 </Button>
               )}
               {canMarkAsReviewed && (
@@ -1062,7 +1127,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   currentStatus={task.status as TaskStatus}
                   onStatusChange={handleStatusChange}
                   taskName={task.name}
-                  isClickable={isAssignee && canEditStatus}
+                  isClickable={false}
                 />
               </div>
             </div>
@@ -1086,7 +1151,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                 </div>
               </div>
 
-              {task.status === 'IN_REVIEW' && (
+              {(task.status === 'IN_REVIEW' || task.status === 'DONE') && (
                 <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
                   <div className="flex-shrink-0 w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
                     <UserIcon className="size-3.5 text-purple-600" />
@@ -1313,6 +1378,18 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                         >
                           <PlayIcon className="size-3 mr-1" />
                           Start Task
+                        </Button>
+                      )}
+                      {canSubmitForReview && (
+                        <Button
+                          size="sm"
+                          onClick={handleSubmitForReview}
+                          disabled={isUpdating}
+                          className="justify-start bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs h-8"
+                          aria-label="Submit task for review"
+                        >
+                          <SendIcon className="size-3 mr-1" />
+                          For Review
                         </Button>
                       )}
                       {canMarkAsReviewed && (

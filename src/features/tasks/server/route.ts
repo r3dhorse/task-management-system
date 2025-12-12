@@ -1633,6 +1633,34 @@ const app = new Hono()
           }
         }
 
+        // Create reviewer assignment notification when reviewer changes
+        const reviewerChange = changes.find(change => change.field === 'reviewerId');
+        if (reviewerChange && reviewerChange.newValue && reviewerChange.newValue !== existingTask.reviewerId) {
+          try {
+            const newReviewerMember = await prisma.member.findUnique({
+              where: { id: reviewerChange.newValue },
+              include: { user: true }
+            });
+
+            if (newReviewerMember && newReviewerMember.userId !== user.id) {
+              await prisma.notification.create({
+                data: {
+                  userId: newReviewerMember.userId,
+                  type: "REVIEWER_ASSIGNED",
+                  title: "Assigned as reviewer",
+                  message: `${user.name || 'Someone'} assigned you as reviewer for task "${task.name}"`,
+                  workspaceId: task.workspaceId,
+                  taskId: task.id,
+                  mentionedBy: user.id,
+                }
+              });
+            }
+          } catch (notificationError) {
+            console.error("Failed to create reviewer assignment notification:", notificationError);
+            // Don't fail task update if notification fails
+          }
+        }
+
         // Create task update notifications for followers and collaborators (for significant changes)
         const significantChanges = changes.filter(change =>
           ['status', 'assigneeIds', 'serviceId', 'dueDate', 'name', 'description'].includes(change.field)

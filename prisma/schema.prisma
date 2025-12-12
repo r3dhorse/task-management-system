@@ -340,11 +340,12 @@ model TaskAttachment {
 }
 
 enum NotificationType {
-  MENTION        // @username mention in chat
-  NEW_MESSAGE    // New message in task chat
-  TASK_ASSIGNED  // Task assigned to user
-  TASK_UPDATE    // Task status/details updated
-  TASK_COMMENT   // Comment added to task
+  MENTION           // @username mention in chat
+  NEW_MESSAGE       // New message in task chat
+  TASK_ASSIGNED     // Task assigned to user
+  TASK_UPDATE       // Task status/details updated
+  TASK_COMMENT      // Comment added to task
+  REVIEWER_ASSIGNED // User assigned as task reviewer
 }
 
 model Notification {

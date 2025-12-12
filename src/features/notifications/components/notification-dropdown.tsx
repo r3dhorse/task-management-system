@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { Bell, CheckCheck, MessageSquare, UserPlus, FileEdit, MessageCircle } from "@/lib/lucide-icons";
+import { Bell, CheckCheck, MessageSquare, UserPlus, FileEdit, MessageCircle, ClipboardCheck } from "@/lib/lucide-icons";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -94,6 +94,8 @@ export const NotificationDropdown = () => {
         return <UserPlus className="w-4 h-4" />;
       case "TASK_UPDATE":
         return <FileEdit className="w-4 h-4" />;
+      case "REVIEWER_ASSIGNED":
+        return <ClipboardCheck className="w-4 h-4" />;
       default:
         return <Bell className="w-4 h-4" />;
     }
@@ -189,6 +191,7 @@ export const NotificationDropdown = () => {
                           notification.type === "MENTION" ? "bg-blue-100 text-blue-600" :
                           notification.type === "TASK_ASSIGNED" ? "bg-green-100 text-green-600" :
                           notification.type === "TASK_UPDATE" ? "bg-yellow-100 text-yellow-600" :
+                          notification.type === "REVIEWER_ASSIGNED" ? "bg-purple-100 text-purple-600" :
                           "bg-gray-100 text-gray-600"
                         )}>
                           {getNotificationIcon(notification.type)}

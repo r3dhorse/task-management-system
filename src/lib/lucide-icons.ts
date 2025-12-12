@@ -158,6 +158,8 @@ export const BuildingIcon = getIcon('Building', ['BuildingIcon', 'Building2']);
 export const ChevronRightIcon = getIcon('ChevronRight', ['ChevronRightIcon']);
 export const Users2Icon = getIcon('Users2', ['Users2Icon', 'Users']);
 export const TargetIcon = getIcon('Target', ['TargetIcon']);
+export const ClipboardCheck = getIcon('ClipboardCheck', ['ClipboardCheckIcon']);
+export const ClipboardCheckIcon = getIcon('ClipboardCheck', ['ClipboardCheckIcon']);
 
 // Export all lucide icons as a namespace for direct access
 export * from "lucide-react";
