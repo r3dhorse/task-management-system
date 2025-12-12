@@ -82,10 +82,11 @@ export const FileUpload = ({
       }
 
       const result = await response.json();
-      
+
+      // Use the actual stored filename from API (e.g., TASK-001_attachment.pdf)
       const uploadedFileData = {
         id: result.data.$id,
-        name: file.name,
+        name: result.data.name || file.name, // Prefer API filename, fallback to original
       };
 
       setUploadedFile(uploadedFileData);
@@ -113,20 +114,23 @@ export const FileUpload = ({
 
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full overflow-hidden">
       <Label htmlFor="file-upload" className="text-xs">PDF file only</Label>
-      
+
       {uploadedFile ? (
         <Card className="border-gray-200/80 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-3">
-            <div className="flex items-center justify-between gap-x-2">
-              <div className="flex items-center gap-x-2 flex-1 min-w-0">
-                <FileTextIcon className="size-4 text-red-500 flex-shrink-0" />
-                <span className="text-sm font-medium text-gray-800 truncate" title={uploadedFile.name}>
+            <div className="grid grid-cols-[1fr_auto] items-center gap-x-2">
+              <div className="flex items-center gap-x-2 overflow-hidden">
+                <FileTextIcon className="size-4 text-red-500 shrink-0" />
+                <span
+                  className="text-sm font-medium text-gray-800 truncate"
+                  title={uploadedFile.name}
+                >
                   {uploadedFile.name}
                 </span>
               </div>
-              
+
               {showRemoveButton && (
                 <Button
                   type="button"
@@ -134,7 +138,7 @@ export const FileUpload = ({
                   size="sm"
                   onClick={handleRemoveFile}
                   disabled={disabled}
-                  className="flex-shrink-0 w-8 h-8 p-0 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
+                  className="shrink-0 w-8 h-8 p-0 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
                   title="Remove attachment"
                 >
                   <XIcon className="size-3.5" />

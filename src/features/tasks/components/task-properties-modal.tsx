@@ -563,7 +563,7 @@ export const TaskPropertiesModal = ({
           </div>
 
           {/* Attachment - Full Width */}
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 overflow-hidden">
             <label className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
               Attachment

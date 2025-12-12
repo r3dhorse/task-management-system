@@ -97,7 +97,8 @@ export async function POST(request: NextRequest) {
       data: {
         $id: uploadResult.id,
         id: uploadResult.id,
-        name: file.name,
+        name: localResult.fileName, // Use the actual stored filename (e.g., TASK-001_attachment.pdf)
+        originalName: file.name, // Keep original name for reference
         size: file.size,
         mimeType: file.type,
         filePath: uploadResult.filePath,

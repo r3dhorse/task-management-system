@@ -507,33 +507,48 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   const isCollaborator = collaboratorIds.includes(currentMember?.id || '');
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
 
+  // Check if user is involved in the task (for permission calculations)
+  const isInvolvedInTask = isCreator || isAssignee || isReviewer || isCollaborator || isFollower || isWorkspaceAdmin || isSuperAdmin;
+
   // For DONE tasks, only admins can archive
   const canDelete = task?.status === TaskStatus.DONE
     ? (isWorkspaceAdmin || isSuperAdmin)
     : (isCreator || isAssignee || isSuperAdmin);
   const isAlreadyArchived = task?.status === "ARCHIVED";
 
-  // Update permission: Allow creators/customers to edit details, exclude TO DO stage from restrictions
-  // Reviewers can edit tasks in IN_REVIEW status
-  const canEdit = task?.status === TaskStatus.DONE
-    ? isWorkspaceAdmin
-    : task?.status === TaskStatus.TODO
-      ? true // All workspace members can edit TO DO tasks (since this is where they get their tasks)
-      : task?.status === TaskStatus.IN_REVIEW && isReviewer
-        ? true // Reviewers can edit tasks in IN_REVIEW status
-      : currentMember?.role === MemberRole.CUSTOMER
-        ? false // Customers cannot edit tasks that are not in TO DO status
-        : (isCreator || isAssignee || isCollaborator || (isFollower && currentMember?.role === MemberRole.MEMBER) || isWorkspaceAdmin || isSuperAdmin);
+  // Update permission for editing tasks:
+  // - Creator-only: can only edit in TODO stage (but can chat until DONE)
+  // - Creator who is also assignee/admin: can edit based on their other roles
+  // - Reviewers: can edit tasks in IN_REVIEW status
+  // - Customers: cannot edit tasks that are not in TODO status
+  // - Non-involved members viewing non-confidential tasks are read-only
+  const canEdit = !isInvolvedInTask && !task?.isConfidential
+    ? false // Read-only viewers cannot edit
+    : task?.status === TaskStatus.DONE
+      ? isWorkspaceAdmin || isSuperAdmin // Only admins can edit DONE tasks
+      : task?.status === TaskStatus.TODO
+        ? isInvolvedInTask // All involved members can edit TODO tasks (including creator)
+        : task?.status === TaskStatus.IN_REVIEW && isReviewer
+          ? true // Reviewers can edit tasks in IN_REVIEW status
+        : currentMember?.role === MemberRole.CUSTOMER
+          ? false // Customers cannot edit tasks that are not in TODO status
+          : isCreator && !isAssignee && !isWorkspaceAdmin && !isSuperAdmin
+            ? false // Creator-only (not assignee/admin) can only edit in TODO stage
+            : (isAssignee || isCollaborator || (isFollower && currentMember?.role === MemberRole.MEMBER) || isWorkspaceAdmin || isSuperAdmin);
 
   const canEditStatus = task?.status === TaskStatus.IN_REVIEW && isReviewer
     ? true // Reviewers can change status of IN_REVIEW tasks
     : (currentMember?.role !== MemberRole.CUSTOMER || isCreator); // Non-customers and creators can edit status
 
-  // Access restriction: Only assignee, creator, reviewer, collaborators, followers, and workspace admins can view task details
-  // Exception: All workspace members can view TO DO tasks (since this is where they get their tasks)
+  // Access restriction for task viewing:
+  // - Confidential tasks: Only assignee, creator, reviewer, collaborators, followers, and workspace admins
+  // - Non-confidential tasks: All workspace members can view (read-only for non-involved members)
+  // - Exception: All workspace members can view TO DO tasks (since this is where they get their tasks)
   const canViewTaskDetails = task?.status === TaskStatus.TODO
     ? currentMember?.role !== undefined // All workspace members can view TO DO tasks
-    : (isCreator || isAssignee || isReviewer || isCollaborator || isFollower || isWorkspaceAdmin || isSuperAdmin);
+    : task?.isConfidential
+      ? isInvolvedInTask // Confidential: only involved members
+      : currentMember?.role !== undefined; // Non-confidential: all workspace members can view
 
   // If user doesn't have permission to view task details, show access denied
   if (!canViewTaskDetails && task && currentMember) {
@@ -878,18 +893,24 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     );
   };
 
+  // Read-only mode for non-involved members viewing non-confidential tasks
+  const isReadOnlyViewer = !isInvolvedInTask && !task?.isConfidential && canViewTaskDetails;
+
   // Determine if Start Task button should be shown
-  // Show when: task is in TODO or BACKLOG, user is not a customer, and user is not already assigned
+  // Show when: task is in TODO or BACKLOG, user is a workspace member (not customer), and user is not already assigned
+  // Available to ALL workspace members (including read-only viewers) so they can pick up tasks
   const canStartTask = (task.status === TaskStatus.TODO || task.status === TaskStatus.BACKLOG) &&
     currentMember?.role !== MemberRole.CUSTOMER &&
     !isAssignee;
 
   // Determine if Mark as Reviewed button should be shown
   // Show when: task is in IN_REVIEW stage and:
-  // - For confidential tasks: only the assigned reviewer
-  // - For non-confidential tasks: any workspace member (non-customer)
-  const canMarkAsReviewed = task.status === TaskStatus.IN_REVIEW &&
-    (task.isConfidential
+  // - If task has a reviewer assigned: only the assigned reviewer can see/use the button
+  // - If no reviewer assigned: any workspace member (non-customer) can see/use the button (not read-only viewers)
+  const hasReviewer = task.reviewerId && task.reviewerId !== "";
+  const canMarkAsReviewed = !isReadOnlyViewer &&
+    task.status === TaskStatus.IN_REVIEW &&
+    (hasReviewer
       ? isReviewer
       : (currentMember?.role !== MemberRole.CUSTOMER));
 
@@ -1021,19 +1042,9 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
               <span className="text-sm text-gray-600 font-medium">Task Details</span>
             </div>
 
-            {/* Action Buttons - Always visible in header */}
+            {/* Action Buttons - Ordered: Actions first, then View/Update/Archive */}
             <div className="flex items-center gap-2">
-              {task.attachmentId && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleViewAttachment}
-                  className="hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200"
-                >
-                  <FileTextIcon className="size-4 mr-2" />
-                  <span className="hidden sm:inline">View</span> Attachment
-                </Button>
-              )}
+              {/* Primary Action Buttons (workflow actions) */}
               {canStartTask && (
                 <Button
                   size="sm"
@@ -1067,7 +1078,20 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   <span className="hidden sm:inline">Mark as Reviewed &</span> Done
                 </Button>
               )}
-              {canEdit && isAssignee && (
+
+              {/* Secondary Actions (view/edit/archive) */}
+              {task.attachmentId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewAttachment}
+                  className="hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200"
+                >
+                  <FileTextIcon className="size-4 mr-2" />
+                  <span className="hidden sm:inline">View</span> Attachment
+                </Button>
+              )}
+              {canEdit && (isAssignee || isWorkspaceAdmin || isSuperAdmin) && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -1356,18 +1380,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   </CardHeader>
                   <CardContent className="pb-4">
                     <div className="grid grid-cols-2 gap-2">
-                      {task.attachmentId && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleViewAttachment}
-                          className="justify-start hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200 text-xs h-8"
-                          aria-label="View attached file"
-                        >
-                          <FileTextIcon className="size-3 mr-1" />
-                          Attachment
-                        </Button>
-                      )}
+                      {/* Primary Action Buttons (workflow actions) */}
                       {canStartTask && (
                         <Button
                           size="sm"
@@ -1404,7 +1417,21 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                           Reviewed & Done
                         </Button>
                       )}
-                      {canEdit && isAssignee && (
+
+                      {/* Secondary Actions (view/edit/archive) */}
+                      {task.attachmentId && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleViewAttachment}
+                          className="justify-start hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200 text-xs h-8"
+                          aria-label="View task attachment"
+                        >
+                          <FileTextIcon className="size-3 mr-1" />
+                          View Attachment
+                        </Button>
+                      )}
+                      {canEdit && (isAssignee || isWorkspaceAdmin || isSuperAdmin) && (
                         <Button
                           variant="outline"
                           size="sm"

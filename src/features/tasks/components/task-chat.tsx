@@ -121,6 +121,23 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
       }
     });
 
+    // Add reviewer (if exists and different from current user)
+    if (task?.reviewer?.user?.name && task.reviewer.user.id !== currentUser?.id) {
+      // Don't override if already in another role
+      if (!memberMap.has(task.reviewer.user.id)) {
+        memberMap.set(task.reviewer.user.id, {
+          id: task.reviewer.id,
+          name: task.reviewer.user.name,
+          email: task.reviewer.user.email,
+          userId: task.reviewer.user.id,
+          role: 'REVIEWER',
+          taskRole: 'Reviewer',
+          workspaceId: task.workspaceId,
+          joinedAt: new Date().toISOString(),
+        });
+      }
+    }
+
     // Filter by search query and convert to array
     const members = Array.from(memberMap.values())
       .filter(member => member.name.toLowerCase().includes(mentionQuery.toLowerCase()))
@@ -147,7 +164,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
     }
 
     return members;
-  }, [task?.assignees, task?.collaborators, task?.followers, task?.workspaceId, currentUser?.id, showMentionDropdown, mentionQuery]);
+  }, [task?.assignees, task?.collaborators, task?.followers, task?.reviewer, task?.workspaceId, currentUser?.id, showMentionDropdown, mentionQuery]);
 
   // Transform API messages to include isOwn property
   const messages = useMemo(() => {
@@ -385,6 +402,20 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
         });
       }
     });
+
+    // Add reviewer
+    if (task?.reviewer?.user?.id && !seenUserIds.has(task.reviewer.user.id)) {
+      seenUserIds.add(task.reviewer.user.id);
+      taskMembers.push({
+        id: task.reviewer.id,
+        name: task.reviewer.user?.name || '',
+        email: task.reviewer.user?.email || '',
+        userId: task.reviewer.user?.id || '',
+        role: 'REVIEWER',
+        workspaceId: task.workspaceId,
+        joinedAt: new Date().toISOString(),
+      });
+    }
 
     const mentions = extractMentions(messageContent, taskMembers, currentUser.id);
     
@@ -794,6 +825,20 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                                 }
                               });
 
+                              // Add reviewer
+                              if (task?.reviewer?.user?.id && !seenIds.has(task.reviewer.user.id)) {
+                                seenIds.add(task.reviewer.user.id);
+                                allTaskMembers.push({
+                                  id: task.reviewer.id,
+                                  name: task.reviewer.user?.name || '',
+                                  email: task.reviewer.user?.email || '',
+                                  userId: task.reviewer.user?.id || '',
+                                  role: 'REVIEWER',
+                                  workspaceId: task.workspaceId,
+                                  joinedAt: new Date().toISOString(),
+                                });
+                              }
+
                               const mentions = extractMentions(message.content, allTaskMembers, currentUser?.id);
                               return mentions.length > 0
                                 ? renderMessageWithMentions(message.content, mentions)
@@ -993,6 +1038,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                             member.role === 'ASSIGNEE' && "bg-green-100 text-green-600",
                             member.role === 'COLLABORATOR' && "bg-purple-100 text-purple-600",
                             member.role === 'FOLLOWER' && "bg-blue-100 text-blue-600",
+                            member.role === 'REVIEWER' && "bg-amber-100 text-amber-600",
                             member.role === 'ALL' && "bg-orange-100 text-orange-600"
                           )}>
                             {member.userId === 'all' ? '👥' : getInitials(member.name || '')}
@@ -1012,6 +1058,7 @@ export const TaskChat = ({ taskId, className }: TaskChatProps) => {
                             member.role === 'ASSIGNEE' && "bg-green-100 text-green-800",
                             member.role === 'COLLABORATOR' && "bg-purple-100 text-purple-800",
                             member.role === 'FOLLOWER' && "bg-blue-100 text-blue-800",
+                            member.role === 'REVIEWER' && "bg-amber-100 text-amber-800",
                             member.role === 'ALL' && "bg-orange-100 text-orange-800"
                           )}>
                             {memberWithRole.taskRole}

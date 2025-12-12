@@ -71,6 +71,7 @@ async function ensureUploadDir(): Promise<void> {
 /**
  * Upload a file to local storage with organized folder structure
  * Folder format: dd-mm-yyyy - task#
+ * File naming: {taskNumber}_attachment.pdf for task attachments
  */
 export async function uploadFile(
   file: File,
@@ -103,7 +104,17 @@ export async function uploadFile(
   // Generate unique file ID
   const fileId = randomUUID()
   const extension = path.extname(file.name)
-  const fileName = `${fileId}${extension}`
+
+  // Generate filename: use taskNumber_attachment for task attachments, UUID for others
+  let fileName: string
+  if (taskNumber && fileType === 'task') {
+    // Use uniform naming: {taskNumber}_attachment.pdf
+    const safeTaskNumber = sanitizeTaskNumber(taskNumber)
+    fileName = `${safeTaskNumber}_attachment${extension}`
+  } else {
+    // Fallback to UUID-based naming
+    fileName = `${fileId}${extension}`
+  }
 
   // Determine folder path
   let folderPath: string
@@ -124,6 +135,14 @@ export async function uploadFile(
   await ensureDir(folderPath)
 
   const filePath = path.join(folderPath, fileName)
+
+  // If file already exists with same name (re-uploading attachment), delete old file first
+  try {
+    await fs.access(filePath)
+    await fs.unlink(filePath)
+  } catch {
+    // File doesn't exist, which is fine
+  }
 
   try {
     // Convert File to Buffer and write to disk
