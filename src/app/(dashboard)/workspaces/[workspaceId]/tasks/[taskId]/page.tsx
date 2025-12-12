@@ -510,6 +510,12 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   // Check if user is involved in the task (for permission calculations)
   const isInvolvedInTask = isCreator || isAssignee || isReviewer || isCollaborator || isFollower || isWorkspaceAdmin || isSuperAdmin;
 
+  // Check if user can actively work on the task (for edit permissions)
+  const canWorkOnTask = isCreator || isAssignee || isCollaborator || isWorkspaceAdmin || isSuperAdmin;
+
+  // Read-only viewer: can view non-confidential tasks but cannot edit
+  const isReadOnlyViewer = !canWorkOnTask && !task?.isConfidential;
+
   // For DONE tasks, only admins can archive
   const canDelete = task?.status === TaskStatus.DONE
     ? (isWorkspaceAdmin || isSuperAdmin)
@@ -541,14 +547,12 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     : (currentMember?.role !== MemberRole.CUSTOMER || isCreator); // Non-customers and creators can edit status
 
   // Access restriction for task viewing:
-  // - Confidential tasks: Only assignee, creator, reviewer, collaborators, followers, and workspace admins
-  // - Non-confidential tasks: All workspace members can view (read-only for non-involved members)
-  // - Exception: All workspace members can view TO DO tasks (since this is where they get their tasks)
-  const canViewTaskDetails = task?.status === TaskStatus.TODO
-    ? currentMember?.role !== undefined // All workspace members can view TO DO tasks
-    : task?.isConfidential
-      ? isInvolvedInTask // Confidential: only involved members
-      : currentMember?.role !== undefined; // Non-confidential: all workspace members can view
+  // - Non-confidential tasks: ALL workspace members can view (read-only for non-involved)
+  // - Confidential tasks: Only involved members (assignee, creator, reviewer, collaborators, followers, admins)
+  // This enhances teamwork UX by allowing visibility into non-confidential work
+  const canViewTaskDetails = task?.isConfidential
+    ? isInvolvedInTask // Confidential: only involved members can view
+    : currentMember?.role !== undefined; // Non-confidential: all workspace members can view (read-only if not involved)
 
   // If user doesn't have permission to view task details, show access denied
   if (!canViewTaskDetails && task && currentMember) {
@@ -893,9 +897,6 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     );
   };
 
-  // Read-only mode for non-involved members viewing non-confidential tasks
-  const isReadOnlyViewer = !isInvolvedInTask && !task?.isConfidential && canViewTaskDetails;
-
   // Determine if Start Task button should be shown
   // Show when: task is in TODO or BACKLOG, user is a workspace member (not customer), and user is not already assigned
   // Available to ALL workspace members (including read-only viewers) so they can pick up tasks
@@ -1141,6 +1142,11 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                 {task.isConfidential && (
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100 border border-red-200 shadow-sm">
                     🔒 Confidential
+                  </span>
+                )}
+                {isReadOnlyViewer && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-gray-600 bg-gray-100 border border-gray-200 shadow-sm">
+                    👁️ View Only
                   </span>
                 )}
               </div>

@@ -61,10 +61,13 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
   const isWorkspaceAdmin = currentMember?.role === MemberRole.ADMIN;
   const isSuperAdmin = currentUser?.isSuperAdmin || false;
 
-  // Exception: All workspace members can view TO DO tasks (since this is where they get their tasks)
-  const canViewTaskDetails = task.status === 'TODO'
-    ? currentMember?.role !== undefined // All workspace members can view TO DO tasks
-    : (isCreator || isAssignee || isReviewer || isFollower || isWorkspaceAdmin || isSuperAdmin);
+  // Access restriction for task viewing:
+  // - Non-confidential tasks: ALL workspace members can view (read-only for non-involved)
+  // - Confidential tasks: Only involved members can view
+  const isInvolvedInTask = isCreator || isAssignee || isReviewer || isFollower || isWorkspaceAdmin || isSuperAdmin;
+  const canViewTaskDetails = task.isConfidential
+    ? isInvolvedInTask // Confidential: only involved members
+    : currentMember?.role !== undefined; // Non-confidential: all workspace members can view
 
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -74,7 +77,7 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
     // Check if user has permission to view task details
     if (!canViewTaskDetails) {
       toast.error("Access restricted", {
-        description: "You can only view tasks you're assigned to, created, or following",
+        description: "This is a confidential task. Only assigned members can view it.",
         style: {
           background: '#ffffff',
           borderColor: '#6b7280',
@@ -102,7 +105,7 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
     // Check if user has permission to view task details
     if (!canViewTaskDetails) {
       toast.error("Access restricted", {
-        description: "You can only view tasks you're assigned to, created, or following",
+        description: "This is a confidential task. Only assigned members can view it.",
         style: {
           background: '#ffffff',
           borderColor: '#6b7280',
@@ -171,23 +174,19 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
             !canViewTaskDetails
               ? "cursor-not-allowed opacity-60 hover:scale-100 border-gray-300"
               : isDragDisabled
-                ? "cursor-not-allowed opacity-75 hover:scale-100"
-                : "cursor-grab active:cursor-grabbing"
+                ? "cursor-pointer hover:scale-[1.02]"
+                : "cursor-grab active:cursor-grabbing hover:scale-[1.02]"
           } ${
             snapshot.isDragging
               ? "opacity-0 invisible scale-75"
               : isBeingDragged
                 ? "opacity-30 scale-95"
-                : !isDragDisabled && canViewTaskDetails
-                  ? "hover:scale-[1.02]"
-                  : ""
+                : ""
           }`}
           title={
             !canViewTaskDetails
-              ? "You don't have permission to view this task"
-              : isDragDisabled
-                ? "You don't have permission to move this task"
-                : undefined
+              ? "This is a confidential task. Only assigned members can view it."
+              : undefined
           }
         >
           {/* Card Header */}

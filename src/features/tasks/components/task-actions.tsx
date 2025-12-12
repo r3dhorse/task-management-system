@@ -21,9 +21,10 @@ interface TaskActionsProps {
   reviewerId?: string; // Task reviewer's member ID
   status?: string; // Task status to determine if already archived or done
   followedIds?: string; // JSON string of follower IDs
+  isConfidential?: boolean; // Whether task is confidential
 };
 
-export const TaskActions = ({ id, serviceId, children, deleteOnly = false, status, creatorId, assigneeId, reviewerId, followedIds }: TaskActionsProps) => {
+export const TaskActions = ({ id, serviceId, children, deleteOnly = false, status, creatorId, assigneeId, reviewerId, followedIds, isConfidential = false }: TaskActionsProps) => {
   const workspaceId = useWorkspaceId();
   const router = useRouter();
 
@@ -93,14 +94,17 @@ export const TaskActions = ({ id, serviceId, children, deleteOnly = false, statu
 
     // Check if user has permission to view task details
     const isFollower = parsedFollowedIds.includes(currentMember?.id || '');
-    // Exception: All workspace members can view TO DO tasks (since this is where they get their tasks)
-    const canViewTaskDetails = status === 'TODO'
-      ? currentMember?.role !== undefined // All workspace members can view TO DO tasks
-      : (isCreator || isAssignee || isReviewer || isFollower || isWorkspaceAdmin || isSuperAdmin);
+    // Access restriction for task viewing:
+    // - Non-confidential tasks: ALL workspace members can view (read-only for non-involved)
+    // - Confidential tasks: Only involved members can view
+    const isInvolvedInTask = isCreator || isAssignee || isReviewer || isFollower || isWorkspaceAdmin || isSuperAdmin;
+    const canViewTaskDetails = isConfidential
+      ? isInvolvedInTask // Confidential: only involved members
+      : currentMember?.role !== undefined; // Non-confidential: all workspace members can view
 
     if (!canViewTaskDetails) {
       toast.error("Access restricted", {
-        description: "You can only view tasks you're assigned to, created, reviewing, or following",
+        description: "This is a confidential task. Only assigned members can view it.",
         style: {
           background: '#ffffff',
           borderColor: '#6b7280',

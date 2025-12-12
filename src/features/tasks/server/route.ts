@@ -1972,23 +1972,11 @@ const app = new Hono()
         return c.json({ error: "Task not found" }, 404);
       }
 
-      // Check access to confidential tasks
+      // Access control for viewing tasks:
+      // - Non-confidential tasks: ALL workspace members can view (read-only for non-involved)
+      // - Confidential tasks: Only involved members can view
+      // This enhances teamwork UX by allowing visibility into non-confidential work
       if (task.isConfidential) {
-        const hasConfidentialAccess =
-          task.creatorId === currentUser.id || // User created the task
-          task.assignees.some(a => a.id === currentMember.id) || // User is assigned to the task
-          task.reviewerId === currentMember.id || // User is the reviewer of the task
-          task.followers.some(f => f.id === currentMember.id) || // Customer is following the task
-          task.collaborators.some(c => c.id === currentMember.id); // Team member is collaborating
-
-        if (!hasConfidentialAccess) {
-          return c.json({ error: "You don't have access to this confidential task" }, 403);
-        }
-      }
-
-      // Check general access permissions for non-confidential tasks
-      // TODO tasks can be viewed by all workspace members
-      if (task.status !== TaskStatus.TODO) {
         const isCreator = task.creatorId === currentUser.id;
         const isAssignee = task.assignees.some(a => a.id === currentMember.id);
         const isReviewer = task.reviewerId === currentMember.id;
@@ -1997,11 +1985,13 @@ const app = new Hono()
         const isWorkspaceAdmin = currentMember.role === MemberRole.ADMIN;
         const isSuperAdmin = currentUser.isAdmin || currentUser.isSuperAdmin || false;
 
-        // Check if user has permission to view this task
-        if (!isCreator && !isAssignee && !isReviewer && !isFollower && !isCollaborator && !isWorkspaceAdmin && !isSuperAdmin) {
-          return c.json({ error: "Unauthorized" }, 401);
+        const hasConfidentialAccess = isCreator || isAssignee || isReviewer || isFollower || isCollaborator || isWorkspaceAdmin || isSuperAdmin;
+
+        if (!hasConfidentialAccess) {
+          return c.json({ error: "You don't have access to this confidential task" }, 403);
         }
       }
+      // Non-confidential tasks: All workspace members can view (being a member is already verified above)
 
       const assignees = task.assignees.map(assignee => ({
         ...assignee,
