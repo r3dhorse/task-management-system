@@ -419,49 +419,7 @@ export const CreateTaskForm = ({
                 )}
               />
 
-              {/* 4. Assignees (Multi-select) - Enhanced UI */}
-              <FormItem>
-                <FormLabel className="flex items-center gap-2">
-                  Assignees
-                  {isConfidentialValue && (
-                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
-                      Required for confidential tasks
-                    </span>
-                  )}
-                </FormLabel>
-                <FormControl>
-                  <MultiSelect
-                    options={assigneeOptions}
-                    selected={selectedAssignees}
-                    onChange={setSelectedAssignees}
-                    placeholder={
-                      isLoadingMembers
-                        ? "Loading members..."
-                        : !selectedWorkspaceId
-                          ? "Select workspace first"
-                          : "Select assignees..."
-                    }
-                    className="w-full"
-                  />
-                </FormControl>
-                <div className="space-y-1 mt-2">
-                  {selectedAssignees.length > 0 && (
-                    <div className="flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-200">
-                      <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                      <span className="font-medium">{selectedAssignees.length} assignee{selectedAssignees.length > 1 ? 's' : ''} selected</span>
-                      <span className="text-indigo-500">(Primary task owners)</span>
-                    </div>
-                  )}
-                  {isConfidentialValue && selectedAssignees.length === 0 && (
-                    <p className="text-sm text-destructive">At least one assignee is required for confidential tasks</p>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    Team members responsible for completing this task. They have full access to monitor and update the task.
-                  </p>
-                </div>
-              </FormItem>
-
-              {/* 5. Service (only services from selected workspace) */}
+              {/* 4. Service (only services from selected workspace) */}
               <FormField
                 control={form.control}
                 name="serviceId"
@@ -510,6 +468,48 @@ export const CreateTaskForm = ({
                   </FormItem>
                 )}
               />
+
+              {/* 5. Assignees (Multi-select) - Enhanced UI */}
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  Assignees
+                  {isConfidentialValue && (
+                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-medium">
+                      Required for confidential tasks
+                    </span>
+                  )}
+                </FormLabel>
+                <FormControl>
+                  <MultiSelect
+                    options={assigneeOptions}
+                    selected={selectedAssignees}
+                    onChange={setSelectedAssignees}
+                    placeholder={
+                      isLoadingMembers
+                        ? "Loading members..."
+                        : !selectedWorkspaceId
+                          ? "Select workspace first"
+                          : "Select assignees..."
+                    }
+                    className="w-full"
+                  />
+                </FormControl>
+                <div className="space-y-1 mt-2">
+                  {selectedAssignees.length > 0 && (
+                    <div className="flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-2 rounded-lg border border-indigo-200">
+                      <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                      <span className="font-medium">{selectedAssignees.length} assignee{selectedAssignees.length > 1 ? 's' : ''} selected</span>
+                      <span className="text-indigo-500">(Primary task owners)</span>
+                    </div>
+                  )}
+                  {isConfidentialValue && selectedAssignees.length === 0 && (
+                    <p className="text-sm text-destructive">At least one assignee is required for confidential tasks</p>
+                  )}
+                  <p className="text-sm text-muted-foreground">
+                    Team members responsible for completing this task. They have full access to monitor and update the task.
+                  </p>
+                </div>
+              </FormItem>
 
               {/* 6. Due Date */}
               <FormField

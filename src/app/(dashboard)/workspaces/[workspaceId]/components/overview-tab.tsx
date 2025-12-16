@@ -518,9 +518,7 @@ export function OverviewTab({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className="text-right text-xs text-gray-500 hidden sm:block">
-                        <div>{Math.round(performer.completionRate)}% rate</div>
-                      </div>
+                      <span className="text-xs text-gray-500 hidden sm:block">Score:</span>
                       <Badge
                         className={cn(
                           "font-bold min-w-[50px] justify-center",

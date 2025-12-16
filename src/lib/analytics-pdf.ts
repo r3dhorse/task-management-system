@@ -62,7 +62,13 @@ interface ProductivityMetrics {
   averageCompletionTime: number;
   completionRate: number;
   overdueRate: number;
+  tasksInProgress: number;
+  tasksOverdue: number;
+  tasksInReview: number;
+  tasksBacklog: number;
+  tasksTodo: number;
 }
+
 
 export interface AnalyticsPDFParams {
   workspaceName: string;
@@ -96,6 +102,10 @@ function getKPIColor(kpiScore: number): [number, number, number] {
 
 function calculateProductivityMetrics(tasks: PopulatedTask[]): ProductivityMetrics {
   const completedTasks = tasks.filter(task => task.status === TaskStatus.DONE);
+  const inProgressTasks = tasks.filter(task => task.status === TaskStatus.IN_PROGRESS);
+  const inReviewTasks = tasks.filter(task => task.status === TaskStatus.IN_REVIEW);
+  const backlogTasks = tasks.filter(task => task.status === TaskStatus.BACKLOG);
+  const todoTasks = tasks.filter(task => task.status === TaskStatus.TODO);
   const overdueTasks = tasks.filter(task => {
     if (!task.dueDate || task.status === TaskStatus.DONE) return false;
     return new Date(task.dueDate) < new Date();
@@ -114,8 +124,14 @@ function calculateProductivityMetrics(tasks: PopulatedTask[]): ProductivityMetri
     averageCompletionTime: Math.round(avgCompletionTime),
     completionRate: tasks.length > 0 ? (completedTasks.length / tasks.length) * 100 : 0,
     overdueRate: tasks.length > 0 ? (overdueTasks.length / tasks.length) * 100 : 0,
+    tasksInProgress: inProgressTasks.length,
+    tasksOverdue: overdueTasks.length,
+    tasksInReview: inReviewTasks.length,
+    tasksBacklog: backlogTasks.length,
+    tasksTodo: todoTasks.length,
   };
 }
+
 
 function calculateStatusDistribution(tasks: PopulatedTask[]): StatusDistribution {
   return {
@@ -554,24 +570,43 @@ export function generateAnalyticsPDF({
   doc.setTextColor(31, 41, 55);
   doc.text("Member Performance Analytics", margin + chartSectionWidth + 10, yPos);
 
-  // KPI Gauge Charts - positioned on the right side
-  const numGauges = withReviewStage ? 5 : 4;
-  const gaugeRadiusPage1 = 12; // Reduced radius to prevent overlap
+  // KPI Gauge Charts - positioned on the right side with proper spacing
+  // Use 2 rows for 5 gauges to prevent overlap
+  const gaugeRadiusPage1 = 14; // Larger radius for better visibility
   const gaugeStartX = margin + chartSectionWidth + 15;
   const gaugeAreaWidth = chartSectionWidth - 10;
-  const gaugeSpacingPage1 = gaugeAreaWidth / numGauges;
-  const gaugeY = yPos + 40;
-
-  drawKPIGaugeChart(doc, avgKPI, gaugeStartX + gaugeSpacingPage1 * 0.5, gaugeY, gaugeRadiusPage1, "Avg KPI Score");
-  drawKPIGaugeChart(doc, avgCompletion, gaugeStartX + gaugeSpacingPage1 * 1.5, gaugeY, gaugeRadiusPage1, "Avg Completion");
-  drawKPIGaugeChart(doc, avgSLA, gaugeStartX + gaugeSpacingPage1 * 2.5, gaugeY, gaugeRadiusPage1, "Avg SLA");
-  drawKPIGaugeChart(doc, avgCollaboration, gaugeStartX + gaugeSpacingPage1 * 3.5, gaugeY, gaugeRadiusPage1, "Collaboration");
 
   if (withReviewStage) {
+    // 5 gauges: 3 on top row, 2 on bottom row
+    const topRowSpacing = gaugeAreaWidth / 3;
+    const gaugeY1 = yPos + 30;
+    const gaugeY2 = yPos + 70;
+
+    // Top row: 3 gauges
+    drawKPIGaugeChart(doc, avgKPI, gaugeStartX + topRowSpacing * 0.5, gaugeY1, gaugeRadiusPage1, "Avg KPI Score");
+    drawKPIGaugeChart(doc, avgCompletion, gaugeStartX + topRowSpacing * 1.5, gaugeY1, gaugeRadiusPage1, "Avg Completion");
+    drawKPIGaugeChart(doc, avgSLA, gaugeStartX + topRowSpacing * 2.5, gaugeY1, gaugeRadiusPage1, "Avg SLA");
+
+    // Bottom row: 2 gauges (centered)
+    const bottomRowSpacing = gaugeAreaWidth / 2;
     const avgReview = memberAnalytics.length > 0
       ? Math.round(memberAnalytics.reduce((sum, m) => sum + m.reviewScore, 0) / memberAnalytics.length * 100)
       : 0;
-    drawKPIGaugeChart(doc, avgReview, gaugeStartX + gaugeSpacingPage1 * 4.5, gaugeY, gaugeRadiusPage1, "Review Score");
+    drawKPIGaugeChart(doc, avgCollaboration, gaugeStartX + bottomRowSpacing * 0.5, gaugeY2, gaugeRadiusPage1, "Collaboration");
+    drawKPIGaugeChart(doc, avgReview, gaugeStartX + bottomRowSpacing * 1.5, gaugeY2, gaugeRadiusPage1, "Review Score");
+  } else {
+    // 4 gauges: 2x2 grid layout
+    const rowSpacing = gaugeAreaWidth / 2;
+    const gaugeY1 = yPos + 30;
+    const gaugeY2 = yPos + 70;
+
+    // Top row
+    drawKPIGaugeChart(doc, avgKPI, gaugeStartX + rowSpacing * 0.5, gaugeY1, gaugeRadiusPage1, "Avg KPI Score");
+    drawKPIGaugeChart(doc, avgCompletion, gaugeStartX + rowSpacing * 1.5, gaugeY1, gaugeRadiusPage1, "Avg Completion");
+
+    // Bottom row
+    drawKPIGaugeChart(doc, avgSLA, gaugeStartX + rowSpacing * 0.5, gaugeY2, gaugeRadiusPage1, "Avg SLA");
+    drawKPIGaugeChart(doc, avgCollaboration, gaugeStartX + rowSpacing * 1.5, gaugeY2, gaugeRadiusPage1, "Collaboration");
   }
 
   // ===== PAGE 2: MEMBER PERFORMANCE =====
@@ -589,7 +624,7 @@ export function generateAnalyticsPDF({
 
   yPos = 35;
 
-  // Member Performance Table (Gauge charts moved to page 1)
+  // Member Performance Table
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
@@ -761,14 +796,14 @@ export function generateAnalyticsPDF({
   doc.text("Workspace Summary", margin, yPos);
   yPos += 10;
 
-  const summaryCardWidth = (pageWidth - margin * 2 - 5) / 2;
-  const summaryCardHeight = 35;
+  const wsSummaryCardWidth = (pageWidth - margin * 2 - 5) / 2;
+  const wsSummaryCardHeight = 35;
 
   // Overall Productivity Card
   doc.setFillColor(249, 250, 251);
-  doc.roundedRect(margin, yPos, summaryCardWidth, summaryCardHeight, 4, 4, "F");
+  doc.roundedRect(margin, yPos, wsSummaryCardWidth, wsSummaryCardHeight, 4, 4, "F");
   doc.setFillColor(99, 102, 241);
-  doc.roundedRect(margin, yPos, 4, summaryCardHeight, 2, 2, "F");
+  doc.roundedRect(margin, yPos, 4, wsSummaryCardHeight, 2, 2, "F");
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
@@ -786,30 +821,30 @@ export function generateAnalyticsPDF({
   doc.text(`${productivityMetrics.tasksCompleted} of ${productivityMetrics.tasksCreated} tasks completed`, margin + 10, yPos + 32);
 
   // Team Efficiency Card
-  const card2X = margin + summaryCardWidth + 5;
+  const wsCard2X = margin + wsSummaryCardWidth + 5;
   doc.setFillColor(249, 250, 251);
-  doc.roundedRect(card2X, yPos, summaryCardWidth, summaryCardHeight, 4, 4, "F");
+  doc.roundedRect(wsCard2X, yPos, wsSummaryCardWidth, wsSummaryCardHeight, 4, 4, "F");
   doc.setFillColor(168, 85, 247);
-  doc.roundedRect(card2X, yPos, 4, summaryCardHeight, 2, 2, "F");
+  doc.roundedRect(wsCard2X, yPos, 4, wsSummaryCardHeight, 2, 2, "F");
 
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(107, 114, 128);
-  doc.text("Team Efficiency", card2X + 10, yPos + 10);
+  doc.text("Team Efficiency", wsCard2X + 10, yPos + 10);
 
   const highPerformers = memberAnalytics.filter(m => m.kpiScore >= 60).length;
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(168, 85, 247);
-  doc.text(highPerformers.toString(), card2X + 10, yPos + 25);
+  doc.text(highPerformers.toString(), wsCard2X + 10, yPos + 25);
 
   doc.setFontSize(7);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(107, 114, 128);
-  doc.text("high-performing members", card2X + 10, yPos + 32);
+  doc.text("high-performing members", wsCard2X + 10, yPos + 32);
 
   // ===== KPI WEIGHTS LEGEND =====
-  yPos += summaryCardHeight + 15;
+  yPos += wsSummaryCardHeight + 15;
 
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
