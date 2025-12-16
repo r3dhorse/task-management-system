@@ -163,16 +163,25 @@ export const WorkspaceAnalytics = ({
         const reviewerPoints = reviewingTasksCompleted * 0.3;
         const contributionScore = assignedPoints + collaboratorPoints + reviewerPoints;
 
-        // KPI Metric 3: SLA Compliance (SLA) - tasks completed before due date
+        // KPI Metric 3: SLA Compliance (SLA) - percentage of tasks meeting SLA
+        // A task meets SLA if:
+        // - It's completed and was completed on or before the due date, OR
+        // - It's not completed but the due date hasn't passed yet
         const tasksWithDueDate = memberTasks.filter(task => task.dueDate);
-        const tasksCompletedOnTime = completedTasks.filter(task => {
-          if (!task.dueDate) return true; // Count tasks without due dates as compliant
-          const dueDate = new Date(task.dueDate);
-          const completedDate = new Date(task.updatedAt);
-          return completedDate <= dueDate;
+        const now = new Date();
+        const tasksWithinSLA = tasksWithDueDate.filter(task => {
+          const dueDate = new Date(task.dueDate!);
+          if (task.status === TaskStatus.DONE) {
+            // Completed task: check if it was completed on time
+            const completedDate = new Date(task.updatedAt);
+            return completedDate <= dueDate;
+          } else {
+            // Not completed: check if due date hasn't passed yet
+            return dueDate >= now;
+          }
         });
         const slaCompliance = tasksWithDueDate.length > 0
-          ? tasksCompletedOnTime.length / tasksWithDueDate.length
+          ? tasksWithinSLA.length / tasksWithDueDate.length
           : 1; // If no tasks with due dates, consider fully compliant
 
         // KPI Metric 4: Collaboration Score (CS) - collaboration effectiveness

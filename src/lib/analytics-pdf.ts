@@ -185,15 +185,20 @@ function calculateMemberAnalytics(
       const reviewerPoints = reviewingTasksCompleted * 0.3;
       const contributionScore = assignedPoints + collaboratorPoints + reviewerPoints;
 
+      // SLA Compliance - percentage of tasks meeting SLA
       const tasksWithDueDate = memberTasks.filter(task => task.dueDate);
-      const tasksCompletedOnTime = completedTasks.filter(task => {
-        if (!task.dueDate) return true;
-        const dueDate = new Date(task.dueDate);
-        const completedDate = new Date(task.updatedAt);
-        return completedDate <= dueDate;
+      const now = new Date();
+      const tasksWithinSLA = tasksWithDueDate.filter(task => {
+        const dueDate = new Date(task.dueDate!);
+        if (task.status === TaskStatus.DONE) {
+          const completedDate = new Date(task.updatedAt);
+          return completedDate <= dueDate;
+        } else {
+          return dueDate >= now;
+        }
       });
       const slaCompliance = tasksWithDueDate.length > 0
-        ? tasksCompletedOnTime.length / tasksWithDueDate.length
+        ? tasksWithinSLA.length / tasksWithDueDate.length
         : 1;
 
       const collaborationScore = followingTasks.length > 0

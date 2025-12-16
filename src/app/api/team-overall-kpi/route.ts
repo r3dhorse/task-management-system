@@ -109,14 +109,23 @@ function calculateMemberKPI(
   const reviewerPoints = reviewingTasksCompleted * 0.3;
   const contributionScore = assignedPoints + collaboratorPoints + reviewerPoints;
 
-  // SLA Compliance
+  // SLA Compliance - percentage of tasks meeting SLA
+  // A task is within SLA if: completed on time OR not yet overdue
   const tasksWithDueDate = memberTasks.filter(task => task.dueDate);
-  const tasksCompletedOnTime = completedTasks.filter(task => {
-    if (!task.dueDate) return true;
-    return new Date(task.updatedAt) <= new Date(task.dueDate);
+  const now = new Date();
+  const tasksWithinSLA = tasksWithDueDate.filter(task => {
+    const dueDate = new Date(task.dueDate!);
+    if (task.status === TaskStatus.DONE) {
+      // Completed task: check if completed on or before due date
+      const completedDate = new Date(task.updatedAt);
+      return completedDate <= dueDate;
+    } else {
+      // Incomplete task: check if not yet overdue
+      return dueDate >= now;
+    }
   });
   const slaCompliance = tasksWithDueDate.length > 0
-    ? tasksCompletedOnTime.length / tasksWithDueDate.length
+    ? tasksWithinSLA.length / tasksWithDueDate.length
     : 1;
 
   // Collaboration Score
