@@ -34,10 +34,6 @@ export const SignInCard = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { mutate, isPending } = useLogin();
 
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
-
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -45,6 +41,15 @@ export const SignInCard = () => {
       password: "",
     },
   });
+
+  useEffect(() => {
+    setIsVisible(true);
+    // Auto-focus on email input after animation starts
+    const focusTimer = setTimeout(() => {
+      form.setFocus("email");
+    }, 100);
+    return () => clearTimeout(focusTimer);
+  }, [form]);
 
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
     mutate({ json: values });
@@ -77,6 +82,7 @@ export const SignInCard = () => {
                       type="text"
                       placeholder="Email address"
                       autoComplete="email"
+                      tabIndex={1}
                       data-testid="email-input"
                       className={`${styles.glassmorphismInput} h-12 px-4 text-base text-white placeholder:text-white/70 focus:ring-0 focus:ring-offset-0 ${
                         form.formState.errors.email ? 'border-red-400/60 focus:border-red-400/80 !bg-red-500/10' : ''
@@ -101,6 +107,7 @@ export const SignInCard = () => {
                         type={showPassword ? "text" : "password"}
                         placeholder="Password"
                         autoComplete="current-password"
+                        tabIndex={2}
                         data-testid="password-input"
                         className={`${styles.glassmorphismInput} h-12 px-4 pr-12 text-base text-white placeholder:text-white/70 focus:ring-0 focus:ring-offset-0`}
                       />
@@ -108,6 +115,7 @@ export const SignInCard = () => {
                         type="button"
                         variant="ghost"
                         size="sm"
+                        tabIndex={-1}
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-0 top-0 h-12 px-3 py-0 hover:bg-transparent text-white/70 hover:text-white transition-colors"
                       >
@@ -128,6 +136,7 @@ export const SignInCard = () => {
               disabled={isPending}
               type="submit"
               size="lg"
+              tabIndex={3}
               data-testid="signin-button"
               className={`${styles.glassmorphismButton} w-full h-12 text-base font-semibold text-white focus:ring-0 focus:ring-offset-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none`}
             >
