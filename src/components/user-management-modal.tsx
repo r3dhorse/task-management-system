@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Search, Edit, Trash2, Loader2, Key, Shield, ShieldCheck, Copy, Plus, X } from "@/lib/lucide-icons";
+import { Search, Edit, Trash2, Loader2, Key, Shield, ShieldCheck, Copy, Plus, X, ChevronLeft, ChevronRight } from "@/lib/lucide-icons";
 import { formatDistanceToNow } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 
@@ -124,26 +124,44 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
     };
   }, [queryClient]);
 
-  // Fetch users with optimizations
+  const ITEMS_PER_PAGE = 8;
+
+  // Fetch ALL users (frontend pagination)
   const { data, isLoading, error } = useQuery<UsersResponse>({
-    queryKey: ["users", page, debouncedSearch],
+    queryKey: ["users"],
     queryFn: async () => {
       const params = new URLSearchParams({
-        page: page.toString(),
-        limit: "15",
-        ...(debouncedSearch && { search: debouncedSearch }),
+        page: "1",
+        limit: "1000", // Fetch all users
       });
       const response = await fetch(`/api/users?${params}`);
       if (!response.ok) throw new Error("Failed to fetch users");
       return response.json();
     },
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     refetchOnReconnect: false,
-    enabled: open, // Only fetch when modal is open
+    enabled: open,
   });
+
+  // Frontend filtering and pagination
+  const filteredUsers = useMemo(() => {
+    if (!data?.users) return [];
+    if (!debouncedSearch) return data.users;
+
+    const searchLower = debouncedSearch.toLowerCase();
+    return data.users.filter(user =>
+      user.name?.toLowerCase().includes(searchLower) ||
+      user.email.toLowerCase().includes(searchLower)
+    );
+  }, [data?.users, debouncedSearch]);
+
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    return filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredUsers, page]);
 
   // Create user mutation
   const createUserMutation = useMutation({
@@ -166,11 +184,7 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
       return response.json();
     },
     onSuccess: (data) => {
-      // Optimized invalidation - only invalidate current page
-      queryClient.invalidateQueries({
-        queryKey: ["users", page, debouncedSearch],
-        exact: true
-      });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("User created successfully");
       setCreatedUserPassword(data.temporaryPassword);
       setCreateForm({
@@ -204,11 +218,7 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
       return response.json();
     },
     onSuccess: () => {
-      // Optimized invalidation - only invalidate current page
-      queryClient.invalidateQueries({
-        queryKey: ["users", page, debouncedSearch],
-        exact: true
-      });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("User updated successfully");
       setEditDialogOpen(false);
     },
@@ -230,11 +240,7 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
       return response.json();
     },
     onSuccess: () => {
-      // Optimized invalidation - only invalidate current page
-      queryClient.invalidateQueries({
-        queryKey: ["users", page, debouncedSearch],
-        exact: true
-      });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("User deleted successfully");
       setDeleteDialogOpen(false);
     },
@@ -370,28 +376,27 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
     deleteUserMutation.mutate(selectedUser.id);
   };
 
-  // Memoized pagination info to prevent recalculation
+  // Memoized pagination info for frontend pagination
   const paginationInfo = useMemo(() => {
-    if (!data) return null;
-
-    const { pagination } = data;
-    const startItem = ((page - 1) * 15) + 1;
-    const endItem = Math.min(page * 15, pagination.totalCount);
+    const totalCount = filteredUsers.length;
+    const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+    const startItem = totalCount === 0 ? 0 : ((page - 1) * ITEMS_PER_PAGE) + 1;
+    const endItem = Math.min(page * ITEMS_PER_PAGE, totalCount);
 
     return {
       startItem,
       endItem,
-      totalCount: pagination.totalCount,
-      totalPages: pagination.totalPages,
-      hasMultiplePages: pagination.totalPages > 1,
+      totalCount,
+      totalPages,
+      hasMultiplePages: totalPages > 1,
     };
-  }, [data, page]);
+  }, [filteredUsers.length, page]);
 
   // Memoized page numbers for pagination
   const pageNumbers = useMemo(() => {
-    if (!paginationInfo) return [];
-
     const { totalPages } = paginationInfo;
+    if (totalPages <= 1) return [];
+
     const maxPages = Math.min(5, totalPages);
     const startPage = Math.max(1, Math.min(
       totalPages - 4,
@@ -403,6 +408,13 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
       return pageNum <= totalPages ? pageNum : null;
     }).filter(Boolean) as number[];
   }, [paginationInfo, page]);
+
+  // Reset to page 1 when search changes and results are filtered
+  useEffect(() => {
+    if (page > paginationInfo.totalPages && paginationInfo.totalPages > 0) {
+      setPage(1);
+    }
+  }, [paginationInfo.totalPages, page]);
 
   if (error) {
     return (
@@ -422,13 +434,13 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogPortal>
           <DialogOverlay className="bg-white/70 backdrop-blur-md" />
-          <DialogContent className="max-w-6xl h-[80vh] p-0 gap-0 bg-white/95 backdrop-blur-sm border shadow-lg"
+          <DialogContent
+            className="max-w-6xl h-[80vh] max-h-[80vh] p-0 gap-0 flex flex-col overflow-hidden bg-white/95 backdrop-blur-sm border shadow-lg"
             style={{ transform: "translate(-50%, -50%)", left: "50%", top: "50%", position: "fixed" }}
             hideCloseButton={true}
           >
-          <div className="flex flex-col h-full">
             {/* Header with close button */}
-            <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
               <div className="flex items-center gap-3">
                 <Shield className="h-6 w-6 text-purple-600" />
                 <DialogTitle className="text-xl font-semibold">User Management</DialogTitle>
@@ -444,9 +456,9 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-hidden">
-              <div className="h-full overflow-auto p-6">
-                <div className="space-y-4">
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <div className="h-full overflow-y-auto p-6">
+                <div className="space-y-4 pb-4">
                   {/* Action bar */}
                   <div className="flex justify-between items-center">
                     <div className="relative flex-1 max-w-sm">
@@ -484,7 +496,7 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {data?.users.map((user) => (
+                          {paginatedUsers.map((user) => (
                             <TableRow key={user.id}>
                               <TableCell>{user.name || "No name"}</TableCell>
                               <TableCell>{user.email}</TableCell>
@@ -552,49 +564,73 @@ export function UserManagementModal({ open, onOpenChange }: UserManagementModalP
                     </div>
                   )}
 
-                  {/* Pagination */}
-                  {paginationInfo?.hasMultiplePages && (
-                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4">
-                      <div className="text-sm text-gray-600">
-                        Showing {paginationInfo.startItem} to {paginationInfo.endItem} of {paginationInfo.totalCount} users
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage((p) => Math.max(1, p - 1))}
-                          disabled={page === 1}
-                        >
-                          Previous
-                        </Button>
-                        <div className="flex items-center gap-1">
-                          {pageNumbers.map((pageNum) => (
-                            <Button
-                              key={pageNum}
-                              variant={pageNum === page ? "secondary" : "outline"}
-                              size="sm"
-                              onClick={() => setPage(pageNum)}
-                              className="w-10 h-8"
-                            >
-                              {pageNum}
-                            </Button>
-                          ))}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPage((p) => p + 1)}
-                          disabled={page === paginationInfo.totalPages}
-                        >
-                          Next
-                        </Button>
-                      </div>
+                  {/* Empty state */}
+                  {!isLoading && paginatedUsers.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      {debouncedSearch ? `No users found matching "${debouncedSearch}"` : "No users found"}
                     </div>
                   )}
                 </div>
               </div>
             </div>
-          </div>
+
+            {/* Footer with Pagination */}
+            {!isLoading && filteredUsers.length > 0 && (
+              <div className="flex-shrink-0 border-t bg-gray-50/80 px-6 py-4">
+                <div className="flex items-center justify-between">
+                  {/* Left side - showing info */}
+                  <div className="text-sm text-gray-600">
+                    Showing <span className="font-medium">{paginationInfo.startItem}</span> to{" "}
+                    <span className="font-medium">{paginationInfo.endItem}</span> of{" "}
+                    <span className="font-medium">{paginationInfo.totalCount}</span> users
+                  </div>
+
+                  {/* Right side - pagination controls */}
+                  {paginationInfo.totalPages > 1 && (
+                    <div className="flex items-center gap-2">
+                      {/* Previous page */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page === 1}
+                        className="h-8 px-3 gap-1"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="hidden sm:inline">Previous</span>
+                      </Button>
+
+                      {/* Page numbers */}
+                      <div className="flex items-center gap-1">
+                        {pageNumbers.map((pageNum) => (
+                          <Button
+                            key={pageNum}
+                            variant={pageNum === page ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={() => setPage(pageNum)}
+                            className={`h-8 w-8 p-0 ${pageNum === page ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
+                          >
+                            {pageNum}
+                          </Button>
+                        ))}
+                      </div>
+
+                      {/* Next page */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage((p) => Math.min(paginationInfo.totalPages, p + 1))}
+                        disabled={page === paginationInfo.totalPages}
+                        className="h-8 px-3 gap-1"
+                      >
+                        <span className="hidden sm:inline">Next</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </DialogContent>
         </DialogPortal>
       </Dialog>

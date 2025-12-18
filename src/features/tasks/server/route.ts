@@ -1131,8 +1131,30 @@ const app = new Hono()
           return c.json({ error: "Customers cannot change task status" }, 403);
         }
 
-        // Check if trying to mark task as DONE when it has incomplete sub-tasks
-        if (status === TaskStatus.DONE && status !== existingTask.status) {
+        // Check if trying to move task from IN_PROGRESS to next stage (IN_REVIEW or DONE) when it has incomplete sub-tasks
+        const isMovingFromInProgress = existingTask.status === TaskStatus.IN_PROGRESS &&
+          (status === TaskStatus.IN_REVIEW || status === TaskStatus.DONE);
+
+        if (isMovingFromInProgress) {
+          const incompleteSubTasks = await prisma.task.count({
+            where: {
+              parentTaskId: taskId,
+              status: {
+                not: TaskStatus.DONE
+              }
+            }
+          });
+
+          if (incompleteSubTasks > 0) {
+            const targetStatus = status === TaskStatus.IN_REVIEW ? "in review" : "done";
+            return c.json({
+              error: `Cannot move task to ${targetStatus}. There are ${incompleteSubTasks} incomplete sub-task(s) that must be completed first.`
+            }, 400);
+          }
+        }
+
+        // Also check when moving directly to DONE from other statuses
+        if (status === TaskStatus.DONE && existingTask.status !== TaskStatus.DONE && existingTask.status !== TaskStatus.IN_PROGRESS) {
           const incompleteSubTasks = await prisma.task.count({
             where: {
               parentTaskId: taskId,

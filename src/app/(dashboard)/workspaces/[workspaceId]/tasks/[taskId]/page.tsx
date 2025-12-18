@@ -34,6 +34,7 @@ import { TaskPropertiesModal } from "@/features/tasks/components/task-properties
 import { EnhancedStageIndicator } from "@/features/tasks/components/enhanced-stage-indicator";
 import { SubTasksTable } from "@/features/tasks/components/sub-tasks-table";
 import { TaskAttachmentsTable } from "@/features/tasks/components/task-attachments-table";
+import { useGetSubTasks } from "@/features/tasks/api/use-get-sub-tasks";
 
 interface TaskDetailsPageProps {
   params: {
@@ -89,6 +90,8 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
   const { data: workspaces, isLoading: isLoadingWorkspaces } = useGetWorkspaces();
 
+  // Get subtasks to check if all are completed before allowing status change
+  const { data: subTasks } = useGetSubTasks({ taskId: params.taskId });
 
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask({
     originalWorkspaceId: task?.workspaceId
@@ -111,7 +114,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
   const [StartTaskConfirmDialog, confirmStartTask] = useConfirm(
     "Start Task",
-    "You will be assigned to this task and it will move to In Progress.",
+    "This task will move to In Progress.",
     "primary"
   );
 
@@ -826,6 +829,21 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   const handleStatusChange = (newStatus: TaskStatus) => {
     if (!task || !canEditStatus) return;
 
+    // Block transition from IN_PROGRESS to IN_REVIEW/DONE if there are incomplete subtasks
+    const incompleteCount = subTasks?.filter(st => st.status !== TaskStatus.DONE).length || 0;
+    if (task.status === TaskStatus.IN_PROGRESS &&
+        (newStatus === TaskStatus.IN_REVIEW || newStatus === TaskStatus.DONE) &&
+        subTasks && subTasks.length > 0 && incompleteCount > 0) {
+      toast.error(
+        `Cannot move to ${newStatus.replace('_', ' ').toLowerCase()}. ${incompleteCount} subtask${incompleteCount > 1 ? 's are' : ' is'} not yet completed.`,
+        {
+          description: "Please complete all subtasks first.",
+          duration: 5000,
+        }
+      );
+      return;
+    }
+
     const updatePayload = {
       name: task.name,
       description: task.description || "",
@@ -880,6 +898,8 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       isConfidential: task.isConfidential || false,
     };
 
+    const wasAlreadyAssigned = assignees.some(a => a.id === currentMember.id);
+
     updateTask(
       {
         param: { taskId: task.id },
@@ -887,7 +907,10 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       },
       {
         onSuccess: () => {
-          toast.success("Task started! You've been added as an assignee.");
+          toast.success(wasAlreadyAssigned
+            ? "Task started! Moved to In Progress."
+            : "Task started! You've been added as an assignee."
+          );
         },
         onError: (error) => {
           console.error("Failed to start task:", error);
@@ -898,11 +921,13 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   };
 
   // Determine if Start Task button should be shown
-  // Show when: task is in TODO or BACKLOG, user is a workspace member (not customer), and user is not already assigned
-  // Available to ALL workspace members (including read-only viewers) so they can pick up tasks
-  const canStartTask = (task.status === TaskStatus.TODO || task.status === TaskStatus.BACKLOG) &&
-    currentMember?.role !== MemberRole.CUSTOMER &&
-    !isAssignee;
+  // - For TODO: Show to assignees (so they can move to IN_PROGRESS) AND non-assignees (so they can pick up)
+  // - For BACKLOG: Show only to non-assignees (so they can pick up unassigned tasks)
+  // - Never show to customers
+  const canStartTask = currentMember?.role !== MemberRole.CUSTOMER && (
+    task.status === TaskStatus.TODO ||
+    (task.status === TaskStatus.BACKLOG && !isAssignee)
+  );
 
   // Determine if Mark as Reviewed button should be shown
   // Show when: task is in IN_REVIEW stage and:
@@ -919,8 +944,25 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   // Show when: task is in IN_PROGRESS and user is an assignee
   const canSubmitForReview = task.status === TaskStatus.IN_PROGRESS && isAssignee;
 
+  // Check if all subtasks are completed (DONE status)
+  const hasIncompleteSubtasks = subTasks && subTasks.length > 0 &&
+    subTasks.some(st => st.status !== TaskStatus.DONE);
+  const incompleteSubtaskCount = subTasks?.filter(st => st.status !== TaskStatus.DONE).length || 0;
+
   // Handle Submit for Review - updates status to IN_REVIEW
   const handleSubmitForReview = async () => {
+    // Check if there are incomplete subtasks
+    if (hasIncompleteSubtasks) {
+      toast.error(
+        `Cannot submit for review. ${incompleteSubtaskCount} subtask${incompleteSubtaskCount > 1 ? 's are' : ' is'} not yet completed.`,
+        {
+          description: "Please complete all subtasks before submitting for review.",
+          duration: 5000,
+        }
+      );
+      return;
+    }
+
     const ok = await confirmForReview();
     if (!ok || !task) return;
 

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MemberRole } from "@/features/members/types";
 import { TaskStatus } from "@/features/tasks/types";
+import { calculateSLACompliance, type SLATask } from "@/lib/sla-utils";
 
 // Force dynamic rendering since this route uses headers (auth)
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,7 @@ interface TeamOverallKPIResponse {
 
 /**
  * Calculate KPI score for a member in a specific workspace
+ * SLA is calculated separately for main tasks (70% weight) and subtasks (30% weight)
  */
 function calculateMemberKPI(
   memberId: string,
@@ -69,6 +71,7 @@ function calculateMemberKPI(
     dueDate: Date | null;
     updatedAt: Date;
     followers: Array<{ id: string }>;
+    parentTaskId: string | null;
   }>,
   weights: {
     kpiCompletionWeight: number;
@@ -109,24 +112,19 @@ function calculateMemberKPI(
   const reviewerPoints = reviewingTasksCompleted * 0.3;
   const contributionScore = assignedPoints + collaboratorPoints + reviewerPoints;
 
-  // SLA Compliance - percentage of tasks meeting SLA
-  // A task is within SLA if: completed on time OR not yet overdue
-  const tasksWithDueDate = memberTasks.filter(task => task.dueDate);
-  const now = new Date();
-  const tasksWithinSLA = tasksWithDueDate.filter(task => {
-    const dueDate = new Date(task.dueDate!);
-    if (task.status === TaskStatus.DONE) {
-      // Completed task: check if completed on or before due date
-      const completedDate = new Date(task.updatedAt);
-      return completedDate <= dueDate;
-    } else {
-      // Incomplete task: check if not yet overdue
-      return dueDate >= now;
-    }
-  });
-  const slaCompliance = tasksWithDueDate.length > 0
-    ? tasksWithinSLA.length / tasksWithDueDate.length
-    : 1;
+  // SLA Compliance - using new weighted calculation for main tasks vs subtasks
+  // Convert member tasks to SLATask format
+  const slaTasks: SLATask[] = memberTasks.map(task => ({
+    id: task.id,
+    status: task.status,
+    dueDate: task.dueDate,
+    updatedAt: task.updatedAt,
+    parentTaskId: task.parentTaskId,
+  }));
+
+  // Calculate SLA with main task (70%) and subtask (30%) weighting
+  const slaResult = calculateSLACompliance(slaTasks, TaskStatus.DONE);
+  const slaCompliance = slaResult.combinedSLA;
 
   // Collaboration Score
   const collaborationScore = followingTasks.length > 0
@@ -363,6 +361,7 @@ export async function GET(request: NextRequest) {
             reviewerId: true,
             dueDate: true,
             updatedAt: true,
+            parentTaskId: true,
             followers: {
               select: { id: true },
             },

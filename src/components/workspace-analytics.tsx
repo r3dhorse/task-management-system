@@ -27,6 +27,7 @@ import { Member, MemberRole } from "@/features/members/types";
 import { cn } from "@/lib/utils";
 import { TASK_STATUS_CONFIG } from "@/lib/constants/task-constants";
 import { formatDistanceToNow } from "date-fns";
+import { calculateSLACompliance, type SLATask } from "@/lib/sla-utils";
 
 interface ServiceType {
   id: string;
@@ -163,26 +164,20 @@ export const WorkspaceAnalytics = ({
         const reviewerPoints = reviewingTasksCompleted * 0.3;
         const contributionScore = assignedPoints + collaboratorPoints + reviewerPoints;
 
-        // KPI Metric 3: SLA Compliance (SLA) - percentage of tasks meeting SLA
+        // KPI Metric 3: SLA Compliance (SLA) - weighted calculation for main tasks vs subtasks
+        // Main tasks (70% weight) and subtasks (30% weight)
         // A task meets SLA if:
         // - It's completed and was completed on or before the due date, OR
         // - It's not completed but the due date hasn't passed yet
-        const tasksWithDueDate = memberTasks.filter(task => task.dueDate);
-        const now = new Date();
-        const tasksWithinSLA = tasksWithDueDate.filter(task => {
-          const dueDate = new Date(task.dueDate!);
-          if (task.status === TaskStatus.DONE) {
-            // Completed task: check if it was completed on time
-            const completedDate = new Date(task.updatedAt);
-            return completedDate <= dueDate;
-          } else {
-            // Not completed: check if due date hasn't passed yet
-            return dueDate >= now;
-          }
-        });
-        const slaCompliance = tasksWithDueDate.length > 0
-          ? tasksWithinSLA.length / tasksWithDueDate.length
-          : 1; // If no tasks with due dates, consider fully compliant
+        const slaTasks: SLATask[] = memberTasks.map(task => ({
+          id: task.id,
+          status: task.status,
+          dueDate: task.dueDate,
+          updatedAt: task.updatedAt,
+          parentTaskId: task.parentTaskId,
+        }));
+        const slaResult = calculateSLACompliance(slaTasks, TaskStatus.DONE);
+        const slaCompliance = slaResult.combinedSLA;
 
         // KPI Metric 4: Collaboration Score (CS) - collaboration effectiveness
         const collaborationScore = followingTasks.length > 0

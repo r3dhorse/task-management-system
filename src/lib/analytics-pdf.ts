@@ -5,6 +5,7 @@ import type { PopulatedTask } from "@/features/tasks/types";
 import type { Member } from "@/features/members/types";
 import { TaskStatus } from "@/features/tasks/types";
 import { MemberRole } from "@/features/members/types";
+import { calculateSLACompliance, type SLATask } from "@/lib/sla-utils";
 
 // ============================================================================
 // TYPES
@@ -185,21 +186,17 @@ function calculateMemberAnalytics(
       const reviewerPoints = reviewingTasksCompleted * 0.3;
       const contributionScore = assignedPoints + collaboratorPoints + reviewerPoints;
 
-      // SLA Compliance - percentage of tasks meeting SLA
-      const tasksWithDueDate = memberTasks.filter(task => task.dueDate);
-      const now = new Date();
-      const tasksWithinSLA = tasksWithDueDate.filter(task => {
-        const dueDate = new Date(task.dueDate!);
-        if (task.status === TaskStatus.DONE) {
-          const completedDate = new Date(task.updatedAt);
-          return completedDate <= dueDate;
-        } else {
-          return dueDate >= now;
-        }
-      });
-      const slaCompliance = tasksWithDueDate.length > 0
-        ? tasksWithinSLA.length / tasksWithDueDate.length
-        : 1;
+      // SLA Compliance - weighted calculation for main tasks vs subtasks
+      // Main tasks (70% weight) and subtasks (30% weight)
+      const slaTasks: SLATask[] = memberTasks.map(task => ({
+        id: task.id,
+        status: task.status,
+        dueDate: task.dueDate,
+        updatedAt: task.updatedAt,
+        parentTaskId: task.parentTaskId,
+      }));
+      const slaResult = calculateSLACompliance(slaTasks, TaskStatus.DONE);
+      const slaCompliance = slaResult.combinedSLA;
 
       const collaborationScore = followingTasks.length > 0
         ? followingTasksCompleted.length / followingTasks.length
