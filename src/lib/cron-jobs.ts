@@ -1,4 +1,3 @@
-import * as cron from 'node-cron';
 import { prisma } from '@/lib/prisma';
 import { TaskStatus } from '@/features/tasks/types';
 import { TaskHistoryAction } from '@/features/tasks/types/history';
@@ -15,6 +14,10 @@ let lastExecutionLog: {
 // Track routinary tasks execution
 let lastRoutinaryExecution: Date | null = null;
 let isRoutinaryRunning = false;
+
+// Track overdue tasks execution
+let lastOverdueExecution: Date | null = null;
+let isOverdueRunning = false;
 
 export const updateOverdueTasks = async () => {
   try {
@@ -111,6 +114,55 @@ export const updateOverdueTasks = async () => {
   }
 };
 
+// Execute overdue tasks with safeguards
+const executeOverdueTasks = async () => {
+  const timezone = 'Asia/Manila';
+  const currentTime = new Date().toLocaleString('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+
+  // Prevent concurrent executions
+  if (isOverdueRunning) {
+    console.log(`[CRON] ⏭️ Overdue tasks update already running, skipping at ${currentTime}`);
+    return;
+  }
+
+  isOverdueRunning = true;
+  console.log(`[CRON] ⏰ Overdue tasks update started at ${currentTime} (${timezone})`);
+
+  try {
+    const result = await updateOverdueTasks();
+    lastOverdueExecution = new Date();
+
+    // Log execution for monitoring
+    lastExecutionLog = {
+      timestamp: new Date(),
+      success: true,
+      tasksUpdated: result.updatedCount
+    };
+
+    console.log(`[CRON] ✅ Overdue tasks update completed. Updated ${result.updatedCount} tasks at ${currentTime}`);
+  } catch (error) {
+    // Log failed execution for monitoring
+    lastExecutionLog = {
+      timestamp: new Date(),
+      success: false,
+      tasksUpdated: 0,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+
+    console.error(`[CRON] ❌ Overdue tasks update failed at ${currentTime}:`, error);
+  } finally {
+    isOverdueRunning = false;
+  }
+};
+
 // Execute routinary tasks with safeguards
 const executeRoutinaryTasks = async () => {
   const timezone = 'Asia/Manila';
@@ -144,68 +196,37 @@ const executeRoutinaryTasks = async () => {
   }
 };
 
-let cronJob: cron.ScheduledTask | null = null;
 let routinaryInterval: NodeJS.Timeout | null = null;
+let overdueInterval: NodeJS.Timeout | null = null;
 
 export const initializeCronJobs = () => {
-  if (cronJob && routinaryInterval) {
+  if (routinaryInterval && overdueInterval) {
     console.log('[CRON] Cron jobs already initialized');
     return;
   }
 
   const timezone = 'Asia/Manila';
 
-  // Overdue tasks job - runs at midnight using node-cron (less frequent, more tolerant)
-  const overdueCronExpression = '0 0 * * *';
-  cronJob = cron.schedule(
-    overdueCronExpression,
-    async () => {
-      const currentTime = new Date().toLocaleString('en-US', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
+  // Overdue tasks job - runs every 6 hours using setInterval for reliability
+  // 6 hours = 6 * 60 * 60 * 1000 = 21600000ms
+  const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
 
-      console.log(`[CRON] ⏰ Automated overdue tasks update started at ${currentTime} (${timezone})`);
+  // Run overdue check on startup after a short delay
+  setTimeout(async () => {
+    console.log('[CRON] 🚀 Running initial overdue tasks check on startup...');
+    await executeOverdueTasks();
+  }, 5000); // 5 second delay for startup
 
-      try {
-        const result = await updateOverdueTasks();
+  // Then run every 6 hours
+  overdueInterval = setInterval(async () => {
+    await executeOverdueTasks();
+  }, SIX_HOURS_MS);
 
-        // Log execution for monitoring
-        lastExecutionLog = {
-          timestamp: new Date(),
-          success: true,
-          tasksUpdated: result.updatedCount
-        };
+  console.log(`[CRON] Initialized overdue tasks scheduler. Will run every 6 hours using setInterval (${timezone} time).`);
 
-        console.log(`[CRON] ✅ Automated execution completed successfully. Updated ${result.updatedCount} tasks at ${currentTime}`);
-      } catch (error) {
-        // Log failed execution for monitoring
-        lastExecutionLog = {
-          timestamp: new Date(),
-          success: false,
-          tasksUpdated: 0,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        };
-
-        console.error(`[CRON] ❌ Automated execution failed at ${currentTime}:`, error);
-      }
-    },
-    {
-      timezone: timezone
-    }
-  );
-
-  cronJob.start();
-  console.log(`[CRON] Initialized overdue tasks cron job. Will run at midnight ${timezone} time daily.`);
-
-  // Routinary tasks job - using setInterval for reliability (every 5 minutes = 300000ms)
-  // setInterval is more reliable than node-cron for frequent executions in Next.js standalone mode
-  const FIVE_MINUTES_MS = 5 * 60 * 1000;
+  // Routinary tasks job - runs every 3 hours using setInterval for reliability
+  // 3 hours = 3 * 60 * 60 * 1000 = 10800000ms
+  const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
 
   // Run immediately on startup after a short delay (to let the server fully start)
   setTimeout(async () => {
@@ -213,12 +234,12 @@ export const initializeCronJobs = () => {
     await executeRoutinaryTasks();
   }, 10000); // 10 second delay for startup
 
-  // Then run every 5 minutes
+  // Then run every 3 hours
   routinaryInterval = setInterval(async () => {
     await executeRoutinaryTasks();
-  }, FIVE_MINUTES_MS);
+  }, THREE_HOURS_MS);
 
-  console.log(`[CRON] Initialized routinary tasks scheduler. Will run every 5 minutes using setInterval (${timezone} time).`);
+  console.log(`[CRON] Initialized routinary tasks scheduler. Will run every 3 hours using setInterval (${timezone} time).`);
 
   if (process.env.NODE_ENV === 'development') {
     console.log('[CRON] Development mode: You can manually trigger jobs using the /api/cron/* endpoints');
@@ -226,13 +247,13 @@ export const initializeCronJobs = () => {
 };
 
 export const stopCronJobs = () => {
-  if (cronJob) {
-    cronJob.stop();
-    cronJob = null;
-  }
   if (routinaryInterval) {
     clearInterval(routinaryInterval);
     routinaryInterval = null;
+  }
+  if (overdueInterval) {
+    clearInterval(overdueInterval);
+    overdueInterval = null;
   }
   console.log('[CRON] All cron jobs stopped');
 };
@@ -240,17 +261,21 @@ export const stopCronJobs = () => {
 export const getCronJobStatus = () => {
   return {
     overdueTasks: {
-      isRunning: cronJob !== null,
-      cronExpression: '0 0 * * *',
+      isRunning: overdueInterval !== null,
+      interval: '6 hours (setInterval)',
       timezone: 'Asia/Manila',
-      nextExecution: cronJob ? getNextExecution(0) : null,
-      lastExecution: lastExecutionLog
+      description: 'Runs every 6 hours using setInterval for reliability',
+      lastExecution: lastOverdueExecution ? {
+        timestamp: lastOverdueExecution,
+        ...lastExecutionLog
+      } : lastExecutionLog,
+      isCurrentlyRunning: isOverdueRunning
     },
     routinaryTasks: {
       isRunning: routinaryInterval !== null,
-      interval: '5 minutes (setInterval)',
+      interval: '3 hours (setInterval)',
       timezone: 'Asia/Manila',
-      description: 'Runs every 5 minutes using setInterval for reliability',
+      description: 'Runs every 3 hours using setInterval for reliability',
       lastExecution: lastRoutinaryExecution ? {
         timestamp: lastRoutinaryExecution,
         ...getRoutinaryTasksStatus().lastExecution
@@ -258,31 +283,4 @@ export const getCronJobStatus = () => {
       isCurrentlyRunning: isRoutinaryRunning
     }
   };
-};
-
-const getNextExecution = (hour: number = 0) => {
-  try {
-    // Calculate next execution time in Manila timezone
-    const now = new Date();
-    const manila = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Manila"}));
-    const nextExecution = new Date(manila);
-
-    // If the hour has already passed today, schedule for tomorrow
-    if (manila.getHours() >= hour) {
-      nextExecution.setDate(nextExecution.getDate() + 1);
-    }
-    nextExecution.setHours(hour, 0, 0, 0);
-
-    return nextExecution.toLocaleString('en-US', {
-      timeZone: 'Asia/Manila',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  } catch {
-    return 'Unable to calculate';
-  }
 };

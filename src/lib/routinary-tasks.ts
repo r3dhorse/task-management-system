@@ -8,6 +8,14 @@ import { RoutinaryFrequency } from '@/features/services/schemas';
 // Philippine timezone offset (UTC+8)
 const PHT_OFFSET_HOURS = 8;
 
+// Get current date/time adjusted to Philippine timezone for display purposes
+// This returns a Date object that when formatted with date-fns will show PHT date components
+const getCurrentDateInPHT = (): Date => {
+  const now = new Date();
+  // Shift the date by PHT offset so when date-fns formats it (in UTC), it shows PHT values
+  return new Date(now.getTime() + (PHT_OFFSET_HOURS * 60 * 60 * 1000));
+};
+
 // Store last execution info for monitoring
 let lastRoutinaryExecutionLog: {
   timestamp: Date;
@@ -200,8 +208,12 @@ export const createRoutinaryTasks = async () => {
     for (const service of routinaryServices) {
       try {
         const frequency = service.routinaryFrequency as RoutinaryFrequency;
-        const taskDate = new Date(); // Current date for task title
+        // Use PHT-adjusted date for task titles to ensure correct date is shown
+        // This prevents timezone issues where UTC midnight differs from PHT midnight
+        const taskDate = getCurrentDateInPHT();
         const dueDate = calculateDueDate(service.slaDays, service.includeWeekends, frequency);
+
+        console.log(`[CRON] Processing service "${service.name}": taskDate(PHT)=${format(taskDate, 'MMMM d, yyyy')}, UTC now=${new Date().toISOString()}`);
 
         // Determine how many tasks to create and their names
         let tasksToCreate: { name: string; suffix?: string }[] = [];
