@@ -1,8 +1,8 @@
 export type Checklist = {
   id: string;
   serviceId: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   items?: ChecklistItem[];
 };
 
@@ -12,8 +12,8 @@ export type ChecklistItem = {
   title: string;
   description?: string | null;
   order: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
 // Status for checklist items in tasks
@@ -28,6 +28,8 @@ export type TaskChecklistItem = {
   status: ChecklistItemStatus;
   completedAt?: string;
   completedBy?: string;
+  remarks?: string;
+  photoUrl?: string;
 };
 
 export type TaskChecklist = {

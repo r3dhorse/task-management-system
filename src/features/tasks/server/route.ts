@@ -2399,6 +2399,8 @@ const app = new Hono()
             status: z.enum(['pending', 'passed', 'failed']),
             completedAt: z.string().optional(),
             completedBy: z.string().optional(),
+            remarks: z.string().optional(),
+            photoUrl: z.string().optional(),
           })
         ),
       })

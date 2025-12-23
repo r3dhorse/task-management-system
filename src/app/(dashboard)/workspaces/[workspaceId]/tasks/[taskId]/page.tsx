@@ -1446,7 +1446,9 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                     <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                       <div className="px-6 py-6">
                         <TaskChecklistView
-                          taskId={task.id}
+                          taskNumber={task.taskNumber || `Task #${task.id.slice(-7)}`}
+                          taskName={task.name}
+                          serviceName={service?.name || ""}
                           checklist={task.checklist as TaskChecklist | null}
                           canEdit={canEdit && task.status !== TaskStatus.TODO && task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED}
                           onUpdate={async (items: TaskChecklistItem[]) => {
@@ -1469,8 +1471,8 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                 className="h-[780px] bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300"
               />
 
-              {/* Quick actions panel for mobile - Aligned with chat height */}
-              <div className="xl:hidden mt-6">
+              {/* Quick actions panel for mobile - Hidden on tablet and above */}
+              <div className="hidden">
                 <Card className="bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg h-[140px]">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">

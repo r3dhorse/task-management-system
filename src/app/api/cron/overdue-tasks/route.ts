@@ -107,10 +107,11 @@ export async function GET() {
       overdueTasksCount,
       cronJob: {
         isRunning: cronStatus.overdueTasks.isRunning,
-        schedule: cronStatus.overdueTasks.cronExpression,
+        interval: cronStatus.overdueTasks.interval,
         timezone: cronStatus.overdueTasks.timezone,
-        nextExecution: cronStatus.overdueTasks.nextExecution,
-        lastExecution: cronStatus.overdueTasks.lastExecution
+        description: cronStatus.overdueTasks.description,
+        lastExecution: cronStatus.overdueTasks.lastExecution,
+        isCurrentlyRunning: cronStatus.overdueTasks.isCurrentlyRunning
       }
     });
   } catch (error) {

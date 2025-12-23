@@ -23,6 +23,8 @@ export type TaskChecklistItem = {
   status: 'pending' | 'passed' | 'failed';
   completedAt?: string;
   completedBy?: string;
+  remarks?: string;
+  photoUrl?: string;
 };
 
 // Checklist structure stored in task JSON field

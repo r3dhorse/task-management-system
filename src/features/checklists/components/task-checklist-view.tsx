@@ -3,25 +3,37 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Loader2, ClipboardList, CheckCircle2, XCircle, Clock } from "@/lib/lucide-icons";
+import { Loader2, ClipboardList, CheckCircle2, XCircle, Clock, FileDown, MessageSquare } from "@/lib/lucide-icons";
 import type { TaskChecklist, TaskChecklistItem } from "@/features/tasks/types";
+import { ChecklistRemarksModal } from "./checklist-remarks-modal";
+import { generateChecklistPDF } from "@/lib/checklist-pdf";
+import { toast } from "sonner";
 
 type ChecklistItemStatus = 'pending' | 'passed' | 'failed';
 
 interface TaskChecklistViewProps {
-  taskId: string;
+  taskNumber?: string;
+  taskName?: string;
+  serviceName?: string;
   checklist: TaskChecklist | null;
   canEdit: boolean;
   onUpdate?: (items: TaskChecklistItem[]) => Promise<void>;
 }
 
 export const TaskChecklistView = ({
+  taskNumber = "",
+  taskName = "",
+  serviceName = "",
   checklist,
   canEdit,
   onUpdate,
 }: TaskChecklistViewProps) => {
   const [items, setItems] = useState<TaskChecklistItem[]>([]);
   const [isPending, setIsPending] = useState(false);
+  const [remarksModalOpen, setRemarksModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<TaskChecklistItem | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isFailAction, setIsFailAction] = useState(false);
 
   useEffect(() => {
     if (checklist?.items) {
@@ -63,6 +75,73 @@ export const TaskChecklistView = ({
     }
   };
 
+  const handleFailClick = (item: TaskChecklistItem) => {
+    if (!canEdit || isPending) return;
+
+    // If already failed, toggle back to pending
+    if (item.status === 'failed') {
+      handleSetStatus(item.id, 'pending');
+      return;
+    }
+
+    // Open remarks modal with fail action flag
+    setSelectedItem(item);
+    setIsFailAction(true);
+    setRemarksModalOpen(true);
+  };
+
+  const handleSaveRemarks = async (remarks: string | undefined, photoUrl: string | undefined) => {
+    if (!selectedItem || !onUpdate) return;
+
+    const updatedItems = items.map((item) =>
+      item.id === selectedItem.id
+        ? {
+            ...item,
+            remarks,
+            photoUrl,
+            // Set status to failed if this was triggered by fail action
+            ...(isFailAction && {
+              status: 'failed' as ChecklistItemStatus,
+              completedAt: new Date().toISOString(),
+            }),
+          }
+        : item
+    );
+
+    setItems(updatedItems);
+    await onUpdate(updatedItems);
+    setIsFailAction(false);
+  };
+
+  const handleModalClose = (open: boolean) => {
+    setRemarksModalOpen(open);
+    if (!open) {
+      setIsFailAction(false);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      await generateChecklistPDF({
+        taskNumber,
+        taskName,
+        serviceName,
+        items,
+      });
+      toast.success("Report generated successfully");
+    } catch (error) {
+      console.error("Failed to generate PDF:", error);
+      toast.error("Failed to generate report. Please try again.");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
+  const hasRemarksOrPhoto = (item: TaskChecklistItem) => {
+    return !!(item.remarks || item.photoUrl);
+  };
+
   if (!checklist || !checklist.items || checklist.items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-500">
@@ -80,7 +159,6 @@ export const TaskChecklistView = ({
   const pendingCount = items.filter((item) => item.status === 'pending').length;
   const totalCount = items.length;
   const completedCount = passedCount + failedCount;
-  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
   const isComplete = pendingCount === 0;
   const hasFailures = failedCount > 0;
 
@@ -200,7 +278,7 @@ export const TaskChecklistView = ({
                   <Button
                     size="sm"
                     variant={item.status === 'failed' ? 'destructive' : 'outline'}
-                    onClick={() => handleSetStatus(item.id, item.status === 'failed' ? 'pending' : 'failed')}
+                    onClick={() => handleFailClick(item)}
                     disabled={isPending}
                     className={cn(
                       "h-8 px-3",
@@ -211,6 +289,10 @@ export const TaskChecklistView = ({
                   >
                     <XCircle className="h-4 w-4 mr-1" />
                     Fail
+                    {/* Show indicator if failed item has remarks */}
+                    {item.status === 'failed' && hasRemarksOrPhoto(item) && (
+                      <MessageSquare className="h-3 w-3 ml-1" />
+                    )}
                   </Button>
                 </div>
               )}
@@ -259,6 +341,44 @@ export const TaskChecklistView = ({
             : 'All checklist items passed!'
           }
         </div>
+      )}
+
+      {/* Generate Report Button - Only available when no pending items */}
+      {items.length > 0 && pendingCount === 0 && (
+        <div className="pt-4 border-t border-gray-100">
+          <Button
+            onClick={handleGenerateReport}
+            disabled={isGeneratingPDF}
+            variant="outline"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 text-indigo-700 hover:from-indigo-100 hover:to-purple-100 hover:border-indigo-300"
+          >
+            {isGeneratingPDF ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating Report...
+              </>
+            ) : (
+              <>
+                <FileDown className="h-4 w-4" />
+                Generate Report
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Remarks Modal - Opens when clicking Fail */}
+      {selectedItem && (
+        <ChecklistRemarksModal
+          open={remarksModalOpen}
+          onOpenChange={handleModalClose}
+          itemTitle={selectedItem.title}
+          itemId={selectedItem.id}
+          initialRemarks={selectedItem.remarks || ""}
+          initialPhotoUrl={selectedItem.photoUrl || ""}
+          isFailMode={isFailAction}
+          onSave={handleSaveRemarks}
+        />
       )}
     </div>
   );
