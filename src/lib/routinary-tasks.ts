@@ -272,6 +272,27 @@ export const createRoutinaryTasks = async () => {
 
         // Create tasks that don't exist yet
         await prisma.$transaction(async (tx) => {
+          // Fetch checklist for this service to copy to tasks
+          const checklist = await tx.checklist.findUnique({
+            where: { serviceId: service.id },
+            include: {
+              items: {
+                orderBy: { order: 'asc' }
+              }
+            }
+          });
+
+          // Prepare task checklist JSON if checklist exists
+          const taskChecklist = checklist?.items?.length ? {
+            items: checklist.items.map(item => ({
+              id: item.id,
+              title: item.title,
+              description: item.description || undefined,
+              order: item.order,
+              status: 'pending' as const,
+            }))
+          } : undefined;
+
           for (const taskInfo of tasksToCreate) {
             // Check if this specific task exists
             const existingTask = await tx.task.findFirst({
@@ -289,7 +310,7 @@ export const createRoutinaryTasks = async () => {
             // Generate task number using the transaction client to see uncommitted tasks
             const taskNumber = await generateTaskNumber(tx);
 
-            // Create the task
+            // Create the task with checklist if available
             const task = await tx.task.create({
               data: {
                 taskNumber,
@@ -302,20 +323,22 @@ export const createRoutinaryTasks = async () => {
                 position: 1000,
                 creatorId: systemUser.id,
                 isConfidential: false,
+                checklist: taskChecklist,
               }
             });
 
             // Create history entry
+            const checklistInfo = taskChecklist ? ` with ${taskChecklist.items.length} checklist items` : '';
             await tx.taskHistory.create({
               data: {
                 taskId: task.id,
                 userId: systemUser.id,
                 action: TaskHistoryAction.CREATED,
-                details: `Automatically created by routinary schedule for service: ${service.name} (${frequency}${taskInfo.suffix ? ` - ${taskInfo.suffix}` : ''})`
+                details: `Automatically created by routinary schedule for service: ${service.name} (${frequency}${taskInfo.suffix ? ` - ${taskInfo.suffix}` : ''})${checklistInfo}`
               }
             });
 
-            console.log(`[CRON] Created routinary task "${taskInfo.name}" (${taskNumber}) for service ${service.name}`);
+            console.log(`[CRON] Created routinary task "${taskInfo.name}" (${taskNumber}) for service ${service.name}${checklistInfo}`);
             createdCount++;
           }
 

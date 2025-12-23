@@ -35,6 +35,9 @@ import { EnhancedStageIndicator } from "@/features/tasks/components/enhanced-sta
 import { SubTasksTable } from "@/features/tasks/components/sub-tasks-table";
 import { TaskAttachmentsTable } from "@/features/tasks/components/task-attachments-table";
 import { useGetSubTasks } from "@/features/tasks/api/use-get-sub-tasks";
+import { TaskChecklistView } from "@/features/checklists/components/task-checklist-view";
+import { useUpdateTaskChecklist } from "@/features/checklists/api/use-update-task-checklist";
+import type { TaskChecklist, TaskChecklistItem } from "@/features/checklists/types";
 
 interface TaskDetailsPageProps {
   params: {
@@ -98,6 +101,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   });
   const { mutate: createHistory } = useCreateTaskHistory();
   const { mutate: deleteTask, isPending: isDeleting } = useDeleteTask();
+  const { mutateAsync: updateChecklist } = useUpdateTaskChecklist();
   const { data: currentUser } = useCurrent();
   
   const [ConfirmDialog, confirm] = useConfirm(
@@ -1373,6 +1377,9 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                     <TabsTrigger value="attachments" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                       Attachments
                     </TabsTrigger>
+                    <TabsTrigger value="checklist" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                      Checklist
+                    </TabsTrigger>
                   </TabsList>
                   <TabsContent value="timeline" className="m-0">
                     {/* Fixed height to align with chat */}
@@ -1400,6 +1407,21 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                           taskId={task.id}
                           workspaceId={task.workspaceId}
                           taskNumber={task.taskNumber}
+                        />
+                      </div>
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="checklist" className="m-0">
+                    {/* Fixed height to align with chat */}
+                    <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      <div className="px-6 py-6">
+                        <TaskChecklistView
+                          taskId={task.id}
+                          checklist={task.checklist as TaskChecklist | null}
+                          canEdit={canEdit}
+                          onUpdate={async (items: TaskChecklistItem[]) => {
+                            await updateChecklist({ taskId: task.id, items });
+                          }}
                         />
                       </div>
                     </div>

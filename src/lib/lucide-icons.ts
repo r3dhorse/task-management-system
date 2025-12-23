@@ -160,6 +160,10 @@ export const Users2Icon = getIcon('Users2', ['Users2Icon', 'Users']);
 export const TargetIcon = getIcon('Target', ['TargetIcon']);
 export const ClipboardCheck = getIcon('ClipboardCheck', ['ClipboardCheckIcon']);
 export const ClipboardCheckIcon = getIcon('ClipboardCheck', ['ClipboardCheckIcon']);
+export const ClipboardList = getIcon('ClipboardList', ['ClipboardListIcon']);
+export const ClipboardListIcon = getIcon('ClipboardList', ['ClipboardListIcon']);
+export const CheckSquare = getIcon('CheckSquare', ['CheckSquareIcon']);
+export const GripVertical = getIcon('GripVertical', ['GripVerticalIcon']);
 
 // Export all lucide icons as a namespace for direct access
 export * from "lucide-react";

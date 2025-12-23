@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon, ChevronDown, ChevronRight, Briefcase, Building2, Users2Icon } from "@/lib/lucide-icons";
+import { SettingsIcon, UsersIcon, ListTodo, Shield, RefreshCw, FileTextIcon, ChevronDown, ChevronRight, Briefcase, Building2, Users2Icon, ClipboardList } from "@/lib/lucide-icons";
 import Link from "next/link";
 import { GoCheckCircle, GoCheckCircleFill, GoHome, GoHomeFill } from "react-icons/go";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
@@ -476,6 +476,36 @@ export const Navigation = () => {
     );
   };
 
+  // Render Check List button (only for admins)
+  const renderChecklistButton = () => {
+    if (!workspaceId) return null;
+
+    const checklistHref = `/workspaces/${workspaceId}/checklists`;
+    const isActive = pathname?.includes('/checklists') ?? false;
+
+    return (
+      <Link href={checklistHref} className="block">
+        <button
+          className={cn(
+            "w-full flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-md font-medium transition min-h-[44px] touch-manipulation group",
+            isActive
+              ? "bg-white shadow-sm text-primary"
+              : "text-neutral-500 hover:bg-white/70 hover:text-primary",
+            "focus:outline-none focus:ring-2 focus:ring-primary/20"
+          )}
+        >
+          <ClipboardList className={cn(
+            "size-5 flex-shrink-0 transition-colors",
+            isActive ? "text-primary" : "text-neutral-500 group-hover:text-primary"
+          )} />
+          <span className="text-sm sm:text-base truncate text-left">
+            Check List
+          </span>
+        </button>
+      </Link>
+    );
+  };
+
   // Find specific routes by label
   const homeRoute = routes.find(r => r.label === "Home");
   const tasksRoute = routes.find(r => r.label === "Tasks");
@@ -489,11 +519,12 @@ export const Navigation = () => {
           <div className="text-xs font-semibold text-neutral-400 uppercase tracking-wider px-2 mb-2">
             Menu
           </div>
-          {/* Menu order: Home, Team KPI, Tasks, Services (admin only), Settings (admin only) */}
+          {/* Menu order: Home, Team KPI, Tasks, Services (admin only), Check List (admin only), Settings (admin only) */}
           {homeRoute && renderMenuItem(homeRoute)}
           {renderTeamKPIButton()}
           {tasksRoute && renderMenuItem(tasksRoute)}
           {(isAdmin || isSuperAdmin) && renderServicesButton()}
+          {(isAdmin || isSuperAdmin) && renderChecklistButton()}
           {(isAdmin || isSuperAdmin) && settingsRoute && renderMenuItem(settingsRoute)}
         </div>
 

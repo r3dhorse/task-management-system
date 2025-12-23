@@ -4,6 +4,7 @@ import auth from "@/features/auth/server/route";
 import workspaces from "@/features/workspaces/server/route";
 import members from "@/features/members/server/route";
 import services from "@/features/services/server/route";
+import checklists from "@/features/checklists/server/route";
 import tasks from "@/features/tasks/server/route";
 import taskHistory from "@/features/tasks/server/history-route";
 import taskMessages from "@/features/tasks/server/messages-route";
@@ -19,6 +20,7 @@ const routes = app
   .route("/workspaces", workspaces)
   .route("/members", members)
   .route("/services", services)
+  .route("/checklists", checklists)
   .route("/tasks/messages", taskMessages)
   .route("/tasks", tasks)
   .route("/task-history", taskHistory)
@@ -27,6 +29,7 @@ const routes = app
 
 export const GET = handle(routes);
 export const POST = handle(routes);
+export const PUT = handle(routes);
 export const PATCH = handle(routes);
 export const DELETE = handle(routes);
 

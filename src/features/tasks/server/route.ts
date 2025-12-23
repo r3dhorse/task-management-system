@@ -2383,5 +2383,126 @@ const app = new Hono()
     }
   )
 
+  // Update task checklist (pass/fail items)
+  .patch(
+    "/:taskId/checklist",
+    sessionMiddleware,
+    zValidator(
+      "json",
+      z.object({
+        items: z.array(
+          z.object({
+            id: z.string(),
+            title: z.string(),
+            description: z.string().optional(),
+            order: z.number(),
+            status: z.enum(['pending', 'passed', 'failed']),
+            completedAt: z.string().optional(),
+            completedBy: z.string().optional(),
+          })
+        ),
+      })
+    ),
+    async (c) => {
+      const prisma = c.get("prisma");
+      const user = c.get("user");
+      const { taskId } = c.req.param();
+      const { items } = c.req.valid("json");
+
+      // Get task
+      const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: {
+          assignees: true,
+        },
+      });
+
+      if (!task) {
+        return c.json({ error: "Task not found" }, 404);
+      }
+
+      // Check if user is member of the workspace
+      const member = await getMember({ prisma, workspaceId: task.workspaceId, userId: user.id });
+      if (!member) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      // Check if user can edit (assignee, admin, or super admin)
+      const isAssignee = task.assignees.some((a) => a.userId === user.id);
+      const canEdit =
+        isAssignee ||
+        member.role === MemberRole.ADMIN ||
+        user.isSuperAdmin;
+
+      if (!canEdit) {
+        return c.json(
+          { error: "Only assignees can update checklist items" },
+          403
+        );
+      }
+
+      // Get current checklist to compare changes
+      const currentChecklist = task.checklist as { items: Array<{ id: string; status: string }> } | null;
+      const currentItems = currentChecklist?.items || [];
+
+      // Find what changed
+      const changedItems = items.filter((newItem) => {
+        const oldItem = currentItems.find((i) => i.id === newItem.id);
+        return oldItem && oldItem.status !== newItem.status;
+      });
+
+      // Update items with completedBy for newly passed/failed items
+      const updatedItems = items.map((item) => {
+        const oldItem = currentItems.find((i) => i.id === item.id);
+        const wasJustCompleted = item.status !== 'pending' && (!oldItem || oldItem.status === 'pending');
+
+        return {
+          ...item,
+          completedBy: wasJustCompleted ? user.id : item.completedBy,
+          completedAt: wasJustCompleted ? new Date().toISOString() : item.completedAt,
+        };
+      });
+
+      // Update task
+      const updatedTask = await prisma.task.update({
+        where: { id: taskId },
+        data: {
+          checklist: { items: updatedItems },
+        },
+      });
+
+      // Create history entry if items changed
+      if (changedItems.length > 0) {
+        const passedItems = changedItems.filter((i) => i.status === 'passed');
+        const failedItems = changedItems.filter((i) => i.status === 'failed');
+        const pendingItems = changedItems.filter((i) => i.status === 'pending');
+
+        const details: string[] = [];
+        if (passedItems.length > 0) {
+          details.push(`Passed: ${passedItems.map((i) => i.title).join(", ")}`);
+        }
+        if (failedItems.length > 0) {
+          details.push(`Failed: ${failedItems.map((i) => i.title).join(", ")}`);
+        }
+        if (pendingItems.length > 0) {
+          details.push(`Reset to pending: ${pendingItems.map((i) => i.title).join(", ")}`);
+        }
+
+        await prisma.taskHistory.create({
+          data: {
+            taskId,
+            userId: user.id,
+            memberId: member.id,
+            action: TaskHistoryAction.UPDATED,
+            field: "checklist",
+            details: details.join("; "),
+          },
+        });
+      }
+
+      return c.json({ data: updatedTask });
+    }
+  )
+
 
 export default app;
