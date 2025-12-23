@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { useGetServices } from "@/features/services/api/use-get-services";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ClipboardList, Package, ChevronRight, CheckCircle, AlertCircle } from "@/lib/lucide-icons";
 import Link from "next/link";
 import { Loader2 } from "@/lib/lucide-icons";
 import { useGetChecklist } from "@/features/checklists/api/use-get-checklist";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+
+const ITEMS_PER_PAGE = 4;
 
 interface ServiceChecklistCardProps {
   service: {
@@ -25,17 +28,17 @@ const ServiceChecklistCard = ({ service, workspaceId }: ServiceChecklistCardProp
   const itemCount = checklist?.items?.length ?? 0;
 
   return (
-    <Link href={`/workspaces/${workspaceId}/checklists/${service.id}`}>
+    <Link href={`/workspaces/${workspaceId}/checklists/${service.id}`} className="block">
       <Card className="hover:shadow-md transition-shadow cursor-pointer border-gray-200 hover:border-blue-300">
-        <CardContent className="p-4">
+        <CardContent className="py-5 px-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 flex items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
                 {service.name.charAt(0).toUpperCase()}
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">{service.name}</h3>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                   {isLoading ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : hasChecklist ? (
@@ -68,6 +71,14 @@ const ServiceChecklistCard = ({ service, workspaceId }: ServiceChecklistCardProp
 const ChecklistsPage = () => {
   const workspaceId = useWorkspaceId();
   const { data: services, isLoading } = useGetServices({ workspaceId });
+  const [page, setPage] = useState(1);
+
+  const allServices = services?.documents ?? [];
+  const totalPages = Math.ceil(allServices.length / ITEMS_PER_PAGE);
+  const currentPage = Math.min(page, Math.max(1, totalPages));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedServices = allServices.slice(startIndex, endIndex);
 
   return (
     <div className="flex flex-col gap-y-6">
@@ -116,19 +127,89 @@ const ChecklistsPage = () => {
             Select a service to create or edit its checklist
           </p>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
             </div>
-          ) : services?.documents && services.documents.length > 0 ? (
-            services.documents.map((service) => (
-              <ServiceChecklistCard
-                key={service.id}
-                service={service}
-                workspaceId={workspaceId}
-              />
-            ))
+          ) : allServices.length > 0 ? (
+            <>
+              {/* Pagination info */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1}-{Math.min(endIndex, allServices.length)} of {allServices.length} services
+                </span>
+                {totalPages > 1 && (
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                )}
+              </div>
+
+              {/* Services */}
+              <div className="space-y-5">
+                {paginatedServices.map((service) => (
+                  <ServiceChecklistCard
+                    key={service.id}
+                    service={service}
+                    workspaceId={workspaceId}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => setPage(p => Math.max(1, p - 1))}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+
+                      {/* Page Numbers */}
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                        const showPage = pageNum === 1 ||
+                                       pageNum === totalPages ||
+                                       Math.abs(pageNum - currentPage) <= 1;
+
+                        if (!showPage) {
+                          if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                            return (
+                              <PaginationItem key={pageNum}>
+                                <span className="px-2 text-muted-foreground">...</span>
+                              </PaginationItem>
+                            );
+                          }
+                          return null;
+                        }
+
+                        return (
+                          <PaginationItem key={pageNum}>
+                            <PaginationLink
+                              onClick={() => setPage(pageNum)}
+                              isActive={currentPage === pageNum}
+                              className="cursor-pointer"
+                            >
+                              {pageNum}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-8 text-gray-500">
               <Package className="h-12 w-12 mx-auto mb-3 text-gray-300" />

@@ -7,6 +7,7 @@ import { useAddChecklistItem } from "../api/use-add-checklist-item";
 import { useUpdateChecklistItem } from "../api/use-update-checklist-item";
 import { useDeleteChecklistItem } from "../api/use-delete-checklist-item";
 import { useReorderChecklistItems } from "../api/use-reorder-checklist-items";
+import { ChecklistItem } from "../types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +17,9 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, GripVertical, Loader2, Edit, Check, X, ClipboardList } from "@/lib/lucide-icons";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { cn } from "@/lib/utils";
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+
+const ITEMS_PER_PAGE = 4;
 
 interface ChecklistManagerProps {
   serviceId: string;
@@ -36,6 +40,7 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [isGlpiEnabled, setIsGlpiEnabled] = useState(false); // For future GLPI ticket integration
+  const [page, setPage] = useState(1);
 
   const handleCreateChecklist = () => {
     createChecklist({ json: { serviceId } });
@@ -91,14 +96,18 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination || !checklist?.items) return;
 
-    const items = Array.from(checklist.items);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    // Calculate global indexes from paginated indexes
+    const globalSourceIndex = startIndex + result.source.index;
+    const globalDestIndex = startIndex + result.destination.index;
+
+    const allItems = [...(checklist.items as ChecklistItem[])];
+    const [reorderedItem] = allItems.splice(globalSourceIndex, 1);
+    allItems.splice(globalDestIndex, 0, reorderedItem);
 
     reorderItems({
       checklistId: checklist.id,
       serviceId,
-      itemIds: items.map((item) => item.id),
+      itemIds: allItems.map((item) => item.id),
     });
   };
 
@@ -132,6 +141,12 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
   }
 
   const items = checklist.items || [];
+  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+  // Ensure current page is valid
+  const currentPage = Math.min(page, Math.max(1, totalPages));
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedItems = items.slice(startIndex, endIndex);
 
   return (
     <div className="space-y-6">
@@ -196,115 +211,187 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
               <p>No items yet. Add your first checklist item above.</p>
             </div>
           ) : (
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="checklist-items">
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="space-y-2"
-                  >
-                    {items.map((item, index) => (
-                      <Draggable key={item.id} draggableId={item.id} index={index}>
-                        {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            className={cn(
-                              "flex items-start gap-3 p-3 rounded-lg border transition-colors",
-                              snapshot.isDragging
-                                ? "bg-blue-50 border-blue-300 shadow-lg"
-                                : "bg-white border-gray-200 hover:border-gray-300"
-                            )}
-                          >
-                            <div
-                              {...provided.dragHandleProps}
-                              className="mt-1 cursor-grab active:cursor-grabbing"
-                            >
-                              <GripVertical className="h-5 w-5 text-gray-400" />
-                            </div>
-
-                            {editingId === item.id ? (
-                              <div className="flex-1 space-y-2">
-                                <Input
-                                  value={editTitle}
-                                  onChange={(e) => setEditTitle(e.target.value)}
-                                  className="h-8"
-                                  autoFocus
-                                />
-                                <Textarea
-                                  value={editDescription}
-                                  onChange={(e) => setEditDescription(e.target.value)}
-                                  rows={2}
-                                  placeholder="Description (optional)"
-                                />
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    onClick={handleSaveEdit}
-                                    disabled={!editTitle.trim() || isUpdating}
-                                  >
-                                    {isUpdating && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-                                    <Check className="h-3 w-3 mr-1" />
-                                    Save
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={handleCancelEdit}
-                                  >
-                                    <X className="h-3 w-3 mr-1" />
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600">
-                                      {index + 1}
-                                    </span>
-                                    <p className="font-medium text-gray-900 truncate">
-                                      {item.title}
-                                    </p>
-                                  </div>
-                                  {item.description && (
-                                    <p className="text-sm text-gray-500 mt-1 ml-8">
-                                      {item.description}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleStartEdit(item)}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Edit className="h-4 w-4 text-gray-500" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleDeleteItem(item.id)}
-                                    disabled={isDeleting}
-                                    className="h-8 w-8 p-0 hover:text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
+            <>
+              {/* Items count and pagination info */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1}-{Math.min(endIndex, items.length)} of {items.length} items
+                </span>
+                {totalPages > 1 && (
+                  <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </span>
                 )}
-              </Droppable>
-            </DragDropContext>
+              </div>
+
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="checklist-items">
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className="space-y-4"
+                    >
+                      {paginatedItems.map((item: ChecklistItem, index: number) => {
+                        const globalIndex = startIndex + index;
+                        return (
+                          <Draggable key={item.id} draggableId={item.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={cn(
+                                  "flex items-start gap-4 p-4 rounded-lg border transition-colors",
+                                  snapshot.isDragging
+                                    ? "bg-blue-50 border-blue-300 shadow-lg"
+                                    : "bg-white border-gray-200 hover:border-gray-300"
+                                )}
+                              >
+                                <div
+                                  {...provided.dragHandleProps}
+                                  className="mt-1 cursor-grab active:cursor-grabbing"
+                                >
+                                  <GripVertical className="h-5 w-5 text-gray-400" />
+                                </div>
+
+                                {editingId === item.id ? (
+                                  <div className="flex-1 space-y-3">
+                                    <Input
+                                      value={editTitle}
+                                      onChange={(e) => setEditTitle(e.target.value)}
+                                      className="h-9"
+                                      autoFocus
+                                    />
+                                    <Textarea
+                                      value={editDescription}
+                                      onChange={(e) => setEditDescription(e.target.value)}
+                                      rows={2}
+                                      placeholder="Description (optional)"
+                                    />
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        onClick={handleSaveEdit}
+                                        disabled={!editTitle.trim() || isUpdating}
+                                      >
+                                        {isUpdating && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
+                                        <Check className="h-3 w-3 mr-1" />
+                                        Save
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleCancelEdit}
+                                      >
+                                        <X className="h-3 w-3 mr-1" />
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-3">
+                                        <span className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 text-sm font-medium text-gray-600">
+                                          {globalIndex + 1}
+                                        </span>
+                                        <p className="font-medium text-gray-900 truncate">
+                                          {item.title}
+                                        </p>
+                                      </div>
+                                      {item.description && (
+                                        <p className="text-sm text-gray-500 mt-2 ml-10">
+                                          {item.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleStartEdit(item)}
+                                        className="h-9 w-9 p-0"
+                                      >
+                                        <Edit className="h-4 w-4 text-gray-500" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleDeleteItem(item.id)}
+                                        disabled={isDeleting}
+                                        className="h-9 w-9 p-0 hover:text-red-600"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </Draggable>
+                        );
+                      })}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-6">
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={() => setPage(p => Math.max(1, p - 1))}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+
+                      {/* Page Numbers */}
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                        // Show first page, last page, current page, and pages around current
+                        const showPage = pageNum === 1 ||
+                                       pageNum === totalPages ||
+                                       Math.abs(pageNum - currentPage) <= 1;
+
+                        if (!showPage) {
+                          // Show ellipsis for gaps
+                          if (pageNum === currentPage - 2 || pageNum === currentPage + 2) {
+                            return (
+                              <PaginationItem key={pageNum}>
+                                <span className="px-2 text-muted-foreground">...</span>
+                              </PaginationItem>
+                            );
+                          }
+                          return null;
+                        }
+
+                        return (
+                          <PaginationItem key={pageNum}>
+                            <PaginationLink
+                              onClick={() => setPage(pageNum)}
+                              isActive={currentPage === pageNum}
+                              className="cursor-pointer"
+                            >
+                              {pageNum}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
