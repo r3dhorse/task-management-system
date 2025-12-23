@@ -88,7 +88,7 @@ const app = new Hono()
     async (c) => {
       const user = c.get("user");
       const prisma = c.get("prisma");
-      const { name, description, withReviewStage } = c.req.valid("json");
+      const { name, description } = c.req.valid("json");
 
       // Check if user is admin (required for workspace creation)
       if (!user.isAdmin) {
@@ -98,6 +98,7 @@ const app = new Hono()
       }
 
       // Create workspace and add creator as admin member in a transaction
+      // All workspaces have review stage enabled by default
       const result = await prisma.$transaction(async (tx) => {
         const workspace = await tx.workspace.create({
           data: {
@@ -105,7 +106,7 @@ const app = new Hono()
             description: description || null,
             userId: user.id,
             inviteCode: generateInviteCode(10),
-            withReviewStage: withReviewStage ?? true,
+            withReviewStage: true, // Always enabled
           },
         });
 
@@ -135,7 +136,6 @@ const app = new Hono()
       const {
         name,
         description,
-        withReviewStage,
         kpiCompletionWeight,
         kpiProductivityWeight,
         kpiSlaWeight,
@@ -164,7 +164,6 @@ const app = new Hono()
         data: {
           ...(name !== undefined && { name }),
           ...(description !== undefined && { description }),
-          ...(withReviewStage !== undefined && { withReviewStage }),
           ...(kpiCompletionWeight !== undefined && { kpiCompletionWeight }),
           ...(kpiProductivityWeight !== undefined && { kpiProductivityWeight }),
           ...(kpiSlaWeight !== undefined && { kpiSlaWeight }),

@@ -5,12 +5,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { updateWorkspaceSchema } from "../schemas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormDescription } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
 import { DottedSeparator } from "@/components/dotted-separator";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Workspace } from "../types";
@@ -59,7 +58,6 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
     defaultValues: {
       name: initialValues.name,
       description: initialValues.description || undefined,
-      withReviewStage: initialValues.withReviewStage ?? true,
     },
   });
 
@@ -168,28 +166,6 @@ export const EditWorkspaceForm = ({ onCancel, initialValues }: EditWorkspaceForm
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="withReviewStage"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">
-                          With Review Stage
-                        </FormLabel>
-                        <FormDescription>
-                          Enable the &quot;In Review&quot; column in the Kanban board for task review workflow
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
               </div>
 
               <DottedSeparator />
