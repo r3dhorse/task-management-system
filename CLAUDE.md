@@ -33,10 +33,19 @@ npm run start            # Start production server
 
 This is a **multi-tenant task management system** built with:
 - **Frontend**: Next.js 14 App Router, TypeScript, Tailwind CSS with shadcn/ui components
-- **Backend**: Next.js API routes with PostgreSQL database
+- **Backend**: Next.js with PostgreSQL database
+- **API Layer**: Hono RPC for type-safe APIs with end-to-end type inference
 - **Database**: PostgreSQL with Prisma ORM
 - **Authentication**: NextAuth.js with credentials provider and JWT sessions
 - **File Storage**: Local storage with organized folder structure
+
+### Hono RPC Architecture
+
+The API uses Hono for type-safe client-server communication:
+- **Route definition**: `src/app/api/[[...route]]/route.ts` - Central catch-all route using Hono
+- **Feature routes**: `src/features/*/server/route.ts` - Modular route handlers per feature
+- **RPC client**: `src/lib/rpc.ts` - Type-safe client using `hc<Apptype>`
+- **Type inference**: Use `InferRequestType` and `InferResponseType` from `hono` for automatic typing
 
 ## Project Structure
 
@@ -69,13 +78,19 @@ NextAuth configuration in `/src/lib/auth.ts` with 30-day JWT sessions.
 
 ## API Endpoints
 
-RESTful APIs under `/api/`:
+Hono RPC routes under `/api/` (defined in feature modules):
 - `/api/auth/*` - Authentication
 - `/api/users/*` - User management (super-admin only)
 - `/api/workspaces/*` - Workspace CRUD
-- `/api/workspaces/[id]/tasks/*` - Task operations
+- `/api/tasks/*` - Task operations
+- `/api/services/*` - Service management
+- `/api/members/*` - Workspace member management
+- `/api/notifications/*` - Notification system
+- `/api/checklists/*` - Checklist management
+
+Standard Next.js API routes (not using Hono):
 - `/api/upload/*` - File handling
-- `/api/cron/*` - Scheduled notifications
+- `/api/cron/*` - Scheduled jobs
 
 ## Key Development Notes
 
@@ -85,6 +100,7 @@ RESTful APIs under `/api/`:
 - **Environment variables** required: DATABASE_URL, NEXTAUTH_SECRET, NEXTAUTH_URL
 - **Prisma migrations** must be run after schema changes
 - **Docker development** includes PostgreSQL container with automatic migrations
+- **Hono RPC**: When creating new API endpoints, add routes to feature modules and register in `src/app/api/[[...route]]/route.ts`
 
 ## Production Deployment (Docker)
 
