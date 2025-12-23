@@ -31,6 +31,7 @@ interface TaskAttachmentsTableProps {
   taskId: string;
   workspaceId: string;
   taskNumber: string;
+  readOnly?: boolean;
 }
 
 // Helper function to format file size
@@ -46,6 +47,7 @@ export const TaskAttachmentsTable = ({
   taskId,
   workspaceId,
   taskNumber,
+  readOnly = false,
 }: TaskAttachmentsTableProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -167,14 +169,16 @@ export const TaskAttachmentsTable = ({
         <h3 className="text-lg font-semibold text-gray-900">
           Attachments {hasAttachments && `(${attachments.length})`}
         </h3>
-        <Button
-          onClick={handleAddFiles}
-          size="sm"
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          <PlusIcon className="size-4 mr-2" />
-          Add Files
-        </Button>
+        {!readOnly && (
+          <Button
+            onClick={handleAddFiles}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <PlusIcon className="size-4 mr-2" />
+            Add Files
+          </Button>
+        )}
       </div>
 
       {/* Attachments Table */}
@@ -186,17 +190,19 @@ export const TaskAttachmentsTable = ({
             </div>
             <p className="text-gray-600 font-medium">No attachments yet</p>
             <p className="text-sm text-gray-500">
-              Upload files to this task or its subtasks
+              {readOnly ? "Attachments can be added once the task is in progress" : "Upload files to this task or its subtasks"}
             </p>
-            <Button
-              onClick={handleAddFiles}
-              size="sm"
-              variant="outline"
-              className="mt-2"
-            >
-              <PlusIcon className="size-4 mr-2" />
-              Add First Attachment
-            </Button>
+            {!readOnly && (
+              <Button
+                onClick={handleAddFiles}
+                size="sm"
+                variant="outline"
+                className="mt-2"
+              >
+                <PlusIcon className="size-4 mr-2" />
+                Add First Attachment
+              </Button>
+            )}
           </div>
         </div>
       ) : (
@@ -273,8 +279,8 @@ export const TaskAttachmentsTable = ({
                       >
                         <Download className="h-4 w-4" />
                       </Button>
-                      {/* Only show delete button for parent task attachments */}
-                      {attachment.isParentTask && (
+                      {/* Only show delete button for parent task attachments and when not read-only */}
+                      {attachment.isParentTask && !readOnly && (
                         <Button
                           size="icon"
                           variant="ghost"

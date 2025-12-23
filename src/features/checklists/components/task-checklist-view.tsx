@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Loader2, ClipboardList, CheckCircle2, XCircle, Clock } from "@/lib/lucide-icons";
-import type { TaskChecklist, TaskChecklistItem, ChecklistItemStatus } from "../types";
+import type { TaskChecklist, TaskChecklistItem } from "@/features/tasks/types";
+
+type ChecklistItemStatus = 'pending' | 'passed' | 'failed';
 
 interface TaskChecklistViewProps {
   taskId: string;
@@ -182,7 +184,7 @@ export const TaskChecklistView = ({
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <Button
                     size="sm"
-                    variant={item.status === 'passed' ? 'default' : 'outline'}
+                    variant={item.status === 'passed' ? 'primary' : 'outline'}
                     onClick={() => handleSetStatus(item.id, item.status === 'passed' ? 'pending' : 'passed')}
                     disabled={isPending}
                     className={cn(
@@ -197,7 +199,7 @@ export const TaskChecklistView = ({
                   </Button>
                   <Button
                     size="sm"
-                    variant={item.status === 'failed' ? 'default' : 'outline'}
+                    variant={item.status === 'failed' ? 'destructive' : 'outline'}
                     onClick={() => handleSetStatus(item.id, item.status === 'failed' ? 'pending' : 'failed')}
                     disabled={isPending}
                     className={cn(

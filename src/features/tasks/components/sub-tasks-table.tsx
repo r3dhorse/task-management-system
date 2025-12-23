@@ -21,10 +21,12 @@ import { useCreateTaskModal } from "../hooks/use-create-task-modal";
 
 interface SubTasksTableProps {
   parentTaskId: string;
+  readOnly?: boolean;
 }
 
 export const SubTasksTable = ({
   parentTaskId,
+  readOnly = false,
 }: SubTasksTableProps) => {
   const router = useRouter();
   const { data: subTasks, isLoading } = useGetSubTasks({ taskId: parentTaskId });
@@ -99,14 +101,16 @@ export const SubTasksTable = ({
         <h3 className="text-lg font-semibold text-gray-900">
           Sub Tasks {hasSubTasks && `(${subTasks.length})`}
         </h3>
-        <Button
-          onClick={handleCreateSubTask}
-          size="sm"
-          className="bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          <PlusIcon className="size-4 mr-2" />
-          Create Sub Task
-        </Button>
+        {!readOnly && (
+          <Button
+            onClick={handleCreateSubTask}
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            <PlusIcon className="size-4 mr-2" />
+            Create Sub Task
+          </Button>
+        )}
       </div>
 
       {/* Sub Tasks Table */}
@@ -130,17 +134,19 @@ export const SubTasksTable = ({
             </div>
             <p className="text-gray-600 font-medium">No sub-tasks yet</p>
             <p className="text-sm text-gray-500">
-              Break down this task into smaller, manageable pieces
+              {readOnly ? "Sub-tasks can be added once the task is in progress" : "Break down this task into smaller, manageable pieces"}
             </p>
-            <Button
-              onClick={handleCreateSubTask}
-              size="sm"
-              variant="outline"
-              className="mt-2"
-            >
-              <PlusIcon className="size-4 mr-2" />
-              Create First Sub Task
-            </Button>
+            {!readOnly && (
+              <Button
+                onClick={handleCreateSubTask}
+                size="sm"
+                variant="outline"
+                className="mt-2"
+              >
+                <PlusIcon className="size-4 mr-2" />
+                Create First Sub Task
+              </Button>
+            )}
           </div>
         </div>
       ) : (

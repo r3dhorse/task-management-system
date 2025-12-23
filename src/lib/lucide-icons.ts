@@ -164,6 +164,7 @@ export const ClipboardList = getIcon('ClipboardList', ['ClipboardListIcon']);
 export const ClipboardListIcon = getIcon('ClipboardList', ['ClipboardListIcon']);
 export const CheckSquare = getIcon('CheckSquare', ['CheckSquareIcon']);
 export const GripVertical = getIcon('GripVertical', ['GripVerticalIcon']);
+export const XCircle = getIcon('XCircle', ['XCircleIcon']);
 
 // Export all lucide icons as a namespace for direct access
 export * from "lucide-react";

@@ -26,7 +26,7 @@ import { TaskChat } from "@/features/tasks/components/task-chat";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Member, MemberRole } from "@/features/members/types";
 import { Service } from "@/features/services/types";
-import { TaskStatus } from "@/features/tasks/types";
+import { TaskStatus, type TaskChecklist, type TaskChecklistItem } from "@/features/tasks/types";
 import { ManageFollowersModal } from "@/features/tasks/components/manage-followers-modal";
 import { ManageCollaboratorsModal } from "@/features/tasks/components/manage-collaborators-modal";
 import { ManageAssigneesModal } from "@/features/tasks/components/manage-assignees-modal";
@@ -37,7 +37,6 @@ import { TaskAttachmentsTable } from "@/features/tasks/components/task-attachmen
 import { useGetSubTasks } from "@/features/tasks/api/use-get-sub-tasks";
 import { TaskChecklistView } from "@/features/checklists/components/task-checklist-view";
 import { useUpdateTaskChecklist } from "@/features/checklists/api/use-update-task-checklist";
-import type { TaskChecklist, TaskChecklistItem } from "@/features/checklists/types";
 
 interface TaskDetailsPageProps {
   params: {
@@ -553,6 +552,17 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
     ? true // Reviewers can change status of IN_REVIEW tasks
     : (currentMember?.role !== MemberRole.CUSTOMER || isCreator); // Non-customers and creators can edit status
 
+  // Check if all subtasks are completed (DONE status)
+  const hasIncompleteSubtasks = subTasks && subTasks.length > 0 &&
+    subTasks.some(st => st.status !== TaskStatus.DONE);
+  const incompleteSubtaskCount = subTasks?.filter(st => st.status !== TaskStatus.DONE).length || 0;
+
+  // Check if all checklist items are completed (not pending)
+  const taskChecklist = task.checklist as TaskChecklist | null;
+  const hasPendingChecklistItems = taskChecklist?.items && taskChecklist.items.length > 0 &&
+    taskChecklist.items.some(item => item.status === 'pending');
+  const pendingChecklistCount = taskChecklist?.items?.filter(item => item.status === 'pending').length || 0;
+
   // Access restriction for task viewing:
   // - Non-confidential tasks: ALL workspace members can view (read-only for non-involved)
   // - Confidential tasks: Only involved members (assignee, creator, reviewer, collaborators, followers, admins)
@@ -833,17 +843,20 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   const handleStatusChange = (newStatus: TaskStatus) => {
     if (!task || !canEditStatus) return;
 
-    // Block transition from IN_PROGRESS to IN_REVIEW/DONE if there are incomplete subtasks
-    const incompleteCount = subTasks?.filter(st => st.status !== TaskStatus.DONE).length || 0;
-    if (task.status === TaskStatus.IN_PROGRESS &&
-        (newStatus === TaskStatus.IN_REVIEW || newStatus === TaskStatus.DONE) &&
-        subTasks && subTasks.length > 0 && incompleteCount > 0) {
+    // Block transition to IN_REVIEW/DONE if there are incomplete subtasks
+    if ((newStatus === TaskStatus.IN_REVIEW || newStatus === TaskStatus.DONE) &&
+        subTasks && subTasks.length > 0 && incompleteSubtaskCount > 0) {
       toast.error(
-        `Cannot move to ${newStatus.replace('_', ' ').toLowerCase()}. ${incompleteCount} subtask${incompleteCount > 1 ? 's are' : ' is'} not yet completed.`,
-        {
-          description: "Please complete all subtasks first.",
-          duration: 5000,
-        }
+        `Cannot move to ${newStatus.replace('_', ' ').toLowerCase()}. ${incompleteSubtaskCount} subtask${incompleteSubtaskCount > 1 ? 's are' : ' is'} not yet completed.`
+      );
+      return;
+    }
+
+    // Block transition to IN_REVIEW/DONE if there are pending checklist items
+    if ((newStatus === TaskStatus.IN_REVIEW || newStatus === TaskStatus.DONE) &&
+        hasPendingChecklistItems) {
+      toast.error(
+        `Cannot move to ${newStatus.replace('_', ' ').toLowerCase()}. ${pendingChecklistCount} checklist item${pendingChecklistCount > 1 ? 's are' : ' is'} still pending.`
       );
       return;
     }
@@ -948,21 +961,20 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   // Show when: task is in IN_PROGRESS and user is an assignee
   const canSubmitForReview = task.status === TaskStatus.IN_PROGRESS && isAssignee;
 
-  // Check if all subtasks are completed (DONE status)
-  const hasIncompleteSubtasks = subTasks && subTasks.length > 0 &&
-    subTasks.some(st => st.status !== TaskStatus.DONE);
-  const incompleteSubtaskCount = subTasks?.filter(st => st.status !== TaskStatus.DONE).length || 0;
-
   // Handle Submit for Review - updates status to IN_REVIEW
   const handleSubmitForReview = async () => {
     // Check if there are incomplete subtasks
     if (hasIncompleteSubtasks) {
       toast.error(
-        `Cannot submit for review. ${incompleteSubtaskCount} subtask${incompleteSubtaskCount > 1 ? 's are' : ' is'} not yet completed.`,
-        {
-          description: "Please complete all subtasks before submitting for review.",
-          duration: 5000,
-        }
+        `Cannot submit for review. ${incompleteSubtaskCount} subtask${incompleteSubtaskCount > 1 ? 's are' : ' is'} not yet completed.`
+      );
+      return;
+    }
+
+    // Check if there are pending checklist items
+    if (hasPendingChecklistItems) {
+      toast.error(
+        `Cannot submit for review. ${pendingChecklistCount} checklist item${pendingChecklistCount > 1 ? 's are' : ' is'} still pending.`
       );
       return;
     }
@@ -1002,6 +1014,22 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
   // Handle Mark as Reviewed - updates status to DONE and records the reviewer
   const handleMarkAsReviewed = async () => {
+    // Check if there are incomplete subtasks
+    if (hasIncompleteSubtasks) {
+      toast.error(
+        `Cannot mark as done. ${incompleteSubtaskCount} subtask${incompleteSubtaskCount > 1 ? 's are' : ' is'} not yet completed.`
+      );
+      return;
+    }
+
+    // Check if there are pending checklist items
+    if (hasPendingChecklistItems) {
+      toast.error(
+        `Cannot mark as done. ${pendingChecklistCount} checklist item${pendingChecklistCount > 1 ? 's are' : ' is'} still pending.`
+      );
+      return;
+    }
+
     const ok = await confirmReview();
     if (!ok || !task || !currentMember) return;
 
@@ -1395,6 +1423,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                       <div className="px-6 py-6">
                         <SubTasksTable
                           parentTaskId={task.id}
+                          readOnly={task.status === TaskStatus.TODO || task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED}
                         />
                       </div>
                     </div>
@@ -1407,6 +1436,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                           taskId={task.id}
                           workspaceId={task.workspaceId}
                           taskNumber={task.taskNumber}
+                          readOnly={task.status === TaskStatus.TODO || task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED}
                         />
                       </div>
                     </div>
@@ -1418,7 +1448,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                         <TaskChecklistView
                           taskId={task.id}
                           checklist={task.checklist as TaskChecklist | null}
-                          canEdit={canEdit}
+                          canEdit={canEdit && task.status !== TaskStatus.TODO && task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED}
                           onUpdate={async (items: TaskChecklistItem[]) => {
                             await updateChecklist({ taskId: task.id, items });
                           }}

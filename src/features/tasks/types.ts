@@ -14,6 +14,22 @@ export enum ReviewStatus {
   CHANGES_REQUESTED = "CHANGES_REQUESTED"
 };
 
+// Checklist item stored in task JSON field
+export type TaskChecklistItem = {
+  id: string;
+  title: string;
+  description?: string;
+  order: number;
+  status: 'pending' | 'passed' | 'failed';
+  completedAt?: string;
+  completedBy?: string;
+};
+
+// Checklist structure stored in task JSON field
+export type TaskChecklist = {
+  items: TaskChecklistItem[];
+};
+
 export type Task = {
   id: string;
   taskNumber: string;
@@ -31,6 +47,7 @@ export type Task = {
   creatorId?: string | null; // User ID of the task creator
   isConfidential?: boolean; // If true, only visible to creator, assignees, followers, and collaborators
   parentTaskId?: string | null; // ID of the parent task if this is a subtask
+  checklist?: TaskChecklist | null; // Checklist items with pass/fail status
   createdAt: string;
   updatedAt: string;
 }
