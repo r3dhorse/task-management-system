@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Plus, Trash2, GripVertical, Loader2, Edit, Check, X, ClipboardList } from "@/lib/lucide-icons";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,7 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [isGlpiEnabled, setIsGlpiEnabled] = useState(false); // For future GLPI ticket integration
 
   const handleCreateChecklist = () => {
     createChecklist({ json: { serviceId } });
@@ -164,13 +167,25 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
       {/* Checklist Items */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-blue-600" />
-            Checklist Items
-            <span className="text-sm font-normal text-gray-500">
-              ({items.length} item{items.length !== 1 ? "s" : ""})
-            </span>
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-blue-600" />
+              Checklist Items
+              <span className="text-sm font-normal text-gray-500">
+                ({items.length} item{items.length !== 1 ? "s" : ""})
+              </span>
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="glpi-switch" className="text-sm text-gray-600">
+                GLPI
+              </Label>
+              <Switch
+                id="glpi-switch"
+                checked={isGlpiEnabled}
+                onCheckedChange={setIsGlpiEnabled}
+              />
+            </div>
+          </div>
           <p className="text-sm text-muted-foreground">
             Drag to reorder items. The order will be preserved when copying to tasks.
           </p>
