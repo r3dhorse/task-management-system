@@ -162,7 +162,12 @@ export async function generateChecklistPDF({
     },
     didDrawCell: (data) => {
       const cell = data.cell;
-      if (!cell || typeof cell.x !== 'number' || typeof cell.y !== 'number') return;
+      // Validate all cell properties are valid numbers
+      if (!cell ||
+          typeof cell.x !== 'number' || isNaN(cell.x) ||
+          typeof cell.y !== 'number' || isNaN(cell.y) ||
+          typeof cell.width !== 'number' || isNaN(cell.width) ||
+          typeof cell.height !== 'number' || isNaN(cell.height)) return;
 
       // Skip if row index is out of bounds
       const rowIndex = data.row.index;
@@ -200,9 +205,11 @@ export async function generateChecklistPDF({
         doc.setTextColor(textColor[0], textColor[1], textColor[2]);
         doc.setFontSize(6);
         doc.setFont("helvetica", "bold");
-        const textX = cell.x + cell.width / 2;
-        const textY = cell.y + cell.height / 2 + 0.5;
-        doc.text(String(statusText), textX, textY, { align: "center" });
+        const statusTextX = cell.x + cell.width / 2;
+        const statusTextY = cell.y + cell.height / 2 + 0.5;
+        if (!isNaN(statusTextX) && !isNaN(statusTextY)) {
+          doc.text(String(statusText || ""), statusTextX, statusTextY, { align: "center" });
+        }
       }
 
       // Draw photo in photo column
@@ -229,17 +236,21 @@ export async function generateChecklistPDF({
             console.error("Failed to add image to PDF:", err);
             doc.setFontSize(6);
             doc.setTextColor(156, 163, 175);
-            const textX = cell.x + cell.width / 2;
-            const textY = cell.y + cell.height / 2;
-            doc.text("Error", textX, textY, { align: "center" });
+            const errorTextX = cell.x + cell.width / 2;
+            const errorTextY = cell.y + cell.height / 2;
+            if (!isNaN(errorTextX) && !isNaN(errorTextY)) {
+              doc.text("Error", errorTextX, errorTextY, { align: "center" });
+            }
           }
         } else {
           // No photo - show dash centered in cell
           doc.setFontSize(8);
           doc.setTextColor(156, 163, 175);
-          const textX = cell.x + cell.width / 2;
-          const textY = cell.y + cell.height / 2;
-          doc.text("-", textX, textY, { align: "center" });
+          const noPhotoTextX = cell.x + cell.width / 2;
+          const noPhotoTextY = cell.y + cell.height / 2;
+          if (!isNaN(noPhotoTextX) && !isNaN(noPhotoTextY)) {
+            doc.text("-", noPhotoTextX, noPhotoTextY, { align: "center" });
+          }
         }
       }
     },

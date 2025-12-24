@@ -18,7 +18,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Update npm and install all dependencies (including devDependencies)
-RUN npm install -g npm@11.6.0 && npm ci --legacy-peer-deps
+# Also install the musl SWC binary for Alpine Linux
+RUN npm install -g npm@11.6.0 && npm ci --legacy-peer-deps && npm install @next/swc-linux-x64-musl --legacy-peer-deps
 
 # Copy source code
 COPY . .
