@@ -148,7 +148,6 @@ export const TaskChecklistView = ({
       await generateChecklistPDF({
         taskNumber,
         taskName,
-        serviceName,
         items,
       });
       toast.success("Report generated successfully");

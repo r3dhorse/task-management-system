@@ -6,7 +6,6 @@ import type { TaskChecklistItem } from "@/features/tasks/types";
 interface ChecklistPDFParams {
   taskNumber: string;
   taskName: string;
-  serviceName: string;
   items: TaskChecklistItem[];
 }
 
@@ -42,7 +41,6 @@ function getStatusLabel(status: string): string {
 export async function generateChecklistPDF({
   taskNumber,
   taskName,
-  serviceName,
   items,
 }: ChecklistPDFParams): Promise<void> {
   try {
@@ -74,7 +72,7 @@ export async function generateChecklistPDF({
   // Task info
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  const taskInfo = serviceName ? `${taskNumber} - ${taskName} | ${serviceName}` : `${taskNumber} - ${taskName}`;
+  const taskInfo = `${taskNumber} - ${taskName}`;
   doc.text(taskInfo, margin, 17);
 
   // Generated date on right
