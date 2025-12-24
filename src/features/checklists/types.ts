@@ -12,6 +12,8 @@ export type ChecklistItem = {
   title: string;
   description?: string | null;
   order: number;
+  requirePhoto: boolean;
+  requireRemarks: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;
 };
@@ -25,6 +27,8 @@ export type TaskChecklistItem = {
   title: string;
   description?: string;
   order: number;
+  requirePhoto?: boolean;
+  requireRemarks?: boolean;
   status: ChecklistItemStatus;
   completedAt?: string;
   completedBy?: string;

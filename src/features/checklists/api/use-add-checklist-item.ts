@@ -7,16 +7,18 @@ interface AddChecklistItemRequest {
   serviceId: string;
   title: string;
   description?: string;
+  requirePhoto?: boolean;
+  requireRemarks?: boolean;
 }
 
 export const useAddChecklistItem = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation<unknown, Error, AddChecklistItemRequest>({
-    mutationFn: async ({ checklistId, title, description }) => {
+    mutationFn: async ({ checklistId, title, description, requirePhoto, requireRemarks }) => {
       const response = await client.api.checklists[":checklistId"].items.$post({
         param: { checklistId },
-        json: { title, description },
+        json: { title, description, requirePhoto, requireRemarks },
       });
 
       if (!response.ok) {

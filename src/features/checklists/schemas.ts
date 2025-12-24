@@ -9,12 +9,16 @@ export const createChecklistSchema = z.object({
 export const createChecklistItemSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(255, "Title too long"),
   description: z.string().max(1000, "Description too long").optional(),
+  requirePhoto: z.boolean().optional().default(false),
+  requireRemarks: z.boolean().optional().default(false),
 });
 
 // Client-side schema for creating a checklist item
 export const createChecklistItemClientSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(255, "Title too long"),
   description: z.string().max(1000, "Description too long").optional(),
+  requirePhoto: z.boolean().optional().default(false),
+  requireRemarks: z.boolean().optional().default(false),
 });
 
 // Server-side schema for updating a checklist item
@@ -22,6 +26,8 @@ export const updateChecklistItemSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(255, "Title too long").optional(),
   description: z.string().max(1000, "Description too long").optional().nullable(),
   order: z.number().optional(),
+  requirePhoto: z.boolean().optional(),
+  requireRemarks: z.boolean().optional(),
 });
 
 // Schema for reordering checklist items
@@ -39,6 +45,8 @@ export const taskChecklistItemSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
   order: z.number(),
+  requirePhoto: z.boolean().optional(),
+  requireRemarks: z.boolean().optional(),
   status: z.enum(checklistItemStatusValues).default('pending'),
   completedAt: z.string().optional(),
   completedBy: z.string().optional(),

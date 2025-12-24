@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, GripVertical, Loader2, Edit, Check, X, ClipboardList } from "@/lib/lucide-icons";
+import { Plus, Trash2, GripVertical, Loader2, Edit, Check, X, ClipboardList, Camera, MessageSquare } from "@/lib/lucide-icons";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { cn } from "@/lib/utils";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
@@ -36,9 +36,13 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
 
   const [newItemTitle, setNewItemTitle] = useState("");
   const [newItemDescription, setNewItemDescription] = useState("");
+  const [newItemRequirePhoto, setNewItemRequirePhoto] = useState(false);
+  const [newItemRequireRemarks, setNewItemRequireRemarks] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editRequirePhoto, setEditRequirePhoto] = useState(false);
+  const [editRequireRemarks, setEditRequireRemarks] = useState(false);
   const [isGlpiEnabled, setIsGlpiEnabled] = useState(false); // For future GLPI ticket integration
   const [page, setPage] = useState(1);
 
@@ -53,15 +57,21 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
       serviceId,
       title: newItemTitle.trim(),
       description: newItemDescription.trim() || undefined,
+      requirePhoto: newItemRequirePhoto,
+      requireRemarks: newItemRequireRemarks,
     });
     setNewItemTitle("");
     setNewItemDescription("");
+    setNewItemRequirePhoto(false);
+    setNewItemRequireRemarks(false);
   };
 
-  const handleStartEdit = (item: { id: string; title: string; description?: string | null }) => {
+  const handleStartEdit = (item: { id: string; title: string; description?: string | null; requirePhoto?: boolean; requireRemarks?: boolean }) => {
     setEditingId(item.id);
     setEditTitle(item.title);
     setEditDescription(item.description || "");
+    setEditRequirePhoto(item.requirePhoto ?? false);
+    setEditRequireRemarks(item.requireRemarks ?? false);
   };
 
   const handleSaveEdit = () => {
@@ -72,16 +82,22 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
       serviceId,
       title: editTitle.trim(),
       description: editDescription.trim() || null,
+      requirePhoto: editRequirePhoto,
+      requireRemarks: editRequireRemarks,
     });
     setEditingId(null);
     setEditTitle("");
     setEditDescription("");
+    setEditRequirePhoto(false);
+    setEditRequireRemarks(false);
   };
 
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditTitle("");
     setEditDescription("");
+    setEditRequirePhoto(false);
+    setEditRequireRemarks(false);
   };
 
   const handleDeleteItem = (itemId: string) => {
@@ -168,6 +184,31 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
             onChange={(e) => setNewItemDescription(e.target.value)}
             rows={2}
           />
+          {/* Required Photo and Remarks toggles */}
+          <div className="flex flex-wrap gap-6 pt-2">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="require-photo"
+                checked={newItemRequirePhoto}
+                onCheckedChange={setNewItemRequirePhoto}
+              />
+              <Label htmlFor="require-photo" className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <Camera className="h-4 w-4 text-gray-500" />
+                Required Photo
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="require-remarks"
+                checked={newItemRequireRemarks}
+                onCheckedChange={setNewItemRequireRemarks}
+              />
+              <Label htmlFor="require-remarks" className="flex items-center gap-1.5 text-sm cursor-pointer">
+                <MessageSquare className="h-4 w-4 text-gray-500" />
+                Required Remarks
+              </Label>
+            </div>
+          </div>
           <Button
             onClick={handleAddItem}
             disabled={!newItemTitle.trim() || isAdding}
@@ -268,6 +309,31 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
                                       rows={2}
                                       placeholder="Description (optional)"
                                     />
+                                    {/* Required Photo and Remarks toggles */}
+                                    <div className="flex flex-wrap gap-4">
+                                      <div className="flex items-center gap-2">
+                                        <Switch
+                                          id={`edit-require-photo-${item.id}`}
+                                          checked={editRequirePhoto}
+                                          onCheckedChange={setEditRequirePhoto}
+                                        />
+                                        <Label htmlFor={`edit-require-photo-${item.id}`} className="flex items-center gap-1 text-xs cursor-pointer">
+                                          <Camera className="h-3.5 w-3.5 text-gray-500" />
+                                          Req. Photo
+                                        </Label>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Switch
+                                          id={`edit-require-remarks-${item.id}`}
+                                          checked={editRequireRemarks}
+                                          onCheckedChange={setEditRequireRemarks}
+                                        />
+                                        <Label htmlFor={`edit-require-remarks-${item.id}`} className="flex items-center gap-1 text-xs cursor-pointer">
+                                          <MessageSquare className="h-3.5 w-3.5 text-gray-500" />
+                                          Req. Remarks
+                                        </Label>
+                                      </div>
+                                    </div>
                                     <div className="flex gap-2">
                                       <Button
                                         size="sm"
@@ -298,6 +364,21 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
                                         <p className="font-medium text-gray-900 truncate">
                                           {item.title}
                                         </p>
+                                        {/* Required badges */}
+                                        {(item.requirePhoto || item.requireRemarks) && (
+                                          <div className="flex items-center gap-1.5">
+                                            {item.requirePhoto && (
+                                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
+                                                <Camera className="h-3 w-3" />
+                                              </span>
+                                            )}
+                                            {item.requireRemarks && (
+                                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                                <MessageSquare className="h-3 w-3" />
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
                                       {item.description && (
                                         <p className="text-sm text-gray-500 mt-2 ml-10">

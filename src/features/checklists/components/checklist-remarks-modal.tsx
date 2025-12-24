@@ -15,7 +15,10 @@ interface ChecklistRemarksModalProps {
   itemId: string;
   initialRemarks?: string;
   initialPhotoUrl?: string;
+  isPassMode?: boolean;
   isFailMode?: boolean;
+  requirePhoto?: boolean;
+  requireRemarks?: boolean;
   onSave: (remarks: string | undefined, photoUrl: string | undefined) => Promise<void>;
 }
 
@@ -26,7 +29,10 @@ export const ChecklistRemarksModal = ({
   itemId,
   initialRemarks = "",
   initialPhotoUrl = "",
+  isPassMode = false,
   isFailMode = false,
+  requirePhoto = false,
+  requireRemarks = false,
   onSave,
 }: ChecklistRemarksModalProps) => {
   const [remarks, setRemarks] = useState(initialRemarks);
@@ -34,6 +40,7 @@ export const ChecklistRemarksModal = ({
   const [isCapturing, setIsCapturing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [errors, setErrors] = useState<{ photo?: string; remarks?: string }>({});
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -42,6 +49,7 @@ export const ChecklistRemarksModal = ({
     if (open) {
       setRemarks(initialRemarks);
       setPhotoUrl(initialPhotoUrl);
+      setErrors({});
     }
   }, [open, initialRemarks, initialPhotoUrl]);
 
@@ -112,6 +120,22 @@ export const ChecklistRemarksModal = ({
   }, []);
 
   const handleSave = async () => {
+    // Validate required fields
+    const newErrors: { photo?: string; remarks?: string } = {};
+
+    if (requirePhoto && !photoUrl) {
+      newErrors.photo = "Photo is required for this item";
+    }
+    if (requireRemarks && !remarks.trim()) {
+      newErrors.remarks = "Remarks are required for this item";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     setIsSaving(true);
     try {
       await onSave(
@@ -131,10 +155,16 @@ export const ChecklistRemarksModal = ({
     onOpenChange(false);
   };
 
-  const modalTitle = isFailMode ? "Mark as Failed" : "Add Remarks";
-  const modalDescription = isFailMode
-    ? `Document why this item failed: ${itemTitle}`
-    : `Add remarks and photo for: ${itemTitle}`;
+  const modalTitle = isPassMode
+    ? "Mark as Passed"
+    : isFailMode
+      ? "Mark as Failed"
+      : "Add Remarks";
+  const modalDescription = isPassMode
+    ? `Add optional remarks and photo for: ${itemTitle}`
+    : isFailMode
+      ? `Document why this item failed: ${itemTitle}`
+      : `Add remarks and photo for: ${itemTitle}`;
 
   return (
     <ResponsiveModal
@@ -148,20 +178,32 @@ export const ChecklistRemarksModal = ({
         <div className="space-y-1">
           <h2 className={cn(
             "text-lg font-semibold",
-            isFailMode ? "text-red-700" : "text-gray-900"
+            isPassMode ? "text-green-700" : isFailMode ? "text-red-700" : "text-gray-900"
           )}>
             {modalTitle}
           </h2>
           <p className="text-sm text-gray-500 truncate">
-            {isFailMode ? "Item: " : "For: "}{itemTitle}
+            {isPassMode ? "Item: " : isFailMode ? "Item: " : "For: "}{itemTitle}
           </p>
         </div>
 
         {/* Photo Section */}
         <div className="space-y-3">
-          <Label className="text-sm font-medium text-gray-700">
-            Photo (Optional)
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label className={cn(
+              "text-sm font-medium",
+              requirePhoto ? "text-gray-900" : "text-gray-700"
+            )}>
+              Photo {requirePhoto ? (
+                <span className="text-red-500 ml-1">*</span>
+              ) : (
+                <span className="text-gray-400 font-normal">(Optional)</span>
+              )}
+            </Label>
+          </div>
+          {errors.photo && (
+            <p className="text-sm text-red-500">{errors.photo}</p>
+          )}
 
           {isCapturing ? (
             <div className="space-y-3">
@@ -236,9 +278,19 @@ export const ChecklistRemarksModal = ({
 
         {/* Remarks Section */}
         <div className="space-y-2">
-          <Label htmlFor={`remarks-${itemId}`} className="text-sm font-medium text-gray-700">
-            Remarks (Optional)
+          <Label htmlFor={`remarks-${itemId}`} className={cn(
+            "text-sm font-medium",
+            requireRemarks ? "text-gray-900" : "text-gray-700"
+          )}>
+            Remarks {requireRemarks ? (
+              <span className="text-red-500 ml-1">*</span>
+            ) : (
+              <span className="text-gray-400 font-normal">(Optional)</span>
+            )}
           </Label>
+          {errors.remarks && (
+            <p className="text-sm text-red-500">{errors.remarks}</p>
+          )}
           <Textarea
             id={`remarks-${itemId}`}
             placeholder="Enter your remarks here..."
@@ -268,19 +320,21 @@ export const ChecklistRemarksModal = ({
             onClick={handleSave}
             className={cn(
               "flex-1",
-              isFailMode
-                ? "bg-red-600 hover:bg-red-700"
-                : "bg-blue-600 hover:bg-blue-700"
+              isPassMode
+                ? "bg-green-600 hover:bg-green-700"
+                : isFailMode
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-blue-600 hover:bg-blue-700"
             )}
             disabled={isSaving}
           >
             {isSaving ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {isFailMode ? "Marking as Failed..." : "Saving..."}
+                {isPassMode ? "Marking as Passed..." : isFailMode ? "Marking as Failed..." : "Saving..."}
               </>
             ) : (
-              isFailMode ? "Mark as Failed" : "Save Remarks"
+              isPassMode ? "Mark as Passed" : isFailMode ? "Mark as Failed" : "Save Remarks"
             )}
           </Button>
         </div>

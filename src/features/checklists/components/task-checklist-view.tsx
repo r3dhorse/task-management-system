@@ -34,6 +34,7 @@ export const TaskChecklistView = ({
   const [selectedItem, setSelectedItem] = useState<TaskChecklistItem | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isFailAction, setIsFailAction] = useState(false);
+  const [isPassAction, setIsPassAction] = useState(false);
 
   useEffect(() => {
     if (checklist?.items) {
@@ -75,6 +76,21 @@ export const TaskChecklistView = ({
     }
   };
 
+  const handlePassClick = (item: TaskChecklistItem) => {
+    if (!canEdit || isPending) return;
+
+    // If already passed, toggle back to pending
+    if (item.status === 'passed') {
+      handleSetStatus(item.id, 'pending');
+      return;
+    }
+
+    // Open remarks modal with pass action flag
+    setSelectedItem(item);
+    setIsPassAction(true);
+    setRemarksModalOpen(true);
+  };
+
   const handleFailClick = (item: TaskChecklistItem) => {
     if (!canEdit || isPending) return;
 
@@ -99,7 +115,11 @@ export const TaskChecklistView = ({
             ...item,
             remarks,
             photoUrl,
-            // Set status to failed if this was triggered by fail action
+            // Set status based on action type
+            ...(isPassAction && {
+              status: 'passed' as ChecklistItemStatus,
+              completedAt: new Date().toISOString(),
+            }),
             ...(isFailAction && {
               status: 'failed' as ChecklistItemStatus,
               completedAt: new Date().toISOString(),
@@ -110,12 +130,14 @@ export const TaskChecklistView = ({
 
     setItems(updatedItems);
     await onUpdate(updatedItems);
+    setIsPassAction(false);
     setIsFailAction(false);
   };
 
   const handleModalClose = (open: boolean) => {
     setRemarksModalOpen(open);
     if (!open) {
+      setIsPassAction(false);
       setIsFailAction(false);
     }
   };
@@ -263,7 +285,7 @@ export const TaskChecklistView = ({
                   <Button
                     size="sm"
                     variant={item.status === 'passed' ? 'primary' : 'outline'}
-                    onClick={() => handleSetStatus(item.id, item.status === 'passed' ? 'pending' : 'passed')}
+                    onClick={() => handlePassClick(item)}
                     disabled={isPending}
                     className={cn(
                       "h-8 px-3",
@@ -274,6 +296,10 @@ export const TaskChecklistView = ({
                   >
                     <CheckCircle2 className="h-4 w-4 mr-1" />
                     Pass
+                    {/* Show indicator if passed item has remarks */}
+                    {item.status === 'passed' && hasRemarksOrPhoto(item) && (
+                      <MessageSquare className="h-3 w-3 ml-1" />
+                    )}
                   </Button>
                   <Button
                     size="sm"
@@ -367,7 +393,7 @@ export const TaskChecklistView = ({
         </div>
       )}
 
-      {/* Remarks Modal - Opens when clicking Fail */}
+      {/* Remarks Modal - Opens when clicking Pass or Fail */}
       {selectedItem && (
         <ChecklistRemarksModal
           open={remarksModalOpen}
@@ -376,7 +402,10 @@ export const TaskChecklistView = ({
           itemId={selectedItem.id}
           initialRemarks={selectedItem.remarks || ""}
           initialPhotoUrl={selectedItem.photoUrl || ""}
+          isPassMode={isPassAction}
           isFailMode={isFailAction}
+          requirePhoto={selectedItem.requirePhoto}
+          requireRemarks={selectedItem.requireRemarks}
           onSave={handleSaveRemarks}
         />
       )}

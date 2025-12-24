@@ -9,16 +9,18 @@ interface UpdateChecklistItemRequest {
   title?: string;
   description?: string | null;
   order?: number;
+  requirePhoto?: boolean;
+  requireRemarks?: boolean;
 }
 
 export const useUpdateChecklistItem = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation<unknown, Error, UpdateChecklistItemRequest>({
-    mutationFn: async ({ checklistId, itemId, title, description, order }) => {
+    mutationFn: async ({ checklistId, itemId, title, description, order, requirePhoto, requireRemarks }) => {
       const response = await client.api.checklists[":checklistId"].items[":itemId"].$patch({
         param: { checklistId, itemId },
-        json: { title, description, order },
+        json: { title, description, order, requirePhoto, requireRemarks },
       });
 
       if (!response.ok) {

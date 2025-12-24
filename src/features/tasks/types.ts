@@ -20,6 +20,8 @@ export type TaskChecklistItem = {
   title: string;
   description?: string;
   order: number;
+  requirePhoto?: boolean;
+  requireRemarks?: boolean;
   status: 'pending' | 'passed' | 'failed';
   completedAt?: string;
   completedBy?: string;

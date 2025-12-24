@@ -137,7 +137,7 @@ const app = new Hono()
         const prisma = c.get("prisma");
         const user = c.get("user");
         const { checklistId } = c.req.param();
-        const { title, description } = c.req.valid("json");
+        const { title, description, requirePhoto, requireRemarks } = c.req.valid("json");
 
         // Get checklist with service
         const checklist = await prisma.checklist.findUnique({
@@ -180,6 +180,8 @@ const app = new Hono()
             title,
             description,
             order: nextOrder,
+            requirePhoto: requirePhoto ?? false,
+            requireRemarks: requireRemarks ?? false,
           },
         });
 
@@ -240,9 +242,17 @@ const app = new Hono()
           return c.json({ error: "Checklist item not found" }, 404);
         }
 
+        // Filter out undefined values to prevent Prisma errors
+        const updateData: Record<string, unknown> = {};
+        if (updates.title !== undefined) updateData.title = updates.title;
+        if (updates.description !== undefined) updateData.description = updates.description;
+        if (updates.order !== undefined) updateData.order = updates.order;
+        if (updates.requirePhoto !== undefined) updateData.requirePhoto = updates.requirePhoto;
+        if (updates.requireRemarks !== undefined) updateData.requireRemarks = updates.requireRemarks;
+
         const item = await prisma.checklistItem.update({
           where: { id: itemId },
-          data: updates,
+          data: updateData,
         });
 
         return c.json({ data: item });

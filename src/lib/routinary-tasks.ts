@@ -289,6 +289,8 @@ export const createRoutinaryTasks = async () => {
               title: item.title,
               description: item.description || undefined,
               order: item.order,
+              requirePhoto: item.requirePhoto || false,
+              requireRemarks: item.requireRemarks || false,
               status: 'pending' as const,
             }))
           } : undefined;
