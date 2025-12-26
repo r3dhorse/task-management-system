@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Loader2, ClipboardList, CheckCircle2, XCircle, Clock, FileDown, MessageSquare, ChevronDown, ChevronRight } from "@/lib/lucide-icons";
@@ -38,6 +38,7 @@ export const TaskChecklistView = ({
   const [isFailAction, setIsFailAction] = useState(false);
   const [isPassAction, setIsPassAction] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (checklist) {
@@ -55,8 +56,11 @@ export const TaskChecklistView = ({
 
       setSections(normalizedSections);
 
-      // Initialize all sections as collapsed by default
-      setCollapsedSections(new Set(normalizedSections.map(s => s.id)));
+      // Only initialize sections as collapsed on first load
+      if (isInitialLoad.current) {
+        setCollapsedSections(new Set(normalizedSections.map(s => s.id)));
+        isInitialLoad.current = false;
+      }
     }
   }, [checklist]);
 

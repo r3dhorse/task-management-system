@@ -115,8 +115,8 @@ export async function generateChecklistPDF({
     const rowDataRef: RowData[] = [];
 
     sortedSections.forEach((section, sectionIndex) => {
-      // Add section header row
-      tableBody.push([section.name, "", "", "", ""]);
+      // Add section header row - section name will be drawn manually spanning all columns
+      tableBody.push(["", "", "", "", ""]);
       rowDataRef.push({
         type: 'section',
         sectionName: section.name,
@@ -129,7 +129,7 @@ export async function generateChecklistPDF({
         tableBody.push([
           `${itemIndex + 1}`,
           item.title,
-          getStatusLabel(item.status),
+          "", // Status - drawn with badge styling
           "", // Photo placeholder
           item.remarks || "-",
         ]);
@@ -210,20 +210,27 @@ export async function generateChecklistPDF({
             typeof cell.width !== 'number' || isNaN(cell.width) ||
             typeof cell.height !== 'number' || isNaN(cell.height)) return;
 
+        if (data.section !== "body") return;
+
         const rowIndex = data.row.index;
-        if (data.section === "body" && (rowIndex < 0 || rowIndex >= rowDataRef.length)) return;
+        if (rowIndex < 0 || rowIndex >= rowDataRef.length) return;
 
         const rowData = rowDataRef[rowIndex];
         if (!rowData) return;
 
-        // Handle section header row - draw section name spanning all columns
-        if (rowData.type === 'section' && data.column.index === 0) {
-          // Section header already has text set in the first column
-          return;
-        }
-
-        // Skip non-first columns for section rows (they should be empty)
-        if (rowData.type === 'section' && data.column.index > 0) {
+        // Handle section header row - draw section name in Item column (wider)
+        if (rowData.type === 'section') {
+          // Only draw in the Item column (index 1)
+          if (data.column.index === 1) {
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(55, 65, 81); // gray-700
+            const sectionTextX = cell.x + 3;
+            const sectionTextY = cell.y + cell.height / 2 + 1.5;
+            if (!isNaN(sectionTextX) && !isNaN(sectionTextY) && rowData.sectionName) {
+              doc.text(rowData.sectionName, sectionTextX, sectionTextY);
+            }
+          }
           return;
         }
 
@@ -232,18 +239,16 @@ export async function generateChecklistPDF({
           const item = rowData.item;
           if (!item) return;
 
-          // Color the status cell based on status
+          // Draw status badge in status column
           if (data.column.index === 2) {
-            const statusText = data.cell.text?.[0];
-            if (!statusText || typeof statusText !== 'string') return;
-
+            const statusLabel = getStatusLabel(item.status);
             let bgColor: [number, number, number];
             let textColor: [number, number, number];
 
-            if (statusText === "PASSED") {
+            if (item.status === "passed") {
               bgColor = STATUS_BG_COLORS.passed;
               textColor = STATUS_COLORS.passed;
-            } else if (statusText === "FAILED") {
+            } else if (item.status === "failed") {
               bgColor = STATUS_BG_COLORS.failed;
               textColor = STATUS_COLORS.failed;
             } else {
@@ -252,22 +257,22 @@ export async function generateChecklistPDF({
             }
 
             // Draw colored badge background
-            const badgeWidth = 16;
+            const badgeWidth = 18;
             const badgeHeight = 7;
             const badgeX = cell.x + (cell.width - badgeWidth) / 2;
             const badgeY = cell.y + (cell.height - badgeHeight) / 2;
 
             doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
-            doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 1, 1, "F");
+            doc.roundedRect(badgeX, badgeY, badgeWidth, badgeHeight, 1.5, 1.5, "F");
 
-            // Redraw text with color
+            // Draw status text
             doc.setTextColor(textColor[0], textColor[1], textColor[2]);
             doc.setFontSize(6);
             doc.setFont("helvetica", "bold");
             const statusTextX = cell.x + cell.width / 2;
-            const statusTextY = cell.y + cell.height / 2 + 0.5;
+            const statusTextY = cell.y + cell.height / 2 + 1;
             if (!isNaN(statusTextX) && !isNaN(statusTextY)) {
-              doc.text(String(statusText || ""), statusTextX, statusTextY, { align: "center" });
+              doc.text(statusLabel, statusTextX, statusTextY, { align: "center" });
             }
           }
 
@@ -308,64 +313,6 @@ export async function generateChecklistPDF({
         }
       },
     });
-
-    // Get the end Y position after the table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    yPos = (doc as any).lastAutoTable.finalY + 15;
-
-    // ============================================================================
-    // SUMMARY SECTION
-    // ============================================================================
-
-    const allItems = sections.flatMap(s => s.items);
-    const passedCount = allItems.filter(i => i.status === 'passed').length;
-    const failedCount = allItems.filter(i => i.status === 'failed').length;
-    const pendingCount = allItems.filter(i => i.status === 'pending').length;
-    const totalCount = allItems.length;
-
-    // Check if we need a new page for summary
-    if (yPos > pageHeight - 40) {
-      doc.addPage();
-      yPos = margin;
-    }
-
-    // Summary box
-    doc.setFillColor(249, 250, 251); // gray-50
-    doc.roundedRect(margin, yPos, pageWidth - (margin * 2), 25, 2, 2, "F");
-    doc.setDrawColor(229, 231, 235); // gray-200
-    doc.roundedRect(margin, yPos, pageWidth - (margin * 2), 25, 2, 2, "S");
-
-    // Summary title
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(55, 65, 81); // gray-700
-    doc.text("Summary", margin + 5, yPos + 8);
-
-    // Summary stats
-    const statsY = yPos + 18;
-    const statsStartX = margin + 5;
-    const statGap = 50;
-
-    // Sections count
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(107, 114, 128); // gray-500
-    doc.text(`Sections: ${sections.length}`, statsStartX, statsY);
-
-    // Total items
-    doc.text(`Total Items: ${totalCount}`, statsStartX + statGap, statsY);
-
-    // Passed
-    doc.setTextColor(34, 197, 94); // green-500
-    doc.text(`Passed: ${passedCount}`, statsStartX + (statGap * 2), statsY);
-
-    // Failed
-    doc.setTextColor(239, 68, 68); // red-500
-    doc.text(`Failed: ${failedCount}`, statsStartX + (statGap * 3), statsY);
-
-    // Pending
-    doc.setTextColor(156, 163, 175); // gray-400
-    doc.text(`Pending: ${pendingCount}`, statsStartX + (statGap * 4), statsY);
 
     // ============================================================================
     // FOOTER ON ALL PAGES
