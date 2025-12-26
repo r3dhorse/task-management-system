@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useGetChecklist } from "../api/use-get-checklist";
 import { useCreateChecklist } from "../api/use-create-checklist";
 import { useCreateSection } from "../api/use-create-section";
@@ -74,6 +74,18 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
   const [editSectionName, setEditSectionName] = useState("");
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [deletingSectionId, setDeletingSectionId] = useState<string | null>(null);
+  const initialCollapseApplied = useRef(false);
+
+  // Collapse all sections by default on initial load
+  useEffect(() => {
+    if (checklist && !initialCollapseApplied.current) {
+      const sections = ((checklist as { sections?: ChecklistSection[] }).sections || []);
+      if (sections.length > 0) {
+        setCollapsedSections(new Set(sections.map(s => s.id)));
+        initialCollapseApplied.current = true;
+      }
+    }
+  }, [checklist]);
 
   // Item state (per section)
   const [addingToSectionId, setAddingToSectionId] = useState<string | null>(null);
@@ -396,12 +408,41 @@ export const ChecklistManager = ({ serviceId, serviceName }: ChecklistManagerPro
                 ({sections.length} section{sections.length !== 1 ? "s" : ""}, {totalItems} item{totalItems !== 1 ? "s" : ""})
               </span>
             </CardTitle>
+            {sections.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const allCollapsed = sections.every(s => collapsedSections.has(s.id));
+                  if (allCollapsed) {
+                    setCollapsedSections(new Set());
+                  } else {
+                    setCollapsedSections(new Set(sections.map(s => s.id)));
+                  }
+                }}
+                className="h-8 text-xs"
+              >
+                {sections.every(s => collapsedSections.has(s.id)) ? (
+                  <>
+                    <ChevronDown className="h-3.5 w-3.5 mr-1" />
+                    Expand All
+                  </>
+                ) : (
+                  <>
+                    <ChevronRight className="h-3.5 w-3.5 mr-1" />
+                    Collapse All
+                  </>
+                )}
+              </Button>
+            )}
           </div>
           <p className="text-sm text-muted-foreground">
             Drag sections to reorder. Click on a section to expand/collapse and manage items.
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className={cn(
+          sections.length >= 5 && "max-h-[600px] overflow-y-auto"
+        )}>
           {sections.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p>No sections yet. Add your first section above.</p>
