@@ -79,6 +79,7 @@ export const Sparkles = getIcon('Sparkles', ['SparklesIcon']);
 export const CalendarDays = getIcon('CalendarDays', ['CalendarDaysIcon']);
 export const Timer = getIcon('Timer', ['TimerIcon']);
 export const FolderOpen = getIcon('FolderOpen', ['FolderOpenIcon']);
+export const FolderPlus = getIcon('FolderPlus', ['FolderPlusIcon']);
 export const ArrowUp = getIcon('ArrowUp', ['ArrowUpIcon']);
 export const ArrowDown = getIcon('ArrowDown', ['ArrowDownIcon']);
 export const ArrowUpDown = getIcon('ArrowUpDown', ['ArrowUpDownIcon']);

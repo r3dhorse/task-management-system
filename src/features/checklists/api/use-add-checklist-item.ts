@@ -4,6 +4,7 @@ import { client } from "@/lib/rpc";
 
 interface AddChecklistItemRequest {
   checklistId: string;
+  sectionId: string;
   serviceId: string;
   title: string;
   description?: string;
@@ -15,9 +16,9 @@ export const useAddChecklistItem = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation<unknown, Error, AddChecklistItemRequest>({
-    mutationFn: async ({ checklistId, title, description, requirePhoto, requireRemarks }) => {
-      const response = await client.api.checklists[":checklistId"].items.$post({
-        param: { checklistId },
+    mutationFn: async ({ checklistId, sectionId, title, description, requirePhoto, requireRemarks }) => {
+      const response = await client.api.checklists[":checklistId"].sections[":sectionId"].items.$post({
+        param: { checklistId, sectionId },
         json: { title, description, requirePhoto, requireRemarks },
       });
 

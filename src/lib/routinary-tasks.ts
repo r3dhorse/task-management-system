@@ -272,26 +272,37 @@ export const createRoutinaryTasks = async () => {
 
         // Create tasks that don't exist yet
         await prisma.$transaction(async (tx) => {
-          // Fetch checklist for this service to copy to tasks
+          // Fetch checklist for this service to copy to tasks (with sections)
           const checklist = await tx.checklist.findUnique({
             where: { serviceId: service.id },
             include: {
-              items: {
-                orderBy: { order: 'asc' }
+              sections: {
+                orderBy: { order: 'asc' },
+                include: {
+                  items: {
+                    orderBy: { order: 'asc' }
+                  }
+                }
               }
             }
           });
 
-          // Prepare task checklist JSON if checklist exists
-          const taskChecklist = checklist?.items?.length ? {
-            items: checklist.items.map(item => ({
-              id: item.id,
-              title: item.title,
-              description: item.description || undefined,
-              order: item.order,
-              requirePhoto: item.requirePhoto || false,
-              requireRemarks: item.requireRemarks || false,
-              status: 'pending' as const,
+          // Prepare task checklist JSON with sections if checklist exists
+          const hasSections = checklist?.sections?.length && checklist.sections.some(s => s.items?.length > 0);
+          const taskChecklist = hasSections ? {
+            sections: checklist.sections.map(section => ({
+              id: section.id,
+              name: section.name,
+              order: section.order,
+              items: section.items.map(item => ({
+                id: item.id,
+                title: item.title,
+                description: item.description || undefined,
+                order: item.order,
+                requirePhoto: item.requirePhoto || false,
+                requireRemarks: item.requireRemarks || false,
+                status: 'pending' as const,
+              }))
             }))
           } : undefined;
 
@@ -330,7 +341,8 @@ export const createRoutinaryTasks = async () => {
             });
 
             // Create history entry
-            const checklistInfo = taskChecklist ? ` with ${taskChecklist.items.length} checklist items` : '';
+            const totalItems = taskChecklist?.sections?.reduce((acc, s) => acc + s.items.length, 0) || 0;
+            const checklistInfo = taskChecklist ? ` with ${taskChecklist.sections.length} sections and ${totalItems} checklist items` : '';
             await tx.taskHistory.create({
               data: {
                 taskId: task.id,

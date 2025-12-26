@@ -4,6 +4,7 @@ import { client } from "@/lib/rpc";
 
 interface ReorderChecklistItemsRequest {
   checklistId: string;
+  sectionId: string;
   serviceId: string;
   itemIds: string[];
 }
@@ -12,9 +13,9 @@ export const useReorderChecklistItems = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation<unknown, Error, ReorderChecklistItemsRequest>({
-    mutationFn: async ({ checklistId, itemIds }) => {
-      const response = await client.api.checklists[":checklistId"].items.reorder.$put({
-        param: { checklistId },
+    mutationFn: async ({ checklistId, sectionId, itemIds }) => {
+      const response = await client.api.checklists[":checklistId"].sections[":sectionId"].items.reorder.$put({
+        param: { checklistId, sectionId },
         json: { itemIds },
       });
 

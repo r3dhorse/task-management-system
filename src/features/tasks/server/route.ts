@@ -2383,24 +2383,33 @@ const app = new Hono()
     }
   )
 
-  // Update task checklist (pass/fail items)
+  // Update task checklist (pass/fail items) - supports sections
   .patch(
     "/:taskId/checklist",
     sessionMiddleware,
     zValidator(
       "json",
       z.object({
-        items: z.array(
+        sections: z.array(
           z.object({
             id: z.string(),
-            title: z.string(),
-            description: z.string().optional(),
+            name: z.string(),
             order: z.number(),
-            status: z.enum(['pending', 'passed', 'failed']),
-            completedAt: z.string().optional(),
-            completedBy: z.string().optional(),
-            remarks: z.string().optional(),
-            photoUrl: z.string().optional(),
+            items: z.array(
+              z.object({
+                id: z.string(),
+                title: z.string(),
+                description: z.string().optional(),
+                order: z.number(),
+                requirePhoto: z.boolean().optional(),
+                requireRemarks: z.boolean().optional(),
+                status: z.enum(['pending', 'passed', 'failed']),
+                completedAt: z.string().optional(),
+                completedBy: z.string().optional(),
+                remarks: z.string().optional(),
+                photoUrl: z.string().optional(),
+              })
+            ),
           })
         ),
       })
@@ -2409,7 +2418,7 @@ const app = new Hono()
       const prisma = c.get("prisma");
       const user = c.get("user");
       const { taskId } = c.req.param();
-      const { items } = c.req.valid("json");
+      const { sections } = c.req.valid("json");
 
       // Get task
       const task = await prisma.task.findUnique({
@@ -2443,33 +2452,53 @@ const app = new Hono()
         );
       }
 
-      // Get current checklist to compare changes
-      const currentChecklist = task.checklist as { items: Array<{ id: string; status: string }> } | null;
-      const currentItems = currentChecklist?.items || [];
+      // Get current checklist to compare changes (handle both legacy and new format)
+      type ChecklistItem = { id: string; status: string; title: string };
+      type LegacyChecklist = { items: ChecklistItem[] };
+      type SectionChecklist = { sections: Array<{ id: string; items: ChecklistItem[] }> };
+
+      const currentChecklist = task.checklist as LegacyChecklist | SectionChecklist | null;
+      let currentItems: ChecklistItem[] = [];
+
+      if (currentChecklist) {
+        if ('sections' in currentChecklist && Array.isArray(currentChecklist.sections)) {
+          // New format with sections
+          currentItems = currentChecklist.sections.flatMap(s => s.items || []);
+        } else if ('items' in currentChecklist && Array.isArray(currentChecklist.items)) {
+          // Legacy format with flat items
+          currentItems = currentChecklist.items;
+        }
+      }
+
+      // Flatten new sections to compare items
+      const newItems = sections.flatMap(s => s.items);
 
       // Find what changed
-      const changedItems = items.filter((newItem) => {
+      const changedItems = newItems.filter((newItem) => {
         const oldItem = currentItems.find((i) => i.id === newItem.id);
         return oldItem && oldItem.status !== newItem.status;
       });
 
-      // Update items with completedBy for newly passed/failed items
-      const updatedItems = items.map((item) => {
-        const oldItem = currentItems.find((i) => i.id === item.id);
-        const wasJustCompleted = item.status !== 'pending' && (!oldItem || oldItem.status === 'pending');
+      // Update sections with completedBy for newly passed/failed items
+      const updatedSections = sections.map((section) => ({
+        ...section,
+        items: section.items.map((item) => {
+          const oldItem = currentItems.find((i) => i.id === item.id);
+          const wasJustCompleted = item.status !== 'pending' && (!oldItem || oldItem.status === 'pending');
 
-        return {
-          ...item,
-          completedBy: wasJustCompleted ? user.id : item.completedBy,
-          completedAt: wasJustCompleted ? new Date().toISOString() : item.completedAt,
-        };
-      });
+          return {
+            ...item,
+            completedBy: wasJustCompleted ? user.id : item.completedBy,
+            completedAt: wasJustCompleted ? new Date().toISOString() : item.completedAt,
+          };
+        }),
+      }));
 
       // Update task
       const updatedTask = await prisma.task.update({
         where: { id: taskId },
         data: {
-          checklist: { items: updatedItems },
+          checklist: { sections: updatedSections },
         },
       });
 

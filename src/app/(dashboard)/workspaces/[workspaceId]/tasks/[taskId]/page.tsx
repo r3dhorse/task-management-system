@@ -26,7 +26,8 @@ import { TaskChat } from "@/features/tasks/components/task-chat";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Member, MemberRole } from "@/features/members/types";
 import { Service } from "@/features/services/types";
-import { TaskStatus, type TaskChecklist, type TaskChecklistItem } from "@/features/tasks/types";
+import { TaskStatus, type TaskChecklist, type TaskChecklistSection } from "@/features/tasks/types";
+import { normalizeTaskChecklist } from "@/features/checklists/types";
 import { ManageFollowersModal } from "@/features/tasks/components/manage-followers-modal";
 import { ManageCollaboratorsModal } from "@/features/tasks/components/manage-collaborators-modal";
 import { ManageAssigneesModal } from "@/features/tasks/components/manage-assignees-modal";
@@ -558,11 +559,13 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   const incompleteSubtaskCount = subTasks?.filter(st => st.status !== TaskStatus.DONE).length || 0;
 
   // Check if all checklist items are completed (not pending)
-  const taskChecklist = task.checklist as TaskChecklist | null;
-  const hasChecklist = taskChecklist?.items && taskChecklist.items.length > 0;
+  // Normalize to handle both legacy and new section-based formats
+  const normalizedChecklist = task.checklist ? normalizeTaskChecklist(task.checklist) : null;
+  const allChecklistItems = normalizedChecklist?.sections.flatMap(s => s.items) ?? [];
+  const hasChecklist = allChecklistItems.length > 0;
   const hasPendingChecklistItems = hasChecklist &&
-    taskChecklist.items.some(item => item.status === 'pending');
-  const pendingChecklistCount = taskChecklist?.items?.filter(item => item.status === 'pending').length || 0;
+    allChecklistItems.some(item => item.status === 'pending');
+  const pendingChecklistCount = allChecklistItems.filter(item => item.status === 'pending').length;
 
   // Access restriction for task viewing:
   // - Non-confidential tasks: ALL workspace members can view (read-only for non-involved)
@@ -1455,8 +1458,8 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                             serviceName={service?.name || ""}
                             checklist={task.checklist as TaskChecklist | null}
                             canEdit={canEdit && task.status !== TaskStatus.TODO && task.status !== TaskStatus.DONE && task.status !== TaskStatus.ARCHIVED}
-                            onUpdate={async (items: TaskChecklistItem[]) => {
-                              await updateChecklist({ taskId: task.id, items });
+                            onUpdate={async (sections: TaskChecklistSection[]) => {
+                              await updateChecklist({ taskId: task.id, sections });
                             }}
                           />
                         </div>

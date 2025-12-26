@@ -1,21 +1,21 @@
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/lib/rpc";
-import type { TaskChecklistItem } from "../types";
+import type { TaskChecklistSection } from "../types";
 
 interface UpdateTaskChecklistRequest {
   taskId: string;
-  items: TaskChecklistItem[];
+  sections: TaskChecklistSection[];
 }
 
 export const useUpdateTaskChecklist = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation<unknown, Error, UpdateTaskChecklistRequest>({
-    mutationFn: async ({ taskId, items }) => {
+    mutationFn: async ({ taskId, sections }) => {
       const response = await client.api.tasks[":taskId"].checklist.$patch({
         param: { taskId },
-        json: { items },
+        json: { sections },
       });
 
       if (!response.ok) {

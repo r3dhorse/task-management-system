@@ -25,7 +25,8 @@ const ServiceChecklistCard = ({ service, workspaceId }: ServiceChecklistCardProp
   const { data: checklist, isLoading } = useGetChecklist({ serviceId: service.id });
 
   const hasChecklist = !!checklist;
-  const itemCount = checklist?.items?.length ?? 0;
+  // Count items across all sections
+  const itemCount = checklist?.sections?.reduce((total, section) => total + (section.items?.length ?? 0), 0) ?? 0;
 
   return (
     <Link href={`/workspaces/${workspaceId}/checklists/${service.id}`} className="block">

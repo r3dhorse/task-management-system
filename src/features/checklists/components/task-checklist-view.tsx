@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Loader2, ClipboardList, CheckCircle2, XCircle, Clock, FileDown, MessageSquare } from "@/lib/lucide-icons";
-import type { TaskChecklist, TaskChecklistItem } from "@/features/tasks/types";
+import { Loader2, ClipboardList, CheckCircle2, XCircle, Clock, FileDown, MessageSquare, ChevronDown, ChevronRight } from "@/lib/lucide-icons";
+import type { TaskChecklist, TaskChecklistItem, TaskChecklistSection } from "../types";
+import { normalizeTaskChecklist } from "../types";
 import { ChecklistRemarksModal } from "./checklist-remarks-modal";
 import { generateChecklistPDF } from "@/lib/checklist-pdf";
 import { toast } from "sonner";
@@ -15,60 +16,91 @@ interface TaskChecklistViewProps {
   taskNumber?: string;
   taskName?: string;
   serviceName?: string;
-  checklist: TaskChecklist | null;
+  checklist: TaskChecklist | { items: TaskChecklistItem[] } | null;
   canEdit: boolean;
-  onUpdate?: (items: TaskChecklistItem[]) => Promise<void>;
+  onUpdate?: (sections: TaskChecklistSection[]) => Promise<void>;
 }
 
 export const TaskChecklistView = ({
   taskNumber = "",
   taskName = "",
-  serviceName = "",
+  serviceName: _serviceName = "",
   checklist,
   canEdit,
   onUpdate,
 }: TaskChecklistViewProps) => {
-  const [items, setItems] = useState<TaskChecklistItem[]>([]);
+  const [sections, setSections] = useState<TaskChecklistSection[]>([]);
   const [isPending, setIsPending] = useState(false);
   const [remarksModalOpen, setRemarksModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<TaskChecklistItem | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isFailAction, setIsFailAction] = useState(false);
   const [isPassAction, setIsPassAction] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (checklist?.items) {
-      // Handle legacy data that might have 'completed' instead of 'status'
-      const normalizedItems = checklist.items.map(item => ({
-        ...item,
-        status: item.status || ('completed' in item && (item as unknown as { completed: boolean }).completed ? 'passed' : 'pending') as ChecklistItemStatus
+    if (checklist) {
+      // Normalize checklist data to new section format (handles legacy data)
+      const normalizedChecklist = normalizeTaskChecklist(checklist);
+
+      // Ensure all items have proper status
+      const normalizedSections = normalizedChecklist.sections.map(section => ({
+        ...section,
+        items: section.items.map(item => ({
+          ...item,
+          status: item.status || ('completed' in item && (item as unknown as { completed: boolean }).completed ? 'passed' : 'pending') as ChecklistItemStatus
+        }))
       }));
-      setItems(normalizedItems);
+
+      setSections(normalizedSections);
+
+      // Initialize all sections as collapsed by default
+      setCollapsedSections(new Set(normalizedSections.map(s => s.id)));
     }
   }, [checklist]);
 
-  const handleSetStatus = async (itemId: string, status: ChecklistItemStatus) => {
+  const toggleSection = (sectionId: string) => {
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSetStatus = async (sectionId: string, itemId: string, status: ChecklistItemStatus) => {
     if (!canEdit || isPending) return;
 
-    const updatedItems = items.map((item) =>
-      item.id === itemId
+    const updatedSections = sections.map((section) =>
+      section.id === sectionId
         ? {
-            ...item,
-            status,
-            completedAt: status !== 'pending' ? new Date().toISOString() : undefined,
+            ...section,
+            items: section.items.map((item) =>
+              item.id === itemId
+                ? {
+                    ...item,
+                    status,
+                    completedAt: status !== 'pending' ? new Date().toISOString() : undefined,
+                  }
+                : item
+            ),
           }
-        : item
+        : section
     );
 
-    setItems(updatedItems);
+    setSections(updatedSections);
 
     if (onUpdate) {
       setIsPending(true);
       try {
-        await onUpdate(updatedItems);
+        await onUpdate(updatedSections);
       } catch (error) {
         // Revert on error
-        setItems(items);
+        setSections(sections);
         console.error("Failed to update checklist:", error);
       } finally {
         setIsPending(false);
@@ -76,62 +108,72 @@ export const TaskChecklistView = ({
     }
   };
 
-  const handlePassClick = (item: TaskChecklistItem) => {
+  const handlePassClick = (sectionId: string, item: TaskChecklistItem) => {
     if (!canEdit || isPending) return;
 
     // If already passed, toggle back to pending
     if (item.status === 'passed') {
-      handleSetStatus(item.id, 'pending');
+      handleSetStatus(sectionId, item.id, 'pending');
       return;
     }
 
     // Open remarks modal with pass action flag
     setSelectedItem(item);
+    setSelectedSectionId(sectionId);
     setIsPassAction(true);
     setRemarksModalOpen(true);
   };
 
-  const handleFailClick = (item: TaskChecklistItem) => {
+  const handleFailClick = (sectionId: string, item: TaskChecklistItem) => {
     if (!canEdit || isPending) return;
 
     // If already failed, toggle back to pending
     if (item.status === 'failed') {
-      handleSetStatus(item.id, 'pending');
+      handleSetStatus(sectionId, item.id, 'pending');
       return;
     }
 
     // Open remarks modal with fail action flag
     setSelectedItem(item);
+    setSelectedSectionId(sectionId);
     setIsFailAction(true);
     setRemarksModalOpen(true);
   };
 
   const handleSaveRemarks = async (remarks: string | undefined, photoUrl: string | undefined) => {
-    if (!selectedItem || !onUpdate) return;
+    if (!selectedItem || !selectedSectionId || !onUpdate) return;
 
-    const updatedItems = items.map((item) =>
-      item.id === selectedItem.id
+    const updatedSections = sections.map((section) =>
+      section.id === selectedSectionId
         ? {
-            ...item,
-            remarks,
-            photoUrl,
-            // Set status based on action type
-            ...(isPassAction && {
-              status: 'passed' as ChecklistItemStatus,
-              completedAt: new Date().toISOString(),
-            }),
-            ...(isFailAction && {
-              status: 'failed' as ChecklistItemStatus,
-              completedAt: new Date().toISOString(),
-            }),
+            ...section,
+            items: section.items.map((item) =>
+              item.id === selectedItem.id
+                ? {
+                    ...item,
+                    remarks,
+                    photoUrl,
+                    // Set status based on action type
+                    ...(isPassAction && {
+                      status: 'passed' as ChecklistItemStatus,
+                      completedAt: new Date().toISOString(),
+                    }),
+                    ...(isFailAction && {
+                      status: 'failed' as ChecklistItemStatus,
+                      completedAt: new Date().toISOString(),
+                    }),
+                  }
+                : item
+            ),
           }
-        : item
+        : section
     );
 
-    setItems(updatedItems);
-    await onUpdate(updatedItems);
+    setSections(updatedSections);
+    await onUpdate(updatedSections);
     setIsPassAction(false);
     setIsFailAction(false);
+    setSelectedSectionId(null);
   };
 
   const handleModalClose = (open: boolean) => {
@@ -139,6 +181,7 @@ export const TaskChecklistView = ({
     if (!open) {
       setIsPassAction(false);
       setIsFailAction(false);
+      setSelectedSectionId(null);
     }
   };
 
@@ -148,7 +191,7 @@ export const TaskChecklistView = ({
       await generateChecklistPDF({
         taskNumber,
         taskName,
-        items,
+        sections,
       });
       toast.success("Report generated successfully");
     } catch (error) {
@@ -163,7 +206,11 @@ export const TaskChecklistView = ({
     return !!(item.remarks || item.photoUrl);
   };
 
-  if (!checklist || !checklist.items || checklist.items.length === 0) {
+  // Calculate overall stats
+  const allItems = sections.flatMap(s => s.items);
+  const totalCount = allItems.length;
+
+  if (!checklist || totalCount === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-500">
         <ClipboardList className="h-12 w-12 text-gray-300 mb-3" />
@@ -175,17 +222,25 @@ export const TaskChecklistView = ({
     );
   }
 
-  const passedCount = items.filter((item) => item.status === 'passed').length;
-  const failedCount = items.filter((item) => item.status === 'failed').length;
-  const pendingCount = items.filter((item) => item.status === 'pending').length;
-  const totalCount = items.length;
+  const passedCount = allItems.filter((item) => item.status === 'passed').length;
+  const failedCount = allItems.filter((item) => item.status === 'failed').length;
+  const pendingCount = allItems.filter((item) => item.status === 'pending').length;
   const completedCount = passedCount + failedCount;
   const isComplete = pendingCount === 0;
   const hasFailures = failedCount > 0;
 
+  // Calculate per-section stats
+  const getSectionStats = (section: TaskChecklistSection) => {
+    const passed = section.items.filter(i => i.status === 'passed').length;
+    const failed = section.items.filter(i => i.status === 'failed').length;
+    const pending = section.items.filter(i => i.status === 'pending').length;
+    const total = section.items.length;
+    return { passed, failed, pending, total };
+  };
+
   return (
     <div className="space-y-4">
-      {/* Progress bar and stats */}
+      {/* Overall Progress bar and stats */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
           <div className="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden flex">
@@ -224,126 +279,193 @@ export const TaskChecklistView = ({
         </div>
       </div>
 
-      {/* Checklist items */}
-      <div className="space-y-2">
-        {items
+      {/* Sections with accordion */}
+      <div className="space-y-3">
+        {sections
           .sort((a, b) => a.order - b.order)
-          .map((item, index) => (
-            <div
-              key={item.id}
-              className={cn(
-                "flex items-start gap-3 p-3 rounded-lg border transition-all duration-200",
-                item.status === 'passed' && "bg-green-50/80 border-green-200",
-                item.status === 'failed' && "bg-red-50/80 border-red-200",
-                item.status === 'pending' && "bg-white border-gray-200 hover:border-gray-300"
-              )}
-            >
-              {/* Item number and status icon */}
-              <div className="flex items-center gap-2 pt-0.5">
-                <span
-                  className={cn(
-                    "inline-flex items-center justify-center w-6 h-6 text-xs font-medium rounded-full flex-shrink-0",
-                    item.status === 'passed' && "bg-green-200 text-green-700",
-                    item.status === 'failed' && "bg-red-200 text-red-700",
-                    item.status === 'pending' && "bg-gray-200 text-gray-600"
-                  )}
-                >
-                  {index + 1}
-                </span>
-              </div>
+          .map((section) => {
+            const isCollapsed = collapsedSections.has(section.id);
+            const stats = getSectionStats(section);
+            const sectionComplete = stats.pending === 0;
+            const sectionHasFailures = stats.failed > 0;
 
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p
+            return (
+              <div
+                key={section.id}
+                className={cn(
+                  "rounded-lg border overflow-hidden",
+                  sectionComplete && !sectionHasFailures && "border-green-200",
+                  sectionComplete && sectionHasFailures && "border-amber-200",
+                  !sectionComplete && "border-gray-200"
+                )}
+              >
+                {/* Section Header */}
+                <button
+                  onClick={() => toggleSection(section.id)}
                   className={cn(
-                    "font-medium transition-all",
-                    item.status === 'passed' && "text-green-800",
-                    item.status === 'failed' && "text-red-800",
-                    item.status === 'pending' && "text-gray-900"
+                    "w-full flex items-center gap-3 p-3 text-left transition-colors",
+                    sectionComplete && !sectionHasFailures && "bg-green-50 hover:bg-green-100",
+                    sectionComplete && sectionHasFailures && "bg-amber-50 hover:bg-amber-100",
+                    !sectionComplete && "bg-gray-50 hover:bg-gray-100"
                   )}
                 >
-                  {item.title}
-                </p>
-                {item.description && (
-                  <p
-                    className={cn(
-                      "text-sm mt-1",
-                      item.status === 'passed' && "text-green-600",
-                      item.status === 'failed' && "text-red-600",
-                      item.status === 'pending' && "text-gray-500"
+                  {isCollapsed ? (
+                    <ChevronRight className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                  )}
+
+                  <span className="font-medium text-gray-900 flex-1">
+                    {section.name}
+                  </span>
+
+                  {/* Section progress indicators */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {stats.passed > 0 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
+                        <CheckCircle2 className="h-3 w-3" />
+                        {stats.passed}
+                      </span>
                     )}
-                  >
-                    {item.description}
-                  </p>
+                    {stats.failed > 0 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded">
+                        <XCircle className="h-3 w-3" />
+                        {stats.failed}
+                      </span>
+                    )}
+                    {stats.pending > 0 && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded">
+                        <Clock className="h-3 w-3" />
+                        {stats.pending}
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                {/* Section Items */}
+                {!isCollapsed && (
+                  <div className="p-3 space-y-2 bg-white">
+                    {section.items
+                      .sort((a, b) => a.order - b.order)
+                      .map((item, index) => (
+                        <div
+                          key={item.id}
+                          className={cn(
+                            "flex items-start gap-3 p-3 rounded-lg border transition-all duration-200",
+                            item.status === 'passed' && "bg-green-50/80 border-green-200",
+                            item.status === 'failed' && "bg-red-50/80 border-red-200",
+                            item.status === 'pending' && "bg-white border-gray-200 hover:border-gray-300"
+                          )}
+                        >
+                          {/* Item number and status icon */}
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <span
+                              className={cn(
+                                "inline-flex items-center justify-center w-6 h-6 text-xs font-medium rounded-full flex-shrink-0",
+                                item.status === 'passed' && "bg-green-200 text-green-700",
+                                item.status === 'failed' && "bg-red-200 text-red-700",
+                                item.status === 'pending' && "bg-gray-200 text-gray-600"
+                              )}
+                            >
+                              {index + 1}
+                            </span>
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className={cn(
+                                "font-medium transition-all",
+                                item.status === 'passed' && "text-green-800",
+                                item.status === 'failed' && "text-red-800",
+                                item.status === 'pending' && "text-gray-900"
+                              )}
+                            >
+                              {item.title}
+                            </p>
+                            {item.description && (
+                              <p
+                                className={cn(
+                                  "text-sm mt-1",
+                                  item.status === 'passed' && "text-green-600",
+                                  item.status === 'failed' && "text-red-600",
+                                  item.status === 'pending' && "text-gray-500"
+                                )}
+                              >
+                                {item.description}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Action buttons */}
+                          {canEdit && (
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button
+                                size="sm"
+                                variant={item.status === 'passed' ? 'primary' : 'outline'}
+                                onClick={() => handlePassClick(section.id, item)}
+                                disabled={isPending}
+                                className={cn(
+                                  "h-8 px-3",
+                                  item.status === 'passed'
+                                    ? "bg-green-600 hover:bg-green-700 text-white"
+                                    : "hover:bg-green-50 hover:text-green-700 hover:border-green-300"
+                                )}
+                              >
+                                <CheckCircle2 className="h-4 w-4 mr-1" />
+                                Pass
+                                {item.status === 'passed' && hasRemarksOrPhoto(item) && (
+                                  <MessageSquare className="h-3 w-3 ml-1" />
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={item.status === 'failed' ? 'destructive' : 'outline'}
+                                onClick={() => handleFailClick(section.id, item)}
+                                disabled={isPending}
+                                className={cn(
+                                  "h-8 px-3",
+                                  item.status === 'failed'
+                                    ? "bg-red-600 hover:bg-red-700 text-white"
+                                    : "hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                                )}
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Fail
+                                {item.status === 'failed' && hasRemarksOrPhoto(item) && (
+                                  <MessageSquare className="h-3 w-3 ml-1" />
+                                )}
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Status indicator for non-editors */}
+                          {!canEdit && item.status !== 'pending' && (
+                            <div className="flex-shrink-0">
+                              {item.status === 'passed' ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Passed
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                                  <XCircle className="h-3 w-3" />
+                                  Failed
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {isPending && (
+                            <Loader2 className="h-4 w-4 animate-spin text-gray-400 flex-shrink-0" />
+                          )}
+                        </div>
+                      ))}
+                  </div>
                 )}
               </div>
-
-              {/* Action buttons */}
-              {canEdit && (
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <Button
-                    size="sm"
-                    variant={item.status === 'passed' ? 'primary' : 'outline'}
-                    onClick={() => handlePassClick(item)}
-                    disabled={isPending}
-                    className={cn(
-                      "h-8 px-3",
-                      item.status === 'passed'
-                        ? "bg-green-600 hover:bg-green-700 text-white"
-                        : "hover:bg-green-50 hover:text-green-700 hover:border-green-300"
-                    )}
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Pass
-                    {/* Show indicator if passed item has remarks */}
-                    {item.status === 'passed' && hasRemarksOrPhoto(item) && (
-                      <MessageSquare className="h-3 w-3 ml-1" />
-                    )}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={item.status === 'failed' ? 'destructive' : 'outline'}
-                    onClick={() => handleFailClick(item)}
-                    disabled={isPending}
-                    className={cn(
-                      "h-8 px-3",
-                      item.status === 'failed'
-                        ? "bg-red-600 hover:bg-red-700 text-white"
-                        : "hover:bg-red-50 hover:text-red-700 hover:border-red-300"
-                    )}
-                  >
-                    <XCircle className="h-4 w-4 mr-1" />
-                    Fail
-                    {/* Show indicator if failed item has remarks */}
-                    {item.status === 'failed' && hasRemarksOrPhoto(item) && (
-                      <MessageSquare className="h-3 w-3 ml-1" />
-                    )}
-                  </Button>
-                </div>
-              )}
-
-              {/* Status indicator for non-editors */}
-              {!canEdit && item.status !== 'pending' && (
-                <div className="flex-shrink-0">
-                  {item.status === 'passed' ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Passed
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                      <XCircle className="h-3 w-3" />
-                      Failed
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {isPending && (
-                <Loader2 className="h-4 w-4 animate-spin text-gray-400 flex-shrink-0" />
-              )}
-            </div>
-          ))}
+            );
+          })}
       </div>
 
       {/* Footer info */}
@@ -369,7 +491,7 @@ export const TaskChecklistView = ({
       )}
 
       {/* Generate Report Button - Only available when no pending items */}
-      {items.length > 0 && pendingCount === 0 && (
+      {totalCount > 0 && pendingCount === 0 && (
         <div className="pt-4 border-t border-gray-100">
           <Button
             onClick={handleGenerateReport}

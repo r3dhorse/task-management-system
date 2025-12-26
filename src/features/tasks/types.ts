@@ -1,3 +1,5 @@
+import type { TaskChecklist as TaskChecklistType } from "@/features/checklists/types";
+
 export enum TaskStatus {
   BACKLOG = "BACKLOG",
   TODO = "TODO",
@@ -14,25 +16,12 @@ export enum ReviewStatus {
   CHANGES_REQUESTED = "CHANGES_REQUESTED"
 };
 
-// Checklist item stored in task JSON field
-export type TaskChecklistItem = {
-  id: string;
-  title: string;
-  description?: string;
-  order: number;
-  requirePhoto?: boolean;
-  requireRemarks?: boolean;
-  status: 'pending' | 'passed' | 'failed';
-  completedAt?: string;
-  completedBy?: string;
-  remarks?: string;
-  photoUrl?: string;
-};
-
-// Checklist structure stored in task JSON field
-export type TaskChecklist = {
-  items: TaskChecklistItem[];
-};
+// Re-export checklist types from checklists feature for backward compatibility
+export type {
+  TaskChecklistItem,
+  TaskChecklistSection,
+  TaskChecklist,
+} from "@/features/checklists/types";
 
 export type Task = {
   id: string;
@@ -51,7 +40,7 @@ export type Task = {
   creatorId?: string | null; // User ID of the task creator
   isConfidential?: boolean; // If true, only visible to creator, assignees, followers, and collaborators
   parentTaskId?: string | null; // ID of the parent task if this is a subtask
-  checklist?: TaskChecklist | null; // Checklist items with pass/fail status
+  checklist?: TaskChecklistType | null; // Checklist items with pass/fail status
   createdAt: string;
   updatedAt: string;
 }
