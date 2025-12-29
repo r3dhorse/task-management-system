@@ -45,7 +45,7 @@ export const TaskDate = ({ value, className }: TaskDateProps) => {
   return (
     <div className={textColor} data-testid="task-date">
       <span className={cn("truncate", className)}>
-        {format(endDate, "PPP")}
+        {format(endDate, "MMM dd, yyyy")}
       </span>
     </div>
   );

@@ -24,47 +24,57 @@ interface StageData {
   time?: string;
 }
 
-const stages: StageData[] = [
-  { 
-    status: TaskStatus.BACKLOG, 
-    label: 'Backlog', 
-    emoji: '🗂️', 
-    color: 'text-slate-700', 
+interface StageDataExtended extends StageData {
+  shortLabel: string;
+}
+
+const stages: StageDataExtended[] = [
+  {
+    status: TaskStatus.BACKLOG,
+    label: 'Backlog',
+    shortLabel: 'Back',
+    emoji: '🗂️',
+    color: 'text-slate-700',
     bgColor: 'bg-slate-50',
   },
-  { 
-    status: TaskStatus.TODO, 
-    label: 'To Do', 
-    emoji: '📝', 
-    color: 'text-indigo-700', 
+  {
+    status: TaskStatus.TODO,
+    label: 'To Do',
+    shortLabel: 'To Do',
+    emoji: '📝',
+    color: 'text-indigo-700',
     bgColor: 'bg-indigo-50',
   },
-  { 
-    status: TaskStatus.IN_PROGRESS, 
-    label: 'In Progress', 
-    emoji: '🔄', 
-    color: 'text-blue-700', 
+  {
+    status: TaskStatus.IN_PROGRESS,
+    label: 'In Progress',
+    shortLabel: 'Progress',
+    emoji: '🔄',
+    color: 'text-blue-700',
     bgColor: 'bg-blue-50',
   },
-  { 
-    status: TaskStatus.IN_REVIEW, 
-    label: 'Review', 
-    emoji: '🔍', 
-    color: 'text-orange-700', 
+  {
+    status: TaskStatus.IN_REVIEW,
+    label: 'Review',
+    shortLabel: 'Review',
+    emoji: '🔍',
+    color: 'text-orange-700',
     bgColor: 'bg-orange-50',
   },
-  { 
-    status: TaskStatus.DONE, 
-    label: 'Done', 
-    emoji: '✅', 
-    color: 'text-emerald-700', 
+  {
+    status: TaskStatus.DONE,
+    label: 'Done',
+    shortLabel: 'Done',
+    emoji: '✅',
+    color: 'text-emerald-700',
     bgColor: 'bg-emerald-50',
   },
-  { 
-    status: TaskStatus.ARCHIVED, 
-    label: 'Archived', 
-    emoji: '🗄️', 
-    color: 'text-red-700', 
+  {
+    status: TaskStatus.ARCHIVED,
+    label: 'Archived',
+    shortLabel: 'Arch',
+    emoji: '🗄️',
+    color: 'text-red-700',
     bgColor: 'bg-red-50',
   }
 ];
@@ -133,7 +143,7 @@ export const EnhancedStageIndicator = ({
 
   const getStageClasses = (stage: StageData, index: number) => {
     const baseCursor = isClickable ? "cursor-pointer" : "cursor-default";
-    const baseClasses = `relative px-3 py-2 text-xs font-medium transition-all duration-500 ease-out ${baseCursor} group rounded-md border backdrop-blur-sm transform-gpu`;
+    const baseClasses = `relative px-2 py-1.5 sm:px-3 sm:py-2 text-xs font-medium transition-all duration-500 ease-out ${baseCursor} group rounded-md border backdrop-blur-sm transform-gpu touch-manipulation`;
     const hoverClasses = isClickable ? "hover:-translate-y-0.5" : "";
     
     if (stage.status === currentStatus) {
@@ -194,17 +204,20 @@ export const EnhancedStageIndicator = ({
                 className={getStageClasses(stage, index)}
                 onClick={() => handleStageClick(stage.status)}
               >
-                <div className="flex items-center gap-1.5 whitespace-nowrap">
-                  <div className={`flex items-center justify-center w-4 h-4 rounded transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${
-                    stage.status === currentStatus 
-                      ? 'bg-white/90 shadow-sm border border-current/20 group-hover:shadow-md' 
+                <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
+                  <div className={`flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${
+                    stage.status === currentStatus
+                      ? 'bg-white/90 shadow-sm border border-current/20 group-hover:shadow-md'
                       : 'bg-transparent group-hover:bg-white/50'
                   }`}>
-                    <span className="text-xs leading-none transition-transform duration-500 group-hover:scale-125" role="img" aria-label={stage.label}>
+                    <span className="text-[10px] sm:text-xs leading-none transition-transform duration-500 group-hover:scale-125" role="img" aria-label={stage.label}>
                       {stage.emoji}
                     </span>
                   </div>
-                  <span className="font-medium text-xs transition-all duration-300 group-hover:font-semibold group-hover:tracking-wide">{stage.label}</span>
+                  <span className="font-medium text-[10px] sm:text-xs transition-all duration-300 group-hover:font-semibold group-hover:tracking-wide">
+                    <span className="sm:hidden">{(stage as StageDataExtended).shortLabel}</span>
+                    <span className="hidden sm:inline">{stage.label}</span>
+                  </span>
                   {showTime && stage.time && (
                     <span className="text-[10px] font-medium opacity-70 bg-white/80 text-slate-600 px-1 py-0.5 rounded border border-slate-200/40 transition-all duration-300 group-hover:opacity-100 group-hover:bg-white group-hover:shadow-sm">
                       {stage.time}
@@ -354,7 +367,7 @@ export const CompactStageIndicator = ({
           {visibleStages.map((stage) => (
             <div
               key={stage.status}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-500 ease-out whitespace-nowrap border backdrop-blur-sm transform-gpu group ${
+              className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs font-medium transition-all duration-500 ease-out whitespace-nowrap border backdrop-blur-sm transform-gpu group touch-manipulation ${
                 isClickable ? 'cursor-pointer hover:-translate-y-0.5 hover:scale-105' : 'cursor-default'
               } ${
                 stage.status === currentStatus
@@ -363,17 +376,20 @@ export const CompactStageIndicator = ({
               }`}
               onClick={() => handleStageClick(stage.status)}
             >
-              <div className="flex items-center gap-1.5">
-                <div className={`flex items-center justify-center w-4 h-4 rounded transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${
-                  stage.status === currentStatus 
-                    ? 'bg-white/80 shadow-sm border border-current/20 group-hover:shadow-md' 
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <div className={`flex items-center justify-center w-3.5 h-3.5 sm:w-4 sm:h-4 rounded transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${
+                  stage.status === currentStatus
+                    ? 'bg-white/80 shadow-sm border border-current/20 group-hover:shadow-md'
                     : 'bg-transparent group-hover:bg-white/50'
                 }`}>
-                  <span className="text-xs leading-none transition-transform duration-500 group-hover:scale-125" role="img" aria-label={stage.label}>
+                  <span className="text-[10px] sm:text-xs leading-none transition-transform duration-500 group-hover:scale-125" role="img" aria-label={stage.label}>
                     {stage.emoji}
                   </span>
                 </div>
-                <span className="font-medium transition-all duration-300 group-hover:font-semibold group-hover:tracking-wide">{stage.label}</span>
+                <span className="font-medium text-[10px] sm:text-xs transition-all duration-300 group-hover:font-semibold group-hover:tracking-wide">
+                  <span className="sm:hidden">{(stage as StageDataExtended).shortLabel}</span>
+                  <span className="hidden sm:inline">{stage.label}</span>
+                </span>
               </div>
             </div>
           ))}

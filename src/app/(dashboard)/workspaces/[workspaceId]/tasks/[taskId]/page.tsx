@@ -98,7 +98,8 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
   const { data: subTasks } = useGetSubTasks({ taskId: params.taskId });
 
   const { mutate: updateTask, isPending: isUpdating } = useUpdateTask({
-    originalWorkspaceId: task?.workspaceId
+    originalWorkspaceId: task?.workspaceId,
+    showSuccessToast: false
   });
   const { mutate: createHistory } = useCreateTaskHistory();
   const { mutate: deleteTask, isPending: isDeleting } = useDeleteTask();
@@ -705,10 +706,17 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       updatePayload.status = editForm.status;
     }
 
-    updateTask({
-      param: { taskId: task.id },
-      json: updatePayload,
-    });
+    updateTask(
+      {
+        param: { taskId: task.id },
+        json: updatePayload,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Task updated successfully");
+        },
+      }
+    );
   };
 
   const handleViewAttachment = async () => {
@@ -788,6 +796,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
       {
         onSuccess: () => {
           setSelectedFollowers(newFollowers);
+          toast.success("Followers updated");
         },
         onError: (error) => {
           console.error("Failed to update followers:", error);
@@ -1322,98 +1331,100 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
             </h1>
 
             {/* Enhanced Meta Information */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-              <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                <div className="flex-shrink-0 w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <UserIcon className="size-3.5 text-indigo-600" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 sm:gap-2 lg:gap-3">
+              <div className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <UserIcon className="size-3 sm:size-3.5 text-indigo-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Assignee{assignees.length > 1 ? 's' : ''}</p>
-                  <p className="text-xs font-semibold text-gray-900 truncate">
+                  <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Assignee</p>
+                  <p className="text-[10px] sm:text-xs font-semibold text-gray-900 truncate">
                     {assignees.length > 0 ? assignees.map(a => a.name).join(', ') : "Unassigned"}
                   </p>
                 </div>
               </div>
 
               {(task.status === 'IN_REVIEW' || task.status === 'DONE') && (
-                <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                  <div className="flex-shrink-0 w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <UserIcon className="size-3.5 text-purple-600" />
+                <div className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                  <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <UserIcon className="size-3 sm:size-3.5 text-purple-600" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Reviewer</p>
-                    <p className="text-xs font-semibold text-gray-900 truncate">
+                    <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Reviewer</p>
+                    <p className="text-[10px] sm:text-xs font-semibold text-gray-900 truncate">
                       {reviewer?.name || "No Reviewer"}
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                <div className="flex-shrink-0 w-7 h-7 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <CalendarIcon className="size-3.5 text-orange-600" />
+              <div className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <CalendarIcon className="size-3 sm:size-3.5 text-orange-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Due Date</p>
-                  <div className="text-xs font-semibold text-gray-900">
+                  <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Due</p>
+                  <div className="text-[10px] sm:text-xs font-semibold text-gray-900 truncate">
                     <TaskDate value={task.dueDate} />
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                <div className="flex-shrink-0 w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Package className="size-3.5 text-green-600" />
+              <div className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Package className="size-3 sm:size-3.5 text-green-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Service</p>
-                  <p className="text-xs font-semibold text-gray-900 truncate">
+                  <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Service</p>
+                  <p className="text-[10px] sm:text-xs font-semibold text-gray-900 truncate">
                     {service?.name || "No service"}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                <div className="flex-shrink-0 w-7 h-7 bg-cyan-100 rounded-lg flex items-center justify-center">
-                  <UsersIcon className="size-3.5 text-cyan-600" />
+              <div className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 bg-cyan-100 rounded-lg flex items-center justify-center">
+                  <UsersIcon className="size-3 sm:size-3.5 text-cyan-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Collaborators</p>
+                  <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5"><span className="hidden sm:inline">Collaborators</span><span className="sm:hidden">Collabs</span></p>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs font-semibold text-gray-900">
+                    <span className="text-[10px] sm:text-xs font-semibold text-gray-900">
                       {collaborators.length}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setIsCollaboratorsModalOpen(true)}
-                      className="text-[10px] text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 p-0.5 h-auto transition-all duration-200 hover:scale-105"
+                      className="text-[9px] sm:text-[10px] text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 p-0.5 h-auto transition-all duration-200 hover:scale-105"
                       aria-label={`Manage collaborators for task ${task.name}`}
                     >
-                      Manage
+                      <span className="hidden sm:inline">Manage</span>
+                      <span className="sm:hidden">Edit</span>
                     </Button>
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
-                <div className="flex-shrink-0 w-7 h-7 bg-teal-100 rounded-lg flex items-center justify-center">
-                  <UserIcon className="size-3.5 text-teal-600" />
+              <div className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
+                <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 bg-teal-100 rounded-lg flex items-center justify-center">
+                  <UserIcon className="size-3 sm:size-3.5 text-teal-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Followers</p>
+                  <p className="text-[9px] sm:text-[10px] text-gray-500 font-medium uppercase tracking-wide mb-0.5">Followers</p>
                   <div className="flex items-center gap-1">
-                    <span className="text-xs font-semibold text-gray-900">
+                    <span className="text-[10px] sm:text-xs font-semibold text-gray-900">
                       {followers.length}
                     </span>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setIsFollowersModalOpen(true)}
-                      className="text-[10px] text-teal-600 hover:text-teal-700 hover:bg-teal-50 p-0.5 h-auto transition-all duration-200 hover:scale-105"
+                      className="text-[9px] sm:text-[10px] text-teal-600 hover:text-teal-700 hover:bg-teal-50 p-0.5 h-auto transition-all duration-200 hover:scale-105"
                       aria-label={`Manage followers for task ${task.name}`}
                     >
-                      Manage
+                      <span className="hidden sm:inline">Manage</span>
+                      <span className="sm:hidden">Edit</span>
                     </Button>
                   </div>
                 </div>
