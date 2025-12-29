@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useMemo } from "react";
 
 import { DataFilters } from "@/features/tasks/components/data-filters";
 import { useGetTasks } from "@/features/tasks/api/use-get-tasks";
@@ -33,8 +33,29 @@ export const WorkspaceTasksClient = () => {
   const [{ status, serviceId, assigneeId, dueDate, search }] = useTaskFilters();
   const [isExporting, setIsExporting] = useState(false);
   const [view, setView] = useQueryState("task-view", {
-    defaultValue: "kanban"
+    defaultValue: "table" // Default to table for mobile-first approach
   });
+
+  // Track if we're on mobile to disable kanban
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640); // sm breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Force table view on mobile
+  const effectiveView = useMemo(() => {
+    if (isMobile && view === "kanban") {
+      return "table";
+    }
+    return view;
+  }, [isMobile, view]);
 
   // Separate state for kanban and table views
   const [kanbanTasks, setKanbanTasks] = useState<PopulatedTask[]>([]);
@@ -47,7 +68,7 @@ export const WorkspaceTasksClient = () => {
   const TABLE_BATCH_SIZE = tablePageSize;
 
   // Determine which view is active to fetch appropriate data
-  const isKanbanView = view === "kanban";
+  const isKanbanView = effectiveView === "kanban";
   const currentOffset = isKanbanView ? kanbanOffset : (tablePage - 1) * tablePageSize;
   const currentLimit = isKanbanView ? KANBAN_BATCH_SIZE : TABLE_BATCH_SIZE;
 
@@ -199,16 +220,18 @@ export const WorkspaceTasksClient = () => {
       </div>
       
       <Tabs
-        defaultValue={view}
+        value={effectiveView}
         onValueChange={setView}
         className="flex-1 w-full border rounded-lg"
       >
-        <div className="h-full flex flex-col overflow-auto p-4 space-y-4">
+        <div className="h-full flex flex-col overflow-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
           {/* Header Section: Tabs and Export Button */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+            {/* On mobile, only show Table tab. On desktop, show both */}
             <TabsList className="w-full sm:w-auto">
+              {/* Kanban tab - hidden on mobile */}
               <TabsTrigger
-                className="h-10 w-full sm:w-auto touch-manipulation"
+                className="hidden sm:inline-flex h-10 w-full sm:w-auto touch-manipulation"
                 value="kanban"
               >
                 Kanban

@@ -201,26 +201,27 @@ const CollapsibleColumn = React.memo(({ board, tasks, isExpanded, onToggle, task
           {(provided, snapshot) => {
             const getDropZoneStyling = () => {
               if (isArchived) return 'opacity-75';
-              
+
               if (snapshot.isDraggingOver) {
                 return 'bg-gradient-to-b from-blue-50 to-blue-100/50 border-2 border-dashed border-blue-300 shadow-inner transform scale-[1.01]';
               }
-              
+
               if (dragState.isDragging && isValidDropZone && !isDropTarget) {
                 return 'border-2 border-dashed border-blue-200/60 bg-blue-50/20';
               }
-              
+
               return '';
             };
-            
+
             return (
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className={`flex flex-col gap-y-2 h-[480px] max-h-[480px] overflow-y-auto overflow-x-auto touch-manipulation kanban-drop-zone rounded-lg p-2 ${getDropZoneStyling()}`}
-                style={{ 
+                className={`flex flex-col gap-y-2 h-[400px] sm:h-[450px] md:h-[480px] max-h-[480px] overflow-y-auto overflow-x-hidden touch-manipulation kanban-drop-zone rounded-lg p-1.5 sm:p-2 ${getDropZoneStyling()}`}
+                style={{
                   scrollbarWidth: 'thin',
-                  scrollbarColor: '#cbd5e1 #f1f5f9'
+                  scrollbarColor: '#cbd5e1 #f1f5f9',
+                  WebkitOverflowScrolling: 'touch',
                 }}
               >
                 {tasks.map((task, index) => {
@@ -730,23 +731,33 @@ export const KanbanBoard = ({ data, totalCount, onChange, onRequestBacklog, onLo
 
   return (
     <div className="relative">
-      <DragDropContext 
+      <DragDropContext
         onDragStart={onDragStart}
         onDragUpdate={onDragUpdate}
         onDragEnd={onDragEnd}
       >
-        <div className={`flex overflow-x-auto gap-2 pb-4 kanban-drag-container ${
+        {/* Scrollable container with touch-friendly scrolling */}
+        <div className={`flex overflow-x-auto gap-2 pb-4 kanban-drag-container scroll-smooth snap-x snap-mandatory md:snap-none ${
           isUpdating ? 'blur-sm opacity-75' : ''
-        } ${dragState.isDragging ? 'select-none' : ''}`}>
+        } ${dragState.isDragging ? 'select-none' : ''}`}
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'thin',
+          scrollPaddingLeft: '0.5rem',
+          scrollPaddingRight: '0.5rem',
+        }}
+        >
           {filteredBoards.map((board) => {
             const isExpanded = expandedColumns[board.key];
             return (
               <div
                 key={board.key}
-                className={`flex-shrink-0 transition-all duration-300 ease-out bg-muted/70 border border-neutral-200/60 p-1.5 rounded-lg shadow-sm backdrop-blur-sm ${
+                className={`flex-shrink-0 transition-all duration-300 ease-out bg-muted/70 border border-neutral-200/60 p-1.5 rounded-lg shadow-sm backdrop-blur-sm snap-start ${
                   dragState.isDragging ? 'transform-gpu' : ''
                 } ${
-                  isExpanded ? 'w-72 sm:w-80' : 'w-24 sm:w-28'
+                  isExpanded
+                    ? 'w-[280px] sm:w-72 md:w-80'
+                    : 'w-16 sm:w-20 md:w-24'
                 }`}
               >
                 <CollapsibleColumn

@@ -45,24 +45,24 @@ export const TaskHistory = ({ taskId }: TaskHistoryProps) => {
   }
 
   return (
-    <div className="space-y-4 pt-4">
+    <div className="space-y-3 sm:space-y-4 pt-2 sm:pt-4">
       {history.map((entry, index) => (
         <div key={entry.id} className="relative">
           {/* Timeline line */}
           {index < history.length - 1 && (
-            <div className="absolute left-1.5 top-6 w-0.5 h-8 bg-gray-200"></div>
+            <div className="absolute left-1.5 top-5 sm:top-6 w-0.5 h-6 sm:h-8 bg-gray-200"></div>
           )}
-          
-          <div className="flex items-start gap-3">
+
+          <div className="flex items-start gap-2 sm:gap-3">
             {/* Activity dot */}
-            <div 
-              className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getActionColor(entry.action as TaskHistoryAction, entry.field || undefined)} shadow-sm`}
+            <div
+              className={`w-2.5 sm:w-3 h-2.5 sm:h-3 rounded-full mt-1.5 sm:mt-1 flex-shrink-0 ${getActionColor(entry.action as TaskHistoryAction, entry.field || undefined)} shadow-sm`}
             ></div>
-            
+
             {/* Content */}
-            <div className="flex-1 min-w-0 pb-2">
-              <div className="bg-gray-50/80 rounded-lg px-3 py-2 border border-gray-100">
-                <p className="text-sm text-gray-700 leading-relaxed">
+            <div className="flex-1 min-w-0 pb-1.5 sm:pb-2">
+              <div className="bg-gray-50/80 rounded-lg px-2.5 sm:px-3 py-2 border border-gray-100">
+                <p className="text-xs sm:text-sm text-gray-700 leading-relaxed break-words">
                   {formatHistoryMessage(
                     entry.action as TaskHistoryAction,
                     entry.userName || 'Unknown User',
@@ -71,7 +71,7 @@ export const TaskHistory = ({ taskId }: TaskHistoryProps) => {
                     entry.newValue || undefined
                   )}
                 </p>
-                <p className="text-xs text-gray-500 mt-1.5 font-medium">
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1 sm:mt-1.5 font-medium">
                   {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
                 </p>
               </div>

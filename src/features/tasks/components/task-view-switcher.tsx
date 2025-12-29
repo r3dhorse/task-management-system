@@ -11,10 +11,11 @@ import { useTaskFilters } from "../hooks/use-task-filters";
 import { DataTablePaginated } from "./data-table-paginated";
 import { columns } from "./columns";
 import { KanbanBoard } from "./kanban-board";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useMemo } from "react";
 import { PopulatedTask } from "../types";
 import { UserWelcomeBadge } from "@/components/user-welcome-badge";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
+import { LayoutGrid, Table2 } from "@/lib/lucide-icons";
 
 
 export const TaskViewSwitcher = () => {
@@ -30,7 +31,27 @@ export const TaskViewSwitcher = () => {
   });
   const workspaceId = useWorkspaceId();
   const { data: workspace } = useGetWorkspace({ workspaceId });
-  // Removed unused includeBacklog state
+
+  // Track if we're on mobile to disable kanban
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640); // sm breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Force table view on mobile
+  const effectiveView = useMemo(() => {
+    if (isMobile && view === "kanban") {
+      return "table";
+    }
+    return view;
+  }, [isMobile, view]);
 
   // For table view, include archived tasks when ARCHIVED status is specifically selected
   const includeArchived = status === 'ARCHIVED';
@@ -46,7 +67,7 @@ export const TaskViewSwitcher = () => {
   const TABLE_BATCH_SIZE = tablePageSize;
 
   // Determine which view is active to fetch appropriate data
-  const isKanbanView = view === "kanban";
+  const isKanbanView = effectiveView === "kanban";
   const currentOffset = isKanbanView ? kanbanOffset : (tablePage - 1) * tablePageSize;
   const currentLimit = isKanbanView ? KANBAN_BATCH_SIZE : TABLE_BATCH_SIZE;
 
@@ -121,53 +142,58 @@ export const TaskViewSwitcher = () => {
 
   return (
     <Tabs
-      defaultValue={view}
+      value={effectiveView}
       onValueChange={setView}
-      className="flex-1 w-full border rounded-lg"
-
+      className="flex-1 w-full border rounded-lg bg-white/50 backdrop-blur-sm"
     >
-      <div className="h-full flex flex-col overflow-auto p-4 space-y-4">
-
+      <div className="h-full flex flex-col overflow-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Header Section: Tabs + User Info */}
-        <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-3 sm:space-y-0 gap-3 min-h-[50px]">
-          {/* Tabs List */}
-          <TabsList className="w-full sm:w-auto">
+        <div className="flex items-center justify-between gap-2 sm:gap-3 min-h-[40px] sm:min-h-[50px]">
+          {/* Tabs List - Kanban hidden on mobile */}
+          <TabsList className="h-9 sm:h-10 p-1">
             <TabsTrigger
-              className="h-10 w-full sm:w-auto touch-manipulation"
+              className="h-7 sm:h-8 px-2 sm:px-4 text-xs sm:text-sm touch-manipulation data-[state=active]:shadow-sm"
               value="table"
             >
-              Table
+              <Table2 className="size-3.5 sm:size-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Table</span>
             </TabsTrigger>
+            {/* Kanban tab - hidden on mobile */}
             <TabsTrigger
-              className="h-10 w-full sm:w-auto touch-manipulation"
+              className="hidden sm:flex h-7 sm:h-8 px-2 sm:px-4 text-xs sm:text-sm touch-manipulation data-[state=active]:shadow-sm"
               value="kanban"
             >
-              Kanban
+              <LayoutGrid className="size-3.5 sm:size-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Kanban</span>
             </TabsTrigger>
-          
           </TabsList>
 
-          {/* User Welcome Badge */}
-          <div className="hidden sm:block">
+          {/* User Welcome Badge - Hidden on mobile */}
+          <div className="hidden md:block flex-shrink-0">
             <UserWelcomeBadge />
           </div>
-
         </div>
 
-        <DottedSeparator />
-        {/* Placeholder for filters */}
-        <div className="flex items-center justify-between gap-4">
-          <DataFilters />
+        <DottedSeparator className="my-1 sm:my-2" />
+
+        {/* Filters Section */}
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
+          <div className="flex-1 min-w-0">
+            <DataFilters />
+          </div>
         </div>
-        <DottedSeparator />
+
+        <DottedSeparator className="my-1 sm:my-2" />
+
+        {/* Loading State */}
         {isLoadingTasks ? (
-          <div className="w-full border rounded-lg h-[200px]">
-            <LoadingSpinner variant="minimal" size="md" className="h-[200px]" />
+          <div className="w-full border rounded-lg h-[200px] sm:h-[300px] bg-white/80">
+            <LoadingSpinner variant="minimal" size="md" className="h-full" />
           </div>
         ) : (
           <>
             {/* Tab content */}
-            <TabsContent value="table" className="mt-0">
+            <TabsContent value="table" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
               <DataTablePaginated
                 columns={columns}
                 data={tableData}
@@ -178,7 +204,7 @@ export const TaskViewSwitcher = () => {
                 onPageSizeChange={handlePageSizeChange}
               />
             </TabsContent>
-            <TabsContent value="kanban" className="mt-0">
+            <TabsContent value="kanban" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
               <KanbanBoard
                 data={kanbanTasks}
                 totalCount={totalCount}
@@ -190,7 +216,6 @@ export const TaskViewSwitcher = () => {
                 withReviewStage={workspace?.withReviewStage ?? true}
               />
             </TabsContent>
-        
           </>
         )}
       </div>

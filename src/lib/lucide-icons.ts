@@ -168,6 +168,9 @@ export const GripVertical = getIcon('GripVertical', ['GripVerticalIcon']);
 export const XCircle = getIcon('XCircle', ['XCircleIcon']);
 export const Camera = getIcon('Camera', ['CameraIcon']);
 export const Image = getIcon('Image', ['ImageIcon']);
+export const LayoutGrid = getIcon('LayoutGrid', ['LayoutGridIcon', 'Grid']);
+export const Table2 = getIcon('Table2', ['Table2Icon', 'Table']);
+export const Table = getIcon('Table', ['TableIcon']);
 
 // Export all lucide icons as a namespace for direct access
 export * from "lucide-react";

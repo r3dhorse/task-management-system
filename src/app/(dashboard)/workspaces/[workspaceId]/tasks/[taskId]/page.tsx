@@ -14,7 +14,8 @@ import { TaskHistoryAction } from "@/features/tasks/types/history";
 import { useWorkspaceId } from "@/features/workspaces/hooks/use-workspace-id";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, UsersIcon, EditIcon, FileTextIcon, ArchiveIcon, PlayIcon, CheckCircleIcon, SendIcon } from "@/lib/lucide-icons";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ArrowLeftIcon, CalendarIcon, Package, UserIcon, UsersIcon, EditIcon, FileTextIcon, ArchiveIcon, PlayIcon, CheckCircleIcon, SendIcon, MoreHorizontal } from "@/lib/lucide-icons";
 import { useRouter } from "next/navigation";
 import { useDeleteTask } from "@/features/tasks/api/use-delete-task";
 import { useConfirm } from "@/hooks/use-confirm";
@@ -1104,25 +1105,25 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
 
       {/* Enhanced Header with Breadcrumb */}
       <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => router.back()}
-                className="hover:bg-gray-100 transition-all duration-200 group"
+                className="hover:bg-gray-100 transition-all duration-200 group px-2 sm:px-3 h-8 sm:h-9"
                 aria-label="Go back to previous page"
               >
-                <ArrowLeftIcon className="size-4 mr-2 group-hover:-translate-x-0.5 transition-transform" />
-                Back
+                <ArrowLeftIcon className="size-4 sm:mr-2 group-hover:-translate-x-0.5 transition-transform" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
-              <div className="h-4 w-px bg-gray-300" />
-              <span className="text-sm text-gray-600 font-medium">Task Details</span>
+              <div className="h-4 w-px bg-gray-300 hidden sm:block" />
+              <span className="text-xs sm:text-sm text-gray-600 font-medium truncate hidden sm:inline">Task Details</span>
             </div>
 
-            {/* Action Buttons - Ordered: Actions first, then View/Update/Archive */}
-            <div className="flex items-center gap-2">
+            {/* Desktop Action Buttons */}
+            <div className="hidden lg:flex items-center gap-2">
               {/* Primary Action Buttons (workflow actions) */}
               {canStartTask && (
                 <Button
@@ -1132,7 +1133,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-md transition-all duration-200"
                 >
                   <PlayIcon className="size-4 mr-2" />
-                  <span className="hidden sm:inline">Start</span> Task
+                  Start Task
                 </Button>
               )}
               {canSubmitForReview && (
@@ -1143,7 +1144,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md transition-all duration-200"
                 >
                   <SendIcon className="size-4 mr-2" />
-                  <span className="hidden sm:inline">For</span> Review
+                  For Review
                 </Button>
               )}
               {canMarkAsReviewed && (
@@ -1154,7 +1155,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white shadow-md transition-all duration-200"
                 >
                   <CheckCircleIcon className="size-4 mr-2" />
-                  <span className="hidden sm:inline">Mark as Reviewed &</span> Done
+                  Mark as Reviewed & Done
                 </Button>
               )}
 
@@ -1167,7 +1168,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   className="hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200"
                 >
                   <FileTextIcon className="size-4 mr-2" />
-                  <span className="hidden sm:inline">View</span> Attachment
+                  View Attachment
                 </Button>
               )}
               {canEdit && (isAssignee || isWorkspaceAdmin || isSuperAdmin) && (
@@ -1178,7 +1179,7 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   className="hover:bg-green-50 hover:border-green-200 hover:text-green-700 transition-all duration-200"
                 >
                   <EditIcon className="size-4 mr-2" />
-                  <span className="hidden sm:inline">Update</span> Task
+                  Update Task
                 </Button>
               )}
               {canDelete && !isAlreadyArchived && (
@@ -1192,45 +1193,120 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   {isDeleting ? (
                     <>
                       <LoadingSpinner size="sm" className="mr-2" />
-                      <span className="hidden sm:inline">Archiving...</span>
+                      Archiving...
                     </>
                   ) : (
                     <>
                       <ArchiveIcon className="size-4 mr-2" />
-                      <span className="hidden sm:inline">Archive</span>
+                      Archive
                     </>
                   )}
                 </Button>
               )}
             </div>
+
+            {/* Mobile/Tablet Action Buttons */}
+            <div className="flex lg:hidden items-center gap-1.5 sm:gap-2">
+              {/* Primary action as button */}
+              {canStartTask && (
+                <Button
+                  size="sm"
+                  onClick={handleStartTask}
+                  disabled={isUpdating}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white h-8 px-2 sm:px-3"
+                >
+                  <PlayIcon className="size-4" />
+                  <span className="hidden sm:inline ml-1.5">Start</span>
+                </Button>
+              )}
+              {canSubmitForReview && (
+                <Button
+                  size="sm"
+                  onClick={handleSubmitForReview}
+                  disabled={isUpdating}
+                  className="bg-gradient-to-r from-amber-500 to-orange-600 text-white h-8 px-2 sm:px-3"
+                >
+                  <SendIcon className="size-4" />
+                  <span className="hidden sm:inline ml-1.5">Review</span>
+                </Button>
+              )}
+              {canMarkAsReviewed && (
+                <Button
+                  size="sm"
+                  onClick={handleMarkAsReviewed}
+                  disabled={isUpdating}
+                  className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white h-8 px-2 sm:px-3"
+                >
+                  <CheckCircleIcon className="size-4" />
+                  <span className="hidden sm:inline ml-1.5">Done</span>
+                </Button>
+              )}
+
+              {/* More actions dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                    <MoreHorizontal className="size-4" />
+                    <span className="sr-only">More actions</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {task.attachmentId && (
+                    <DropdownMenuItem onClick={handleViewAttachment}>
+                      <FileTextIcon className="size-4 mr-2" />
+                      View Attachment
+                    </DropdownMenuItem>
+                  )}
+                  {canEdit && (isAssignee || isWorkspaceAdmin || isSuperAdmin) && (
+                    <DropdownMenuItem onClick={handleEditMode}>
+                      <EditIcon className="size-4 mr-2" />
+                      Update Task
+                    </DropdownMenuItem>
+                  )}
+                  {(task.attachmentId || (canEdit && (isAssignee || isWorkspaceAdmin || isSuperAdmin))) && canDelete && !isAlreadyArchived && (
+                    <DropdownMenuSeparator />
+                  )}
+                  {canDelete && !isAlreadyArchived && (
+                    <DropdownMenuItem
+                      onClick={handleArchiveTask}
+                      disabled={isDeleting}
+                      className="text-orange-600 focus:text-orange-600"
+                    >
+                      <ArchiveIcon className="size-4 mr-2" />
+                      {isDeleting ? "Archiving..." : "Archive Task"}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Enhanced Task Header */}
-        <div className="mb-8">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 shadow-lg p-6 lg:p-8">
+        <div className="mb-4 sm:mb-6 lg:mb-8">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-gray-200/60 shadow-lg p-4 sm:p-6 lg:p-8">
             {/* Task Number & Status Indicator Row */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-mono font-semibold text-blue-700 bg-blue-100 border border-blue-200 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 mb-4 sm:mb-6">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <span className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs sm:text-sm font-mono font-semibold text-blue-700 bg-blue-100 border border-blue-200 shadow-sm">
                   {task.taskNumber || `Task #${task.id.slice(-7)}`}
                 </span>
                 {task.isConfidential && (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-red-700 bg-red-100 border border-red-200 shadow-sm">
-                    🔒 Confidential
+                  <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold text-red-700 bg-red-100 border border-red-200 shadow-sm">
+                    <span className="hidden sm:inline">🔒 </span>Confidential
                   </span>
                 )}
                 {isReadOnlyViewer && (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold text-gray-600 bg-gray-100 border border-gray-200 shadow-sm">
-                    👁️ View Only
+                  <span className="inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold text-gray-600 bg-gray-100 border border-gray-200 shadow-sm">
+                    <span className="hidden sm:inline">👁️ </span>View Only
                   </span>
                 )}
               </div>
 
               {/* Enhanced Stage Indicator */}
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 overflow-x-auto -mx-1 px-1">
                 <EnhancedStageIndicator
                   currentStatus={task.status as TaskStatus}
                   onStatusChange={handleStatusChange}
@@ -1241,12 +1317,12 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
             </div>
 
             {/* Task Title */}
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 leading-tight mb-6 break-words">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-gray-900 leading-tight mb-4 sm:mb-6 break-words">
               {task.name}
             </h1>
 
             {/* Enhanced Meta Information */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
               <div className="flex items-center gap-2.5 p-2.5 bg-gray-50/80 rounded-lg border border-gray-200/50">
                 <div className="flex-shrink-0 w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center">
                   <UserIcon className="size-3.5 text-indigo-600" />
@@ -1347,43 +1423,43 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
         </div>
 
         {/* Enhanced Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-10 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 sm:gap-6 lg:gap-8">
           {/* Primary Content Area - Left Column */}
-          <div className="xl:col-span-6 space-y-6">
+          <div className="lg:col-span-6 space-y-4 sm:space-y-6">
             {/* Enhanced Description Section */}
             <Card className="bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                  <div className="w-2 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full shadow-sm" />
+              <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6">
+                <CardTitle className="text-base sm:text-lg lg:text-xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+                  <div className="w-1.5 sm:w-2 h-6 sm:h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full shadow-sm" />
                   <span>Description</span>
                   {!task.description && (
-                    <span className="text-sm font-normal text-gray-500 ml-auto">
+                    <span className="text-xs sm:text-sm font-normal text-gray-500 ml-auto hidden sm:inline">
                       No description provided
                     </span>
                   )}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 sm:px-6">
                 {/* Fixed height container for exactly 6 lines */}
-                <div className="h-[144px] overflow-hidden">
+                <div className="h-[120px] sm:h-[144px] overflow-hidden">
                   {task.description ? (
                     <div className="prose prose-sm max-w-none h-full">
-                      <div className="text-gray-700 whitespace-pre-wrap leading-6 p-4 bg-gray-50/50 rounded-xl border border-gray-200/50 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      <div className="text-gray-700 whitespace-pre-wrap leading-relaxed sm:leading-6 p-3 sm:p-4 bg-gray-50/50 rounded-lg sm:rounded-xl border border-gray-200/50 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 text-sm">
                         {task.description}
                       </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                        <FileTextIcon className="w-6 h-6 text-gray-400" />
+                    <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                      <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 sm:mb-3">
+                        <FileTextIcon className="w-5 sm:w-6 h-5 sm:h-6 text-gray-400" />
                       </div>
-                      <p className="text-gray-500 text-sm font-medium mb-2">No description yet</p>
+                      <p className="text-gray-500 text-xs sm:text-sm font-medium mb-2">No description yet</p>
                       {canEdit && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={handleEditMode}
-                          className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs"
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50 text-xs h-8"
                         >
                           <EditIcon className="size-3 mr-1" />
                           Add Description
@@ -1399,34 +1475,35 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
             <Card className="bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300">
               <CardContent className="p-0">
                 <Tabs defaultValue="timeline" className="w-full">
-                  <TabsList className="w-full justify-start rounded-none border-b bg-gray-50/50">
-                    <TabsTrigger value="timeline" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                      Activity Timeline
+                  <TabsList className="w-full justify-start rounded-none border-b bg-gray-50/50 overflow-x-auto flex-nowrap px-2 sm:px-0">
+                    <TabsTrigger value="timeline" className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
+                      <span className="hidden sm:inline">Activity </span>Timeline
                     </TabsTrigger>
-                    <TabsTrigger value="subtasks" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                      Sub Tasks
+                    <TabsTrigger value="subtasks" className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
+                      <span className="hidden sm:inline">Sub </span>Tasks
                     </TabsTrigger>
-                    <TabsTrigger value="attachments" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
-                      Attachments
+                    <TabsTrigger value="attachments" className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
+                      <span className="hidden sm:inline">Attachments</span>
+                      <span className="sm:hidden">Files</span>
                     </TabsTrigger>
                     {hasChecklist && (
-                      <TabsTrigger value="checklist" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                      <TabsTrigger value="checklist" className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm whitespace-nowrap px-2 sm:px-4">
                         Checklist
                       </TabsTrigger>
                     )}
                   </TabsList>
                   <TabsContent value="timeline" className="m-0">
-                    {/* Fixed height to align with chat */}
-                    <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                      <div className="px-6 py-6">
+                    {/* Responsive height */}
+                    <div className="h-[350px] sm:h-[400px] lg:h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      <div className="px-3 py-4 sm:px-6 sm:py-6">
                         <TaskHistory taskId={task.id} />
                       </div>
                     </div>
                   </TabsContent>
                   <TabsContent value="subtasks" className="m-0">
-                    {/* Fixed height to align with chat */}
-                    <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                      <div className="px-6 py-6">
+                    {/* Responsive height */}
+                    <div className="h-[350px] sm:h-[400px] lg:h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      <div className="px-3 py-4 sm:px-6 sm:py-6">
                         <SubTasksTable
                           parentTaskId={task.id}
                           readOnly={task.status === TaskStatus.TODO || task.status === TaskStatus.DONE || task.status === TaskStatus.ARCHIVED}
@@ -1435,9 +1512,9 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                     </div>
                   </TabsContent>
                   <TabsContent value="attachments" className="m-0">
-                    {/* Fixed height to align with chat */}
-                    <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                      <div className="px-6 py-6">
+                    {/* Responsive height */}
+                    <div className="h-[350px] sm:h-[400px] lg:h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      <div className="px-3 py-4 sm:px-6 sm:py-6">
                         <TaskAttachmentsTable
                           taskId={task.id}
                           workspaceId={task.workspaceId}
@@ -1449,9 +1526,9 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
                   </TabsContent>
                   {hasChecklist && (
                     <TabsContent value="checklist" className="m-0">
-                      {/* Fixed height to align with chat */}
-                      <div className="h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                        <div className="px-6 py-6">
+                      {/* Responsive height */}
+                      <div className="h-[350px] sm:h-[400px] lg:h-[440px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        <div className="px-3 py-4 sm:px-6 sm:py-6">
                           <TaskChecklistView
                             taskNumber={task.taskNumber || `Task #${task.id.slice(-7)}`}
                             taskName={task.name}
@@ -1472,11 +1549,11 @@ export default function TaskDetailsPage({ params }: TaskDetailsPageProps) {
           </div>
 
           {/* Enhanced Chat Section - Right Column */}
-          <div className="xl:col-span-4">
-            <div className="sticky top-24">
+          <div className="lg:col-span-4">
+            <div className="lg:sticky lg:top-24">
               <TaskChat
                 taskId={task.id}
-                className="h-[780px] bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300"
+                className="h-[400px] sm:h-[500px] lg:h-[780px] bg-white/90 backdrop-blur-sm border border-gray-200/60 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl"
               />
 
               {/* Quick actions panel for mobile - Hidden on tablet and above */}

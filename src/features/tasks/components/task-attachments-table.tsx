@@ -161,157 +161,229 @@ export const TaskAttachmentsTable = ({
   const hasAttachments = attachments && attachments.length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <DeleteConfirmDialog />
 
       {/* Header with Add Files button */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Attachments {hasAttachments && `(${attachments.length})`}
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+          Attachments {hasAttachments && <span className="text-gray-500">({attachments.length})</span>}
         </h3>
         {!readOnly && (
           <Button
             onClick={handleAddFiles}
             size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs sm:text-sm"
           >
-            <PlusIcon className="size-4 mr-2" />
-            Add Files
+            <PlusIcon className="size-3.5 sm:size-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Add </span>Files
           </Button>
         )}
       </div>
 
-      {/* Attachments Table */}
+      {/* Attachments */}
       {!hasAttachments ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-              <Paperclip className="w-6 h-6 text-gray-400" />
+        <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex flex-col items-center gap-2 sm:gap-3 px-4">
+            <div className="w-10 sm:w-12 h-10 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center">
+              <Paperclip className="w-5 sm:w-6 h-5 sm:h-6 text-gray-400" />
             </div>
-            <p className="text-gray-600 font-medium">No attachments yet</p>
-            <p className="text-sm text-gray-500">
-              {readOnly ? "Attachments can be added once the task is in progress" : "Upload files to this task or its subtasks"}
+            <p className="text-gray-600 font-medium text-sm sm:text-base">No attachments yet</p>
+            <p className="text-xs sm:text-sm text-gray-500 max-w-[250px]">
+              {readOnly ? "Attachments can be added once the task is in progress" : "Upload files to this task"}
             </p>
             {!readOnly && (
               <Button
                 onClick={handleAddFiles}
                 size="sm"
                 variant="outline"
-                className="mt-2"
+                className="mt-1 sm:mt-2 h-8 text-xs sm:text-sm"
               >
-                <PlusIcon className="size-4 mr-2" />
+                <PlusIcon className="size-3.5 sm:size-4 mr-1 sm:mr-2" />
                 Add First Attachment
               </Button>
             )}
           </div>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-gray-50">
-                <TableHead className="w-[60px]">No</TableHead>
-                <TableHead className="w-[150px]">Task Number</TableHead>
-                <TableHead>File Name</TableHead>
-                <TableHead className="w-[100px]">Size</TableHead>
-                <TableHead className="w-[130px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {attachments.map((attachment, index) => (
-                <TableRow
-                  key={attachment.id}
-                  className="hover:bg-gray-50 transition-colors"
-                  onMouseEnter={() => setHoveredRowId(attachment.id)}
-                  onMouseLeave={() => setHoveredRowId(null)}
-                >
-                  <TableCell className="font-mono text-sm text-gray-500">
-                    {index + 1}
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      onClick={() => handleTaskClick(attachment)}
-                      className="flex items-center gap-2 hover:underline"
-                    >
-                      {attachment.isParentTask ? (
-                        <Badge
-                          variant="secondary"
-                          className="text-xs bg-purple-100 text-purple-700"
-                        >
-                          Main Task
-                        </Badge>
-                      ) : (
-                        <span className="font-mono text-sm text-blue-600">
-                          {attachment.taskNumber}
-                        </span>
-                      )}
-                    </button>
-                  </TableCell>
-                  <TableCell className="font-medium truncate max-w-[250px]" title={attachment.originalName}>
-                    {attachment.originalName}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-500">
+        <>
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-2">
+            {attachments.map((attachment, index) => (
+              <div
+                key={attachment.id}
+                className="bg-white border border-gray-200 rounded-lg p-3"
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-xs text-gray-400 font-mono">{index + 1}.</span>
+                    {attachment.isParentTask ? (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] bg-purple-100 text-purple-700 shrink-0"
+                      >
+                        Main
+                      </Badge>
+                    ) : (
+                      <button
+                        onClick={() => handleTaskClick(attachment)}
+                        className="font-mono text-xs text-blue-600 hover:underline shrink-0"
+                      >
+                        {attachment.taskNumber}
+                      </button>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-gray-400 shrink-0">
                     {formatFileSize(attachment.fileSize)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleViewFile(attachment)}
-                        className={cn(
-                          "h-8 w-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50",
-                          hoveredRowId === attachment.id && "opacity-100"
-                        )}
-                        title="View file"
+                  </span>
+                </div>
+
+                <p className="text-sm font-medium text-gray-900 truncate mb-2" title={attachment.originalName}>
+                  {attachment.originalName}
+                </p>
+
+                <div className="flex items-center justify-end gap-1 pt-2 border-t border-gray-100">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleViewFile(attachment)}
+                    className="h-7 px-2 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                  >
+                    <Eye className="h-3.5 w-3.5 mr-1" />
+                    View
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleDownloadFile(attachment.id, attachment.originalName)}
+                    className="h-7 px-2 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50"
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1" />
+                    Download
+                  </Button>
+                  {attachment.isParentTask && !readOnly && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteAttachment(attachment)}
+                      disabled={isDeleting}
+                      className="h-7 px-2 text-xs text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden sm:block border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="w-[60px]">No</TableHead>
+                  <TableHead className="w-[150px]">Task Number</TableHead>
+                  <TableHead>File Name</TableHead>
+                  <TableHead className="w-[100px]">Size</TableHead>
+                  <TableHead className="w-[130px] text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {attachments.map((attachment, index) => (
+                  <TableRow
+                    key={attachment.id}
+                    className="hover:bg-gray-50 transition-colors"
+                    onMouseEnter={() => setHoveredRowId(attachment.id)}
+                    onMouseLeave={() => setHoveredRowId(null)}
+                  >
+                    <TableCell className="font-mono text-sm text-gray-500">
+                      {index + 1}
+                    </TableCell>
+                    <TableCell>
+                      <button
+                        onClick={() => handleTaskClick(attachment)}
+                        className="flex items-center gap-2 hover:underline"
                       >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => handleDownloadFile(attachment.id, attachment.originalName)}
-                        className={cn(
-                          "h-8 w-8 text-gray-600 hover:text-green-600 hover:bg-green-50",
-                          hoveredRowId === attachment.id && "opacity-100"
+                        {attachment.isParentTask ? (
+                          <Badge
+                            variant="secondary"
+                            className="text-xs bg-purple-100 text-purple-700"
+                          >
+                            Main Task
+                          </Badge>
+                        ) : (
+                          <span className="font-mono text-sm text-blue-600">
+                            {attachment.taskNumber}
+                          </span>
                         )}
-                        title="Download file"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      {/* Only show delete button for parent task attachments and when not read-only */}
-                      {attachment.isParentTask && !readOnly && (
+                      </button>
+                    </TableCell>
+                    <TableCell className="font-medium truncate max-w-[250px]" title={attachment.originalName}>
+                      {attachment.originalName}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500">
+                      {formatFileSize(attachment.fileSize)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-end gap-1">
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => handleDeleteAttachment(attachment)}
-                          disabled={isDeleting}
+                          onClick={() => handleViewFile(attachment)}
                           className={cn(
-                            "h-8 w-8 text-gray-600 hover:text-red-600 hover:bg-red-50",
+                            "h-8 w-8 text-gray-600 hover:text-blue-600 hover:bg-blue-50",
                             hoveredRowId === attachment.id && "opacity-100"
                           )}
-                          title="Delete file"
+                          title="View file"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDownloadFile(attachment.id, attachment.originalName)}
+                          className={cn(
+                            "h-8 w-8 text-gray-600 hover:text-green-600 hover:bg-green-50",
+                            hoveredRowId === attachment.id && "opacity-100"
+                          )}
+                          title="Download file"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        {attachment.isParentTask && !readOnly && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleDeleteAttachment(attachment)}
+                            disabled={isDeleting}
+                            className={cn(
+                              "h-8 w-8 text-gray-600 hover:text-red-600 hover:bg-red-50",
+                              hoveredRowId === attachment.id && "opacity-100"
+                            )}
+                            title="Delete file"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       )}
 
       {/* Summary */}
       {hasAttachments && (
-        <div className="flex items-center gap-4 text-sm text-gray-600 pt-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 pt-1 sm:pt-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <span className="font-medium">Total:</span>
             <span>{attachments.length} file(s)</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <span className="font-medium">Size:</span>
             <span>{formatFileSize(attachments.reduce((sum, att) => sum + att.fileSize, 0))}</span>
           </div>

@@ -173,25 +173,25 @@ export const ChecklistRemarksModal = ({
       title={modalTitle}
       description={modalDescription}
     >
-      <div className="space-y-6 p-4">
+      <div className="space-y-4 sm:space-y-6 p-3 sm:p-4">
         {/* Header */}
         <div className="space-y-1">
           <h2 className={cn(
-            "text-lg font-semibold",
+            "text-base sm:text-lg font-semibold",
             isPassMode ? "text-green-700" : isFailMode ? "text-red-700" : "text-gray-900"
           )}>
             {modalTitle}
           </h2>
-          <p className="text-sm text-gray-500 truncate">
+          <p className="text-xs sm:text-sm text-gray-500 line-clamp-2 sm:truncate">
             {isPassMode ? "Item: " : isFailMode ? "Item: " : "For: "}{itemTitle}
           </p>
         </div>
 
         {/* Photo Section */}
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between">
             <Label className={cn(
-              "text-sm font-medium",
+              "text-xs sm:text-sm font-medium",
               requirePhoto ? "text-gray-900" : "text-gray-700"
             )}>
               Photo {requirePhoto ? (
@@ -202,11 +202,11 @@ export const ChecklistRemarksModal = ({
             </Label>
           </div>
           {errors.photo && (
-            <p className="text-sm text-red-500">{errors.photo}</p>
+            <p className="text-xs sm:text-sm text-red-500">{errors.photo}</p>
           )}
 
           {isCapturing ? (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <div className="relative rounded-lg overflow-hidden bg-black aspect-video">
                 <video
                   ref={videoRef}
@@ -220,16 +220,16 @@ export const ChecklistRemarksModal = ({
                 <Button
                   type="button"
                   onClick={capturePhoto}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 h-9 sm:h-10 text-sm"
                 >
-                  <Camera className="h-4 w-4 mr-2" />
+                  <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Capture
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={stopCamera}
-                  className="flex-1"
+                  className="flex-1 h-9 sm:h-10 text-sm"
                 >
                   Cancel
                 </Button>
@@ -241,7 +241,7 @@ export const ChecklistRemarksModal = ({
                 <img
                   src={photoUrl}
                   alt="Captured"
-                  className="w-full h-auto max-h-64 object-contain bg-gray-50"
+                  className="w-full h-auto max-h-48 sm:max-h-64 object-contain bg-gray-50"
                 />
               </div>
               <Button
@@ -249,9 +249,9 @@ export const ChecklistRemarksModal = ({
                 variant="destructive"
                 size="sm"
                 onClick={removePhoto}
-                className="absolute top-2 right-2 h-8 w-8 p-0 rounded-full"
+                className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 h-7 w-7 sm:h-8 sm:w-8 p-0 rounded-full"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
             </div>
           ) : (
@@ -260,15 +260,15 @@ export const ChecklistRemarksModal = ({
               variant="outline"
               onClick={startCamera}
               className={cn(
-                "w-full h-32 border-2 border-dashed",
-                "flex flex-col items-center justify-center gap-2",
-                "hover:border-blue-400 hover:bg-blue-50/50 transition-colors"
+                "w-full h-24 sm:h-32 border-2 border-dashed",
+                "flex flex-col items-center justify-center gap-1.5 sm:gap-2",
+                "hover:border-blue-400 hover:bg-blue-50/50 transition-colors touch-manipulation"
               )}
             >
-              <div className="p-3 rounded-full bg-gray-100">
-                <Camera className="h-6 w-6 text-gray-500" />
+              <div className="p-2.5 sm:p-3 rounded-full bg-gray-100">
+                <Camera className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500" />
               </div>
-              <span className="text-sm text-gray-600">Tap to capture photo</span>
+              <span className="text-xs sm:text-sm text-gray-600">Tap to capture photo</span>
             </Button>
           )}
         </div>
@@ -277,9 +277,9 @@ export const ChecklistRemarksModal = ({
         <canvas ref={canvasRef} className="hidden" />
 
         {/* Remarks Section */}
-        <div className="space-y-2">
+        <div className="space-y-1.5 sm:space-y-2">
           <Label htmlFor={`remarks-${itemId}`} className={cn(
-            "text-sm font-medium",
+            "text-xs sm:text-sm font-medium",
             requireRemarks ? "text-gray-900" : "text-gray-700"
           )}>
             Remarks {requireRemarks ? (
@@ -289,28 +289,28 @@ export const ChecklistRemarksModal = ({
             )}
           </Label>
           {errors.remarks && (
-            <p className="text-sm text-red-500">{errors.remarks}</p>
+            <p className="text-xs sm:text-sm text-red-500">{errors.remarks}</p>
           )}
           <Textarea
             id={`remarks-${itemId}`}
             placeholder="Enter your remarks here..."
             value={remarks}
             onChange={(e) => setRemarks(e.target.value)}
-            className="min-h-[120px] resize-none"
+            className="min-h-[100px] sm:min-h-[120px] resize-none text-sm"
             maxLength={1000}
           />
-          <p className="text-xs text-gray-400 text-right">
+          <p className="text-[10px] sm:text-xs text-gray-400 text-right">
             {remarks.length}/1000
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 pt-2">
+        <div className="flex gap-2 sm:gap-3 pt-1 sm:pt-2">
           <Button
             type="button"
             variant="outline"
             onClick={handleClose}
-            className="flex-1"
+            className="flex-1 h-9 sm:h-10 text-sm"
             disabled={isSaving}
           >
             Cancel
@@ -319,7 +319,7 @@ export const ChecklistRemarksModal = ({
             type="button"
             onClick={handleSave}
             className={cn(
-              "flex-1",
+              "flex-1 h-9 sm:h-10 text-sm",
               isPassMode
                 ? "bg-green-600 hover:bg-green-700"
                 : isFailMode
@@ -330,11 +330,15 @@ export const ChecklistRemarksModal = ({
           >
             {isSaving ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                {isPassMode ? "Marking as Passed..." : isFailMode ? "Marking as Failed..." : "Saving..."}
+                <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 animate-spin" />
+                <span className="hidden sm:inline">{isPassMode ? "Marking as Passed..." : isFailMode ? "Marking as Failed..." : "Saving..."}</span>
+                <span className="sm:hidden">{isPassMode ? "Passing..." : isFailMode ? "Failing..." : "Saving..."}</span>
               </>
             ) : (
-              isPassMode ? "Mark as Passed" : isFailMode ? "Mark as Failed" : "Save Remarks"
+              <>
+                <span className="hidden sm:inline">{isPassMode ? "Mark as Passed" : isFailMode ? "Mark as Failed" : "Save Remarks"}</span>
+                <span className="sm:hidden">{isPassMode ? "Pass" : isFailMode ? "Fail" : "Save"}</span>
+              </>
             )}
           </Button>
         </div>

@@ -216,10 +216,10 @@ export const TaskChecklistView = ({
 
   if (!checklist || totalCount === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-        <ClipboardList className="h-12 w-12 text-gray-300 mb-3" />
-        <p className="font-medium">No checklist for this task</p>
-        <p className="text-sm text-gray-400 mt-1">
+      <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-gray-500 px-4">
+        <ClipboardList className="h-10 w-10 sm:h-12 sm:w-12 text-gray-300 mb-2 sm:mb-3" />
+        <p className="font-medium text-sm sm:text-base">No checklist for this task</p>
+        <p className="text-xs sm:text-sm text-gray-400 mt-1 text-center">
           Checklists are automatically added from service templates
         </p>
       </div>
@@ -243,11 +243,11 @@ export const TaskChecklistView = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Overall Progress bar and stats */}
       <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden flex">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex-1 h-2 sm:h-2.5 bg-gray-200 rounded-full overflow-hidden flex">
             {passedCount > 0 && (
               <div
                 className="h-full bg-green-500 transition-all duration-500"
@@ -261,24 +261,24 @@ export const TaskChecklistView = ({
               />
             )}
           </div>
-          <span className="text-sm font-medium text-gray-600 min-w-[60px] text-right">
+          <span className="text-xs sm:text-sm font-medium text-gray-600 min-w-[50px] sm:min-w-[60px] text-right">
             {completedCount}/{totalCount}
           </span>
         </div>
 
-        {/* Status summary */}
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-1.5">
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span className="text-green-700 font-medium">{passedCount} Passed</span>
+        {/* Status summary - responsive grid on mobile */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
+            <span className="text-green-700 font-medium">{passedCount} <span className="hidden sm:inline">Passed</span><span className="sm:hidden">Pass</span></span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <XCircle className="h-4 w-4 text-red-500" />
-            <span className="text-red-700 font-medium">{failedCount} Failed</span>
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-red-500" />
+            <span className="text-red-700 font-medium">{failedCount} <span className="hidden sm:inline">Failed</span><span className="sm:hidden">Fail</span></span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Clock className="h-4 w-4 text-gray-400" />
-            <span className="text-gray-500">{pendingCount} Pending</span>
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400" />
+            <span className="text-gray-500">{pendingCount} <span className="hidden sm:inline">Pending</span><span className="sm:hidden">Pend</span></span>
           </div>
         </div>
       </div>
@@ -307,39 +307,39 @@ export const TaskChecklistView = ({
                 <button
                   onClick={() => toggleSection(section.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 p-3 text-left transition-colors",
-                    sectionComplete && !sectionHasFailures && "bg-green-50 hover:bg-green-100",
-                    sectionComplete && sectionHasFailures && "bg-amber-50 hover:bg-amber-100",
-                    !sectionComplete && "bg-gray-50 hover:bg-gray-100"
+                    "w-full flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 text-left transition-colors touch-manipulation",
+                    sectionComplete && !sectionHasFailures && "bg-green-50 hover:bg-green-100 active:bg-green-100",
+                    sectionComplete && sectionHasFailures && "bg-amber-50 hover:bg-amber-100 active:bg-amber-100",
+                    !sectionComplete && "bg-gray-50 hover:bg-gray-100 active:bg-gray-100"
                   )}
                 >
                   {isCollapsed ? (
-                    <ChevronRight className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                    <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 flex-shrink-0" />
                   )}
 
-                  <span className="font-medium text-gray-900 flex-1">
+                  <span className="font-medium text-gray-900 flex-1 text-sm sm:text-base truncate">
                     {section.name}
                   </span>
 
                   {/* Section progress indicators */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                     {stats.passed > 0 && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
-                        <CheckCircle2 className="h-3 w-3" />
+                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] sm:text-xs font-medium rounded">
+                        <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                         {stats.passed}
                       </span>
                     )}
                     {stats.failed > 0 && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-700 text-xs font-medium rounded">
-                        <XCircle className="h-3 w-3" />
+                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] sm:text-xs font-medium rounded">
+                        <XCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                         {stats.failed}
                       </span>
                     )}
                     {stats.pending > 0 && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded">
-                        <Clock className="h-3 w-3" />
+                      <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 bg-gray-100 text-gray-600 text-[10px] sm:text-xs font-medium rounded">
+                        <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                         {stats.pending}
                       </span>
                     )}
@@ -348,121 +348,229 @@ export const TaskChecklistView = ({
 
                 {/* Section Items */}
                 {!isCollapsed && (
-                  <div className="p-3 space-y-2 bg-white">
+                  <div className="p-2 sm:p-3 space-y-2 bg-white">
                     {section.items
                       .sort((a, b) => a.order - b.order)
                       .map((item, index) => (
                         <div
                           key={item.id}
                           className={cn(
-                            "flex items-start gap-3 p-3 rounded-lg border transition-all duration-200",
+                            "rounded-lg border transition-all duration-200",
                             item.status === 'passed' && "bg-green-50/80 border-green-200",
                             item.status === 'failed' && "bg-red-50/80 border-red-200",
                             item.status === 'pending' && "bg-white border-gray-200 hover:border-gray-300"
                           )}
                         >
-                          {/* Item number and status icon */}
-                          <div className="flex items-center gap-2 pt-0.5">
-                            <span
-                              className={cn(
-                                "inline-flex items-center justify-center w-6 h-6 text-xs font-medium rounded-full flex-shrink-0",
-                                item.status === 'passed' && "bg-green-200 text-green-700",
-                                item.status === 'failed' && "bg-red-200 text-red-700",
-                                item.status === 'pending' && "bg-gray-200 text-gray-600"
-                              )}
-                            >
-                              {index + 1}
-                            </span>
-                          </div>
-
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className={cn(
-                                "font-medium transition-all",
-                                item.status === 'passed' && "text-green-800",
-                                item.status === 'failed' && "text-red-800",
-                                item.status === 'pending' && "text-gray-900"
-                              )}
-                            >
-                              {item.title}
-                            </p>
-                            {item.description && (
-                              <p
+                          {/* Mobile Layout */}
+                          <div className="sm:hidden p-2.5">
+                            <div className="flex items-start gap-2">
+                              {/* Item number */}
+                              <span
                                 className={cn(
-                                  "text-sm mt-1",
-                                  item.status === 'passed' && "text-green-600",
-                                  item.status === 'failed' && "text-red-600",
-                                  item.status === 'pending' && "text-gray-500"
+                                  "inline-flex items-center justify-center w-5 h-5 text-[10px] font-medium rounded-full flex-shrink-0 mt-0.5",
+                                  item.status === 'passed' && "bg-green-200 text-green-700",
+                                  item.status === 'failed' && "bg-red-200 text-red-700",
+                                  item.status === 'pending' && "bg-gray-200 text-gray-600"
                                 )}
                               >
-                                {item.description}
-                              </p>
+                                {index + 1}
+                              </span>
+
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <p
+                                  className={cn(
+                                    "font-medium text-sm transition-all",
+                                    item.status === 'passed' && "text-green-800",
+                                    item.status === 'failed' && "text-red-800",
+                                    item.status === 'pending' && "text-gray-900"
+                                  )}
+                                >
+                                  {item.title}
+                                </p>
+                                {item.description && (
+                                  <p
+                                    className={cn(
+                                      "text-xs mt-0.5 line-clamp-2",
+                                      item.status === 'passed' && "text-green-600",
+                                      item.status === 'failed' && "text-red-600",
+                                      item.status === 'pending' && "text-gray-500"
+                                    )}
+                                  >
+                                    {item.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Mobile action buttons - compact row */}
+                            {canEdit && (
+                              <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-gray-100">
+                                <Button
+                                  size="sm"
+                                  variant={item.status === 'passed' ? 'primary' : 'outline'}
+                                  onClick={() => handlePassClick(section.id, item)}
+                                  disabled={isPending}
+                                  className={cn(
+                                    "flex-1 h-7 text-xs",
+                                    item.status === 'passed'
+                                      ? "bg-green-600 hover:bg-green-700 text-white"
+                                      : "hover:bg-green-50 hover:text-green-700 hover:border-green-300"
+                                  )}
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                                  Pass
+                                  {item.status === 'passed' && hasRemarksOrPhoto(item) && (
+                                    <MessageSquare className="h-2.5 w-2.5 ml-1" />
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={item.status === 'failed' ? 'destructive' : 'outline'}
+                                  onClick={() => handleFailClick(section.id, item)}
+                                  disabled={isPending}
+                                  className={cn(
+                                    "flex-1 h-7 text-xs",
+                                    item.status === 'failed'
+                                      ? "bg-red-600 hover:bg-red-700 text-white"
+                                      : "hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                                  )}
+                                >
+                                  <XCircle className="h-3.5 w-3.5 mr-1" />
+                                  Fail
+                                  {item.status === 'failed' && hasRemarksOrPhoto(item) && (
+                                    <MessageSquare className="h-2.5 w-2.5 ml-1" />
+                                  )}
+                                </Button>
+                                {isPending && (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400 flex-shrink-0" />
+                                )}
+                              </div>
+                            )}
+
+                            {/* Mobile status indicator for non-editors */}
+                            {!canEdit && item.status !== 'pending' && (
+                              <div className="mt-2 pt-2 border-t border-gray-100">
+                                {item.status === 'passed' ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 text-[10px] font-medium rounded-full">
+                                    <CheckCircle2 className="h-2.5 w-2.5" />
+                                    Passed
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-medium rounded-full">
+                                    <XCircle className="h-2.5 w-2.5" />
+                                    Failed
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
 
-                          {/* Action buttons */}
-                          {canEdit && (
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <Button
-                                size="sm"
-                                variant={item.status === 'passed' ? 'primary' : 'outline'}
-                                onClick={() => handlePassClick(section.id, item)}
-                                disabled={isPending}
+                          {/* Desktop Layout */}
+                          <div className="hidden sm:flex items-start gap-3 p-3">
+                            {/* Item number and status icon */}
+                            <div className="flex items-center gap-2 pt-0.5">
+                              <span
                                 className={cn(
-                                  "h-8 px-3",
-                                  item.status === 'passed'
-                                    ? "bg-green-600 hover:bg-green-700 text-white"
-                                    : "hover:bg-green-50 hover:text-green-700 hover:border-green-300"
+                                  "inline-flex items-center justify-center w-6 h-6 text-xs font-medium rounded-full flex-shrink-0",
+                                  item.status === 'passed' && "bg-green-200 text-green-700",
+                                  item.status === 'failed' && "bg-red-200 text-red-700",
+                                  item.status === 'pending' && "bg-gray-200 text-gray-600"
                                 )}
                               >
-                                <CheckCircle2 className="h-4 w-4 mr-1" />
-                                Pass
-                                {item.status === 'passed' && hasRemarksOrPhoto(item) && (
-                                  <MessageSquare className="h-3 w-3 ml-1" />
-                                )}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant={item.status === 'failed' ? 'destructive' : 'outline'}
-                                onClick={() => handleFailClick(section.id, item)}
-                                disabled={isPending}
-                                className={cn(
-                                  "h-8 px-3",
-                                  item.status === 'failed'
-                                    ? "bg-red-600 hover:bg-red-700 text-white"
-                                    : "hover:bg-red-50 hover:text-red-700 hover:border-red-300"
-                                )}
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Fail
-                                {item.status === 'failed' && hasRemarksOrPhoto(item) && (
-                                  <MessageSquare className="h-3 w-3 ml-1" />
-                                )}
-                              </Button>
+                                {index + 1}
+                              </span>
                             </div>
-                          )}
 
-                          {/* Status indicator for non-editors */}
-                          {!canEdit && item.status !== 'pending' && (
-                            <div className="flex-shrink-0">
-                              {item.status === 'passed' ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Passed
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
-                                  <XCircle className="h-3 w-3" />
-                                  Failed
-                                </span>
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className={cn(
+                                  "font-medium transition-all",
+                                  item.status === 'passed' && "text-green-800",
+                                  item.status === 'failed' && "text-red-800",
+                                  item.status === 'pending' && "text-gray-900"
+                                )}
+                              >
+                                {item.title}
+                              </p>
+                              {item.description && (
+                                <p
+                                  className={cn(
+                                    "text-sm mt-1",
+                                    item.status === 'passed' && "text-green-600",
+                                    item.status === 'failed' && "text-red-600",
+                                    item.status === 'pending' && "text-gray-500"
+                                  )}
+                                >
+                                  {item.description}
+                                </p>
                               )}
                             </div>
-                          )}
 
-                          {isPending && (
-                            <Loader2 className="h-4 w-4 animate-spin text-gray-400 flex-shrink-0" />
-                          )}
+                            {/* Action buttons */}
+                            {canEdit && (
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <Button
+                                  size="sm"
+                                  variant={item.status === 'passed' ? 'primary' : 'outline'}
+                                  onClick={() => handlePassClick(section.id, item)}
+                                  disabled={isPending}
+                                  className={cn(
+                                    "h-8 px-3",
+                                    item.status === 'passed'
+                                      ? "bg-green-600 hover:bg-green-700 text-white"
+                                      : "hover:bg-green-50 hover:text-green-700 hover:border-green-300"
+                                  )}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1" />
+                                  Pass
+                                  {item.status === 'passed' && hasRemarksOrPhoto(item) && (
+                                    <MessageSquare className="h-3 w-3 ml-1" />
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={item.status === 'failed' ? 'destructive' : 'outline'}
+                                  onClick={() => handleFailClick(section.id, item)}
+                                  disabled={isPending}
+                                  className={cn(
+                                    "h-8 px-3",
+                                    item.status === 'failed'
+                                      ? "bg-red-600 hover:bg-red-700 text-white"
+                                      : "hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                                  )}
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Fail
+                                  {item.status === 'failed' && hasRemarksOrPhoto(item) && (
+                                    <MessageSquare className="h-3 w-3 ml-1" />
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+
+                            {/* Status indicator for non-editors */}
+                            {!canEdit && item.status !== 'pending' && (
+                              <div className="flex-shrink-0">
+                                {item.status === 'passed' ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Passed
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                                    <XCircle className="h-3 w-3" />
+                                    Failed
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {isPending && (
+                              <Loader2 className="h-4 w-4 animate-spin text-gray-400 flex-shrink-0" />
+                            )}
+                          </div>
                         </div>
                       ))}
                   </div>
@@ -474,7 +582,7 @@ export const TaskChecklistView = ({
 
       {/* Footer info */}
       {!canEdit && (
-        <p className="text-xs text-gray-400 text-center pt-2">
+        <p className="text-[10px] sm:text-xs text-gray-400 text-center pt-1 sm:pt-2">
           You can only update items when assigned to this task
         </p>
       )}
@@ -482,7 +590,7 @@ export const TaskChecklistView = ({
       {/* Summary message */}
       {isComplete && (
         <div className={cn(
-          "p-3 rounded-lg text-center text-sm font-medium",
+          "p-2.5 sm:p-3 rounded-lg text-center text-xs sm:text-sm font-medium",
           hasFailures
             ? "bg-amber-50 text-amber-800 border border-amber-200"
             : "bg-green-50 text-green-800 border border-green-200"
@@ -496,21 +604,22 @@ export const TaskChecklistView = ({
 
       {/* Generate Report Button - Only available when no pending items */}
       {totalCount > 0 && pendingCount === 0 && (
-        <div className="pt-4 border-t border-gray-100">
+        <div className="pt-3 sm:pt-4 border-t border-gray-100">
           <Button
             onClick={handleGenerateReport}
             disabled={isGeneratingPDF}
             variant="outline"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 text-indigo-700 hover:from-indigo-100 hover:to-purple-100 hover:border-indigo-300"
+            className="w-full flex items-center justify-center gap-2 h-9 sm:h-10 text-xs sm:text-sm bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 text-indigo-700 hover:from-indigo-100 hover:to-purple-100 hover:border-indigo-300"
           >
             {isGeneratingPDF ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generating Report...
+                <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                <span className="hidden sm:inline">Generating Report...</span>
+                <span className="sm:hidden">Generating...</span>
               </>
             ) : (
               <>
-                <FileDown className="h-4 w-4" />
+                <FileDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Generate Report
               </>
             )}

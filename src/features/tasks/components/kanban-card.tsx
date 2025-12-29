@@ -190,11 +190,11 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
           }
         >
           {/* Card Header */}
-          <div className="p-3 pb-2">
+          <div className="p-2.5 sm:p-3 pb-1.5 sm:pb-2">
             {/* Task Number */}
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-200">
+            <div className="flex items-center justify-between gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-[10px] sm:text-xs font-mono text-blue-600 bg-blue-50 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-blue-200">
                   {task.taskNumber}
                 </span>
                 {task.isConfidential && (
@@ -203,9 +203,9 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 {/* Task Type Badge - MT for Main Task, ST for Subtask */}
-                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                <span className={`text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${
                   task.parentTaskId
                     ? 'bg-purple-100 text-purple-700 border border-purple-300'
                     : 'bg-green-100 text-green-700 border border-green-300'
@@ -214,103 +214,89 @@ export const KanbanCard = ({ task, index, isDragDisabled = false, isBeingDragged
                 </span>
                 {task.attachmentId && (
                   <div
-                    className="flex-shrink-0 cursor-pointer hover:bg-blue-50 p-1.5 rounded transition-colors"
+                    className="flex-shrink-0 cursor-pointer hover:bg-blue-50 p-1 sm:p-1.5 rounded transition-colors"
                     onClick={handleViewAttachment}
                     title="View attachment"
                   >
-                    <FileTextIcon className="size-4 text-blue-600 hover:text-blue-700" />
+                    <FileTextIcon className="size-3.5 sm:size-4 text-blue-600 hover:text-blue-700" />
                   </div>
                 )}
               </div>
             </div>
-            <div className="flex items-start gap-2 mb-2">
-              <h3 className="text-sm font-semibold text-neutral-900 line-clamp-2 flex-1 leading-snug break-words overflow-hidden">
+            <div className="flex items-start gap-2 mb-1.5 sm:mb-2">
+              <h3 className="text-xs sm:text-sm font-semibold text-neutral-900 line-clamp-2 flex-1 leading-snug break-words overflow-hidden">
                 {task.name}
               </h3>
             </div>
           </div>
 
           {/* Card Body */}
-          <div className="px-3 pb-3">
+          <div className="px-2.5 sm:px-3 pb-2.5 sm:pb-3 space-y-1.5 sm:space-y-2">
             {/* Service */}
             {task.service && (
-              <div className="mb-2">
-                <div className="flex items-center gap-1 text-xs">
-                  <span className="text-gray-500 font-medium">Service:</span>
-                  <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full border border-blue-200">
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                    <span className="font-medium break-words">{task.service.name}</span>
-                  </div>
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs">
+                <span className="text-gray-500 font-medium hidden sm:inline">Service:</span>
+                <div className="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full border border-blue-200 max-w-full">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full flex-shrink-0"></div>
+                  <span className="font-medium truncate">{task.service.name}</span>
                 </div>
               </div>
             )}
-            
+
             {/* Due Date */}
-            <div className="mb-3">
-              <div className="flex items-center gap-1 text-xs">
-                <span className="text-gray-500 font-medium">Due Date:</span>
-                <TaskDate value={task.dueDate} className="font-medium" />
-              </div>
+            <div className="flex items-center gap-1 text-[10px] sm:text-xs">
+              <span className="text-gray-500 font-medium">Due:</span>
+              <TaskDate value={task.dueDate} className="font-medium" />
             </div>
 
             {/* Assignees */}
-            <div className="mb-2">
-              <div className="flex items-start gap-1 text-xs">
-                <span className="text-gray-500 font-medium shrink-0">Assignee{assignees.length > 1 ? 's' : ''}:</span>
-                {assignees.length > 0 ? (
-                  <span className="text-neutral-600 font-medium break-words">
-                    {assignees.map(a => a.name).join(', ')}
-                  </span>
-                ) : (
-                  <span className="text-neutral-400 font-medium">
-                    Unassigned
-                  </span>
-                )}
-              </div>
+            <div className="flex items-start gap-1 text-[10px] sm:text-xs">
+              <span className="text-gray-500 font-medium shrink-0">
+                <span className="hidden sm:inline">Assignee{assignees.length > 1 ? 's' : ''}:</span>
+                <span className="sm:hidden">By:</span>
+              </span>
+              {assignees.length > 0 ? (
+                <span className="text-neutral-600 font-medium truncate">
+                  {assignees.length === 1
+                    ? assignees[0].name
+                    : `${assignees[0].name} +${assignees.length - 1}`
+                  }
+                </span>
+              ) : (
+                <span className="text-neutral-400 font-medium">Unassigned</span>
+              )}
             </div>
 
             {/* Reviewer - show when status is IN_REVIEW or DONE and withReviewStage is enabled */}
             {withReviewStage && (task.status === 'IN_REVIEW' || task.status === 'DONE') && (
-              <div className="mb-2">
-                <div className="flex items-center gap-1 text-xs">
-                  <span className="text-gray-500 font-medium">Reviewer:</span>
-                  {reviewer ? (
-                    <span className="text-neutral-600 font-medium break-words">
-                      {reviewer.name}
-                    </span>
-                  ) : (
-                    <span className="text-neutral-400 font-medium">
-                      No Reviewer
-                    </span>
-                  )}
-                </div>
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs">
+                <span className="text-gray-500 font-medium">Reviewer:</span>
+                {reviewer ? (
+                  <span className="text-neutral-600 font-medium truncate">{reviewer.name}</span>
+                ) : (
+                  <span className="text-neutral-400 font-medium">None</span>
+                )}
               </div>
             )}
 
             {/* Sub-tasks count */}
             {task.subTaskCount !== undefined && task.subTaskCount > 0 && (
-              <div className="mb-2">
-                <div className="flex items-center gap-1 text-xs">
-                  <span className="text-gray-500 font-medium">Sub Tasks:</span>
-                  <span className="text-neutral-600 font-medium">{task.subTaskCount}</span>
-                </div>
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs">
+                <span className="text-gray-500 font-medium">Sub Tasks:</span>
+                <span className="text-neutral-600 font-medium">{task.subTaskCount}</span>
               </div>
             )}
 
-            {/* Requested By */}
+            {/* Requested By - hidden on smallest screens */}
             {creator && (
-              <div className="mb-3">
-                <div className="flex items-center gap-1 text-xs">
-                  <span className="text-gray-500 font-medium">Created by:</span>
-                  <span className="text-neutral-600 font-medium break-words">
-                    {creator.name}
-                  </span>
-                </div>
+              <div className="hidden sm:flex items-center gap-1 text-xs">
+                <span className="text-gray-500 font-medium">Created by:</span>
+                <span className="text-neutral-600 font-medium truncate">{creator.name}</span>
               </div>
             )}
 
             {/* Card Footer */}
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-end pt-1">
               {/* Task Status Indicator */}
               <div className={`h-2 w-2 rounded-full shadow-sm ${
                 task.status === 'BACKLOG' ? 'bg-gray-400' :
