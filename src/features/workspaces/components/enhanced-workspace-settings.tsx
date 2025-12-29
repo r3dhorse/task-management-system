@@ -270,32 +270,54 @@ export const EnhancedWorkspaceSettings = ({ onCancel, initialValues }: EnhancedW
         </Card>
 
         {/* Settings Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 gap-1">
-            <TabsTrigger value="general" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <BrushIcon className="h-3 sm:h-4 w-3 sm:w-4" />
-              <span className="hidden sm:inline">General</span>
-              <span className="sm:hidden">General</span>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+          {/* Mobile: Horizontal scroll tabs */}
+          <div className="sm:hidden overflow-x-auto -mx-4 px-4 pb-2">
+            <TabsList className="inline-flex w-auto min-w-full gap-1 bg-muted/50 p-1">
+              <TabsTrigger value="general" className="flex items-center gap-1.5 text-xs whitespace-nowrap px-3 py-2 touch-manipulation">
+                <BrushIcon className="h-3.5 w-3.5" />
+                General
+              </TabsTrigger>
+              <TabsTrigger value="kpi" className="flex items-center gap-1.5 text-xs whitespace-nowrap px-3 py-2 touch-manipulation">
+                <BarChart3Icon className="h-3.5 w-3.5" />
+                KPI
+              </TabsTrigger>
+              <TabsTrigger value="members" className="flex items-center gap-1.5 text-xs whitespace-nowrap px-3 py-2 touch-manipulation">
+                <UsersIcon className="h-3.5 w-3.5" />
+                Members
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-1.5 text-xs whitespace-nowrap px-3 py-2 touch-manipulation">
+                <ShieldIcon className="h-3.5 w-3.5" />
+                Security
+              </TabsTrigger>
+              <TabsTrigger value="danger" className="flex items-center gap-1.5 text-xs whitespace-nowrap px-3 py-2 text-red-600 touch-manipulation">
+                <AlertTriangleIcon className="h-3.5 w-3.5" />
+                Danger
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* Desktop: Grid tabs */}
+          <TabsList className="hidden sm:grid w-full grid-cols-5 gap-1">
+            <TabsTrigger value="general" className="flex items-center gap-2 text-sm">
+              <BrushIcon className="h-4 w-4" />
+              General
             </TabsTrigger>
-            <TabsTrigger value="kpi" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <BarChart3Icon className="h-3 sm:h-4 w-3 sm:w-4" />
-              <span className="hidden sm:inline">KPI Config</span>
-              <span className="sm:hidden">KPI</span>
+            <TabsTrigger value="kpi" className="flex items-center gap-2 text-sm">
+              <BarChart3Icon className="h-4 w-4" />
+              KPI Config
             </TabsTrigger>
-            <TabsTrigger value="members" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <UsersIcon className="h-3 sm:h-4 w-3 sm:w-4" />
-              <span className="hidden sm:inline">Members</span>
-              <span className="sm:hidden">Members</span>
+            <TabsTrigger value="members" className="flex items-center gap-2 text-sm">
+              <UsersIcon className="h-4 w-4" />
+              Members
             </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <ShieldIcon className="h-3 sm:h-4 w-3 sm:w-4" />
-              <span className="hidden sm:inline">Security</span>
-              <span className="sm:hidden">Security</span>
+            <TabsTrigger value="security" className="flex items-center gap-2 text-sm">
+              <ShieldIcon className="h-4 w-4" />
+              Security
             </TabsTrigger>
-            <TabsTrigger value="danger" className="flex items-center gap-1 sm:gap-2 text-red-600 text-xs sm:text-sm">
-              <AlertTriangleIcon className="h-3 sm:h-4 w-3 sm:w-4" />
-              <span className="hidden sm:inline">Danger Zone</span>
-              <span className="sm:hidden">Danger</span>
+            <TabsTrigger value="danger" className="flex items-center gap-2 text-red-600 text-sm">
+              <AlertTriangleIcon className="h-4 w-4" />
+              Danger Zone
             </TabsTrigger>
           </TabsList>
 

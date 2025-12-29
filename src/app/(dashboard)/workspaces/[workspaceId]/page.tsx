@@ -122,18 +122,18 @@ const WorkspaceIdPage = () => {
   }
 
   return (
-    <div className="flex flex-col space-y-6 py-2">
+    <div className="flex flex-col space-y-4 sm:space-y-6 py-2">
       {/* Header */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
-            <BarChart3Icon className="h-6 w-6 text-white" />
+      <div className="space-y-1 sm:space-y-2">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="p-1.5 sm:p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+            <BarChart3Icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </div>
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent truncate">
               {workspace?.name || "Workspace Dashboard"}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 sm:line-clamp-none">
               {workspace?.description || "Overview of workspace metrics and performance"}
             </p>
           </div>
@@ -144,7 +144,26 @@ const WorkspaceIdPage = () => {
 
       {/* Tabs Navigation */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full max-w-2xl grid-cols-3">
+        {/* Mobile: Horizontal scroll tabs */}
+        <div className="sm:hidden overflow-x-auto -mx-2 px-2 pb-1">
+          <TabsList className="inline-flex w-auto min-w-full gap-1 p-1">
+            <TabsTrigger value="overview" className="flex items-center gap-1.5 text-xs whitespace-nowrap px-3 py-2 touch-manipulation">
+              <BarChart3Icon className="h-3.5 w-3.5" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="deadlines" className="flex items-center gap-1.5 text-xs whitespace-nowrap px-3 py-2 touch-manipulation">
+              <CalendarIcon className="h-3.5 w-3.5" />
+              Deadlines
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-1.5 text-xs whitespace-nowrap px-3 py-2 touch-manipulation">
+              <TrendingUpIcon className="h-3.5 w-3.5" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* Desktop: Grid tabs */}
+        <TabsList className="hidden sm:grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3Icon className="h-4 w-4" />
             Overview
@@ -161,28 +180,28 @@ const WorkspaceIdPage = () => {
 
       {/* Date Range Filter - Hide on Task Deadline tab */}
       {activeTab !== "deadlines" && (
-        <Card className="p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full relative z-10 mt-6">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
+        <Card className="p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 w-full relative z-10 mt-4 sm:mt-6">
+        <div className="flex flex-col gap-2 sm:gap-3 lg:flex-row lg:items-center lg:gap-4">
           <div className="flex items-center gap-2">
-            <CalendarIcon className="size-4 text-blue-600" />
-            <span className="text-sm font-medium text-blue-900">Date Range:</span>
+            <CalendarIcon className="size-3.5 sm:size-4 text-blue-600" />
+            <span className="text-xs sm:text-sm font-medium text-blue-900">Date Range:</span>
           </div>
           <div className="flex items-center gap-2 flex-wrap relative z-0">
             <DatePicker
               value={dateFrom}
               onChange={setDateFrom}
-              placeholder="From date"
-              className="w-44 min-w-[11rem]"
+              placeholder="From"
+              className="w-[130px] sm:w-44 text-xs sm:text-sm"
             />
-            <span className="text-muted-foreground text-sm shrink-0">to</span>
+            <span className="text-muted-foreground text-xs sm:text-sm shrink-0">to</span>
             <DatePicker
               value={dateTo}
               onChange={setDateTo}
-              placeholder="To date"
-              className="w-44 min-w-[11rem]"
+              placeholder="To"
+              className="w-[130px] sm:w-44 text-xs sm:text-sm"
             />
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 sm:gap-2 flex-wrap">
             <Button
               variant="outline"
               size="sm"
@@ -191,9 +210,9 @@ const WorkspaceIdPage = () => {
                 setDateTo(today);
                 setDateFrom(subDays(today, 7));
               }}
-              className="bg-white hover:bg-blue-50 text-xs px-3"
+              className="bg-white hover:bg-blue-50 text-[10px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
             >
-              7 days
+              7d
             </Button>
             <Button
               variant="outline"
@@ -203,9 +222,9 @@ const WorkspaceIdPage = () => {
                 setDateTo(today);
                 setDateFrom(subDays(today, 15));
               }}
-              className="bg-white hover:bg-blue-50 text-xs px-3"
+              className="bg-white hover:bg-blue-50 text-[10px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
             >
-              15 days
+              15d
             </Button>
             <Button
               variant="outline"
@@ -215,9 +234,9 @@ const WorkspaceIdPage = () => {
                 setDateTo(today);
                 setDateFrom(subDays(today, 30));
               }}
-              className="bg-white hover:bg-blue-50 text-xs px-3"
+              className="bg-white hover:bg-blue-50 text-[10px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
             >
-              30 days
+              30d
             </Button>
           </div>
         </div>

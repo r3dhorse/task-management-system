@@ -263,21 +263,21 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
   if (totalSystemTasksWithDeadlines === 0) {
     return (
       <Card className="border-0 shadow-lg">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg">
-              <CalendarIcon className="h-5 w-5 text-white" />
+        <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <div className="p-1.5 sm:p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg">
+              <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
             </div>
             Task Deadline Timeline
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center">
-              <CalendarIcon className="h-8 w-8 text-gray-400" />
+        <CardContent className="px-3 sm:px-6">
+          <div className="text-center py-8 sm:py-12">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center">
+              <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
             </div>
-            <h3 className="font-medium text-gray-900 mb-2">No Upcoming Deadlines</h3>
-            <p className="text-sm text-gray-500 max-w-sm mx-auto">
+            <h3 className="font-medium text-gray-900 mb-2 text-sm sm:text-base">No Upcoming Deadlines</h3>
+            <p className="text-xs sm:text-sm text-gray-500 max-w-sm mx-auto px-4">
               All tasks are either completed or don&apos;t have due dates set. Great work keeping up with deadlines!
             </p>
           </div>
@@ -288,8 +288,59 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
 
   return (
     <Card className="border-0 shadow-lg">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
+      <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6">
+        {/* Mobile Layout */}
+        <div className="sm:hidden space-y-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="p-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg">
+                <CalendarIcon className="h-4 w-4 text-white" />
+              </div>
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Deadlines
+              </span>
+            </CardTitle>
+            <Badge variant="secondary" className="text-xs">
+              {totalTasksWithDeadlines}
+            </Badge>
+          </div>
+
+          {/* Mobile Navigation Controls */}
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToPreviousWeek}
+              disabled={isPreviousDisabled}
+              className="h-8 w-8 p-0 touch-manipulation"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToToday}
+              className="text-xs px-3 h-8 touch-manipulation"
+              disabled={dateOffset === 0}
+            >
+              Today
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToNextWeek}
+              disabled={isNextDisabled}
+              className="h-8 w-8 p-0 touch-manipulation"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden sm:flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg">
               <CalendarIcon className="h-5 w-5 text-white" />
@@ -302,7 +353,7 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
             </Badge>
           </CardTitle>
 
-          {/* Navigation Controls */}
+          {/* Desktop Navigation Controls */}
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -339,10 +390,10 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6">
         {/* Date Range Indicator */}
-        <div className="mb-4 text-center">
-          <div className="text-sm text-gray-600 mb-2">
+        <div className="mb-3 sm:mb-4 text-center">
+          <div className="text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2">
             {timelineData.length > 0 && (
               <span>
                 {format(timelineData[0].date, 'MMM d')} - {format(timelineData[timelineData.length - 1].date, 'MMM d, yyyy')}
@@ -352,21 +403,20 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
 
           {/* Week Position Indicator */}
           <div className="flex items-center justify-center gap-1">
-            <span className="text-xs text-gray-500">
+            <span className="text-[10px] sm:text-xs text-gray-500">
               Week {Math.floor(dateOffset / 7) + MAX_WEEKS_BACKWARD + 1} of {MAX_WEEKS_BACKWARD + 1 + MAX_WEEKS_FORWARD}
             </span>
-            <div className="flex gap-1 ml-2">
+            <div className="flex gap-0.5 sm:gap-1 ml-1 sm:ml-2">
               {Array.from({ length: MAX_WEEKS_BACKWARD + 1 + MAX_WEEKS_FORWARD }, (_, i) => {
                 const weekOffset = (i - MAX_WEEKS_BACKWARD) * 7;
                 const isCurrentWeek = weekOffset === dateOffset;
                 return (
                   <div
                     key={i}
-                    className={`w-2 h-2 rounded-full ${
-                      isCurrentWeek
-                        ? 'bg-indigo-500'
-                        : 'bg-gray-200'
-                    }`}
+                    className={cn(
+                      "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
+                      isCurrentWeek ? 'bg-indigo-500' : 'bg-gray-200'
+                    )}
                     title={`Week ${i + 1}${isCurrentWeek ? ' (current)' : ''}`}
                   />
                 );
@@ -375,155 +425,160 @@ export const TaskDeadlineTimeline = ({ tasks, workspaceId }: TaskDeadlineTimelin
           </div>
         </div>
 
-        {/* Static Date Headers - Outside ScrollArea */}
-        <div className="flex gap-2 mb-4 pb-4 border-b bg-white">
-          {timelineData.map((day, _index) => (
-            <div
-              key={day.date.toISOString()}
-              className={cn(
-                "flex-1 min-w-[80px] text-center",
-                day.isToday && "bg-blue-50 rounded-lg p-2",
-                day.isPast && "opacity-60"
-              )}
-            >
-              <div className={cn(
-                "text-xs font-medium",
-                day.isToday ? "text-blue-600" : "text-gray-600",
-                day.isWeekend && "text-red-500"
-              )}>
-                {day.dayLabel}
-              </div>
-              <div className={cn(
-                "text-sm font-bold mt-1",
-                day.isToday ? "text-blue-800" : "text-gray-900",
-                day.isPast && "text-gray-500"
-              )}>
-                {day.dateLabel}
-              </div>
-              {day.isToday && (
-                <div className="w-2 h-2 bg-blue-500 rounded-full mx-auto mt-1"></div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Scrollable Task Items */}
-        <ScrollArea className="h-[380px]">
-          <div className="relative min-h-[200px]">
-            {/* Grid Lines */}
-            <div className="absolute inset-0 flex gap-2">
-              {timelineData.map((day, idx) => (
+        {/* Horizontally Scrollable Timeline Container */}
+        <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+          <div className="min-w-[600px] sm:min-w-0">
+            {/* Static Date Headers */}
+            <div className="flex gap-1.5 sm:gap-2 mb-3 sm:mb-4 pb-3 sm:pb-4 border-b bg-white">
+              {timelineData.map((day, _index) => (
                 <div
-                  key={`grid-${idx}`}
+                  key={day.date.toISOString()}
                   className={cn(
-                    "flex-1 border-l border-gray-100",
-                    day.isToday && "border-blue-200 bg-blue-50/30"
+                    "flex-1 min-w-[45px] sm:min-w-[60px] text-center",
+                    day.isToday && "bg-blue-50 rounded-lg p-1.5 sm:p-2",
+                    day.isPast && "opacity-60"
                   )}
-                />
-              ))}
-            </div>
-
-            {/* Task Items */}
-            <div className="relative flex gap-2">
-              {timelineData.map((day, dayIndex) => (
-                <div key={`tasks-${dayIndex}`} className="flex-1 min-w-[80px] space-y-2">
-                  {day.tasks.map((task) => {
-                    const canAccess = canAccessTask(task);
-                    const isConfidential = task.isConfidential;
-
-                    return (
-                      <div
-                        key={task.id}
-                        className={cn(
-                          "group rounded-lg p-2 text-center border transition-all duration-200 relative",
-                          canAccess && "cursor-pointer hover:scale-105 hover:shadow-md",
-                          !canAccess && isConfidential && "cursor-not-allowed opacity-75",
-                          day.isPast
-                            ? canAccess
-                              ? "bg-red-50 border-red-200 hover:bg-red-100"
-                              : "bg-red-50 border-red-300"
-                            : day.isToday
-                            ? canAccess
-                              ? "bg-orange-50 border-orange-200 hover:bg-orange-100"
-                              : "bg-orange-50 border-orange-300"
-                            : canAccess
-                            ? "bg-blue-50 border-blue-200 hover:bg-blue-100"
-                            : "bg-blue-50 border-blue-300"
-                        )}
-                        onClick={() => handleTaskClick(task)}
-                        style={{
-                          minHeight: '40px'
-                        }}
-                        title={
-                          !canAccess
-                            ? "Access restricted"
-                            : `${task.name} - ${formatStatusText(task.status)}${task.service ? ` (${task.service.name})` : ''}`
-                        }
-                      >
-                      {/* Task Number */}
-                      <div className="font-mono font-bold text-gray-900 text-sm">
-                        {task.taskNumber}
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div className="w-full bg-gray-200 rounded-full h-1 mt-1">
-                        <div
-                          className={cn(
-                            "h-1 rounded-full transition-all duration-300",
-                            getStatusColor(task.status)
-                          )}
-                          style={{ width: `${getStatusProgress(task.status)}%` }}
-                        />
-                      </div>
-
-                      {/* Overdue indicator */}
-                      {day.isPast && (
-                        <div className="absolute top-1 right-1">
-                          <AlertTriangleIcon className="h-2 w-2 text-red-500" />
-                        </div>
-                      )}
-
-                      {/* Confidential indicator */}
-                      {isConfidential && (
-                        <div className="absolute top-1 left-1">
-                          <Lock className={cn(
-                            "h-2 w-2",
-                            canAccess ? "text-blue-600" : "text-gray-500"
-                          )} />
-                        </div>
-                      )}
-                    </div>
-                    );
-                  })}
-
-                  {/* Empty state for days with no tasks */}
-                  {day.tasks.length === 0 && (
-                    <div className="text-center py-4 text-gray-500 text-xs">
-                      -
-                    </div>
+                >
+                  <div className={cn(
+                    "text-[10px] sm:text-xs font-medium",
+                    day.isToday ? "text-blue-600" : "text-gray-600",
+                    day.isWeekend && "text-red-500"
+                  )}>
+                    {day.dayLabel}
+                  </div>
+                  <div className={cn(
+                    "text-xs sm:text-sm font-bold mt-0.5 sm:mt-1",
+                    day.isToday ? "text-blue-800" : "text-gray-900",
+                    day.isPast && "text-gray-500"
+                  )}>
+                    {day.dateLabel}
+                  </div>
+                  {day.isToday && (
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-500 rounded-full mx-auto mt-0.5 sm:mt-1"></div>
                   )}
                 </div>
               ))}
             </div>
+
+            {/* Scrollable Task Items */}
+            <ScrollArea className="h-[280px] sm:h-[380px]">
+              <div className="relative min-h-[150px] sm:min-h-[200px]">
+                {/* Grid Lines */}
+                <div className="absolute inset-0 flex gap-1.5 sm:gap-2">
+                  {timelineData.map((day, idx) => (
+                    <div
+                      key={`grid-${idx}`}
+                      className={cn(
+                        "flex-1 border-l border-gray-100",
+                        day.isToday && "border-blue-200 bg-blue-50/30"
+                      )}
+                    />
+                  ))}
+                </div>
+
+                {/* Task Items */}
+                <div className="relative flex gap-1.5 sm:gap-2">
+                  {timelineData.map((day, dayIndex) => (
+                    <div key={`tasks-${dayIndex}`} className="flex-1 min-w-[45px] sm:min-w-[60px] space-y-1.5 sm:space-y-2">
+                      {day.tasks.map((task) => {
+                        const canAccess = canAccessTask(task);
+                        const isConfidential = task.isConfidential;
+
+                        return (
+                          <div
+                            key={task.id}
+                            className={cn(
+                              "group rounded-md sm:rounded-lg p-1.5 sm:p-2 text-center border transition-all duration-200 relative touch-manipulation",
+                              canAccess && "cursor-pointer hover:scale-105 hover:shadow-md active:scale-95",
+                              !canAccess && isConfidential && "cursor-not-allowed opacity-75",
+                              day.isPast
+                                ? canAccess
+                                  ? "bg-red-50 border-red-200 hover:bg-red-100"
+                                  : "bg-red-50 border-red-300"
+                                : day.isToday
+                                ? canAccess
+                                  ? "bg-orange-50 border-orange-200 hover:bg-orange-100"
+                                  : "bg-orange-50 border-orange-300"
+                                : canAccess
+                                ? "bg-blue-50 border-blue-200 hover:bg-blue-100"
+                                : "bg-blue-50 border-blue-300"
+                            )}
+                            onClick={() => handleTaskClick(task)}
+                            style={{
+                              minHeight: '36px'
+                            }}
+                            title={
+                              !canAccess
+                                ? "Access restricted"
+                                : `${task.name} - ${formatStatusText(task.status)}${task.service ? ` (${task.service.name})` : ''}`
+                            }
+                          >
+                          {/* Task Number */}
+                          <div className="font-mono font-bold text-gray-900 text-[10px] sm:text-sm truncate">
+                            {task.taskNumber}
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="w-full bg-gray-200 rounded-full h-0.5 sm:h-1 mt-0.5 sm:mt-1">
+                            <div
+                              className={cn(
+                                "h-0.5 sm:h-1 rounded-full transition-all duration-300",
+                                getStatusColor(task.status)
+                              )}
+                              style={{ width: `${getStatusProgress(task.status)}%` }}
+                            />
+                          </div>
+
+                          {/* Overdue indicator */}
+                          {day.isPast && (
+                            <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1">
+                              <AlertTriangleIcon className="h-2 w-2 text-red-500" />
+                            </div>
+                          )}
+
+                          {/* Confidential indicator */}
+                          {isConfidential && (
+                            <div className="absolute top-0.5 left-0.5 sm:top-1 sm:left-1">
+                              <Lock className={cn(
+                                "h-2 w-2",
+                                canAccess ? "text-blue-600" : "text-gray-500"
+                              )} />
+                            </div>
+                          )}
+                        </div>
+                        );
+                      })}
+
+                      {/* Empty state for days with no tasks */}
+                      {day.tasks.length === 0 && (
+                        <div className="text-center py-3 sm:py-4 text-gray-400 text-[10px] sm:text-xs">
+                          -
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollArea>
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Static Legend Footer - Outside ScrollArea */}
-        <div className="mt-4 pt-4 border-t flex flex-wrap gap-4 text-xs bg-white">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t flex flex-wrap gap-2 sm:gap-4 text-[10px] sm:text-xs bg-white">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-blue-500 rounded"></div>
             <span>To Do</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-yellow-500 rounded"></div>
             <span>In Progress</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-purple-500 rounded"></div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-purple-500 rounded"></div>
             <span>In Review</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-red-100 border border-red-200 rounded"></div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-red-100 border border-red-200 rounded"></div>
             <span>Overdue</span>
           </div>
         </div>
